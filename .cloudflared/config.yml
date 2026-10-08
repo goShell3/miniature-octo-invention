@@ -1,0 +1,28 @@
+# Cloudflare Tunnel configuration for Amalink
+# ──────────────────────────────────────────────────────────────────────────────
+# This file is used with a NAMED tunnel (permanent hostnames).
+# See TUNNEL.md for full setup instructions.
+#
+# Replace <TUNNEL-ID> with the UUID printed by:
+#   cloudflared tunnel create amalink
+#
+# Replace <YOUR-DOMAIN> with your registered domain (e.g. amalink.dev).
+# Two sub-domains are expected:
+#   api.<YOUR-DOMAIN>  → NestJS API  (localhost:3000)
+#   app.<YOUR-DOMAIN>  → Vite web    (localhost:5173)
+# ──────────────────────────────────────────────────────────────────────────────
+
+tunnel: <TUNNEL-ID>
+credentials-file: /home/vortex/.cloudflared/<TUNNEL-ID>.json
+
+ingress:
+  # API — NestJS on port 3000
+  - hostname: api.<YOUR-DOMAIN>
+    service: http://localhost:3000
+
+  # Web — Vite dev server on port 5173
+  - hostname: app.<YOUR-DOMAIN>
+    service: http://localhost:5173
+
+  # Catch-all required by cloudflared
+  - service: http_status:404
