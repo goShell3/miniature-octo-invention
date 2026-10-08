@@ -114,12 +114,12 @@ function createCardSvg(templateId: TemplateId, colorMode: ColorMode, portfolio: 
   const domain = escapeXml(`${portfolio.subdomain}.yoursite.com`)
 
   const artwork: Record<TemplateId, string> = {
-    paper: `<rect width="856" height="540" rx="28" fill="${palette.background}"/><rect x="0" y="0" width="18" height="540" fill="${palette.accent}"/><circle cx="760" cy="110" r="132" fill="${palette.spotlight}"/><circle cx="760" cy="110" r="92" fill="none" stroke="${palette.accent}" stroke-width="2"/><path d="M650 110h220M760 0v220" stroke="${palette.accent}" stroke-opacity=".28"/><rect x="56" y="54" width="44" height="44" rx="2" fill="${palette.accent}"/><text x="78" y="86" text-anchor="middle" class="brand-initial">A</text><text x="116" y="82" class="brand">amalink</text><text x="58" y="226" class="eyebrow">A PORTFOLIO, IN PERSON</text>${nameSvg}${taglineSvg}<path d="M58 456h740" stroke="${palette.rule}"/><text x="58" y="493" class="domain">${domain}</text><text x="798" y="493" text-anchor="end" class="nfc">TAP TO OPEN  /  NFC</text>`,
-    signal: `<rect width="856" height="540" rx="28" fill="${palette.background}"/><path d="M0 0h856v20H0z" fill="${palette.accent}"/><path d="M636 0h220v220H636z" fill="${palette.panel}"/><path d="M636 0l220 220" stroke="${palette.accent}" stroke-width="2"/><rect x="56" y="52" width="46" height="46" rx="23" fill="${palette.accent}"/><text x="79" y="83" text-anchor="middle" class="brand-initial">A</text><text x="118" y="82" class="brand">amalink</text><text x="58" y="218" class="eyebrow">GOOD WORK TRAVELS</text>${nameSvg}${taglineSvg}<rect x="58" y="448" width="740" height="2" fill="${palette.rule}"/><text x="58" y="492" class="domain">${domain}</text><text x="798" y="492" text-anchor="end" class="nfc">TAP TO OPEN  /  NFC</text>`,
-    atelier: `<rect width="856" height="540" rx="28" fill="${palette.background}"/><path d="M558 0h298v540H558z" fill="${palette.panel}"/><circle cx="706" cy="270" r="178" fill="none" stroke="${palette.spotlight}" stroke-width="2"/><circle cx="706" cy="270" r="142" fill="none" stroke="${palette.spotlight}" stroke-opacity=".5"/><circle cx="706" cy="270" r="105" fill="${palette.spotlight}"/><path d="M706 165v210M601 270h210" stroke="${palette.background}" stroke-opacity=".35"/><rect x="56" y="52" width="46" height="46" rx="2" fill="${palette.accent}"/><text x="79" y="84" text-anchor="middle" class="brand-initial">A</text><text x="118" y="82" class="brand">amalink</text><text x="58" y="218" class="eyebrow">MADE TO BE REMEMBERED</text>${nameSvg}${taglineSvg}<path d="M58 448h740" stroke="${palette.rule}"/><text x="58" y="492" class="domain">${domain}</text><text x="798" y="492" text-anchor="end" class="nfc">TAP TO OPEN  /  NFC</text>`,
-    frame: `<rect width="856" height="540" rx="28" fill="${palette.background}"/><rect x="24" y="24" width="808" height="492" rx="18" fill="none" stroke="${palette.rule}" stroke-width="2"/><path d="M58 54h48v48M798 438v48h-48" fill="none" stroke="${palette.accent}" stroke-width="5"/><rect x="56" y="54" width="44" height="44" rx="22" fill="${palette.accent}"/><text x="78" y="86" text-anchor="middle" class="brand-initial">A</text><text x="116" y="82" class="brand">amalink</text><text x="58" y="218" class="eyebrow">YOUR WORK, ONE TAP AWAY</text>${nameSvg}${taglineSvg}<path d="M58 456h740" stroke="${palette.rule}"/><text x="58" y="493" class="domain">${domain}</text><text x="798" y="493" text-anchor="end" class="nfc">TAP TO OPEN  /  NFC</text>`,
+    paper: `<rect width="856" height="540" rx="28" fill="${palette.background}"/><rect x="0" y="0" width="18" height="540" fill="${palette.accent}"/><circle cx="760" cy="110" r="132" fill="${palette.spotlight}"/><circle cx="760" cy="110" r="92" fill="none" stroke="${palette.accent}" stroke-width="2"/><path d="M650 110h220M760 0v220" stroke="${palette.accent}" stroke-opacity=".28"/><rect x="56" y="54" width="44" height="44" rx="4" fill="${palette.accent}"/><text x="78" y="85" text-anchor="middle" class="brand-initial">S</text><text x="116" y="82" class="brand">sewnet</text><text x="58" y="226" class="eyebrow">DIGITAL IDENTITY &amp; NETWORKING</text>${nameSvg}${taglineSvg}<path d="M58 456h740" stroke="${palette.rule}"/><text x="58" y="493" class="domain">${domain}</text><text x="798" y="493" text-anchor="end" class="nfc">TAP TO OPEN  /  NFC</text>`,
+    signal: `<rect width="856" height="540" rx="28" fill="${palette.background}"/><path d="M0 0h856v20H0z" fill="${palette.accent}"/><path d="M636 0h220v220H636z" fill="${palette.panel}"/><path d="M636 0l220 220" stroke="${palette.accent}" stroke-width="2"/><rect x="56" y="52" width="46" height="46" rx="23" fill="${palette.accent}"/><text x="79" y="83" text-anchor="middle" class="brand-initial">S</text><text x="118" y="82" class="brand">sewnet</text><text x="58" y="218" class="eyebrow">ONE IDENTITY. ONE TAP.</text>${nameSvg}${taglineSvg}<rect x="58" y="448" width="740" height="2" fill="${palette.rule}"/><text x="58" y="492" class="domain">${domain}</text><text x="798" y="492" text-anchor="end" class="nfc">TAP TO OPEN  /  NFC</text>`,
+    atelier: `<rect width="856" height="540" rx="28" fill="${palette.background}"/><path d="M558 0h298v540H558z" fill="${palette.panel}"/><circle cx="706" cy="270" r="178" fill="none" stroke="${palette.spotlight}" stroke-width="2"/><circle cx="706" cy="270" r="142" fill="none" stroke="${palette.spotlight}" stroke-opacity=".5"/><circle cx="706" cy="270" r="105" fill="${palette.spotlight}"/><path d="M706 165v210M601 270h210" stroke="${palette.background}" stroke-opacity=".35"/><rect x="56" y="52" width="46" height="46" rx="4" fill="${palette.accent}"/><text x="79" y="84" text-anchor="middle" class="brand-initial">S</text><text x="118" y="82" class="brand">sewnet</text><text x="58" y="218" class="eyebrow">EVERY CONNECTION MEASURED</text>${nameSvg}${taglineSvg}<path d="M58 448h740" stroke="${palette.rule}"/><text x="58" y="492" class="domain">${domain}</text><text x="798" y="492" text-anchor="end" class="nfc">TAP TO OPEN  /  NFC</text>`,
+    frame: `<rect width="856" height="540" rx="28" fill="${palette.background}"/><rect x="24" y="24" width="808" height="492" rx="18" fill="none" stroke="${palette.rule}" stroke-width="2"/><path d="M58 54h48v48M798 438v48h-48" fill="none" stroke="${palette.accent}" stroke-width="5"/><rect x="56" y="54" width="44" height="44" rx="22" fill="${palette.accent}"/><text x="78" y="85" text-anchor="middle" class="brand-initial">S</text><text x="116" y="82" class="brand">sewnet</text><text x="58" y="218" class="eyebrow">YOUR WORK, ONE TAP AWAY</text>${nameSvg}${taglineSvg}<path d="M58 456h740" stroke="${palette.rule}"/><text x="58" y="493" class="domain">${domain}</text><text x="798" y="493" text-anchor="end" class="nfc">TAP TO OPEN  /  NFC</text>`,
   }
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="85.6mm" height="54mm" viewBox="0 0 856 540" role="img" aria-label="${escapeXml(name)} Amalink ${colorMode} NFC card"><style>text{font-family:Arial,sans-serif}.brand{font-size:25px;font-weight:700;fill:${palette.ink}}.brand-initial{font-family:Georgia,serif;font-size:31px;font-style:italic;fill:${palette.accentInk}}.eyebrow{font-size:12px;font-weight:700;letter-spacing:3px;fill:${palette.accent}}.name{font-family:Georgia,serif;font-size:51px;fill:${palette.ink}}.tagline{font-size:18px;fill:${palette.muted}}.domain{font-size:14px;font-weight:700;fill:${palette.ink}}.nfc{font-size:12px;font-weight:700;letter-spacing:1px;fill:${palette.accent}}</style>${artwork[templateId]}</svg>`
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="85.6mm" height="54mm" viewBox="0 0 856 540" role="img" aria-label="${escapeXml(name)} Sewnet ${colorMode} NFC card"><style>text{font-family:Arial,sans-serif}.brand{font-size:25px;font-weight:700;fill:${palette.ink}}.brand-initial{font-family:Arial,sans-serif;font-size:26px;font-weight:800;fill:${palette.accentInk}}.eyebrow{font-size:12px;font-weight:700;letter-spacing:3px;fill:${palette.accent}}.name{font-family:Georgia,serif;font-size:51px;fill:${palette.ink}}.tagline{font-size:18px;fill:${palette.muted}}.domain{font-size:14px;font-weight:700;fill:${palette.ink}}.nfc{font-size:12px;font-weight:700;letter-spacing:1px;fill:${palette.accent}}</style>${artwork[templateId]}</svg>`
 }
 
 export function NfcStudio({ portfolio, onBack }: { portfolio: Portfolio; onBack: () => void }) {
@@ -188,16 +188,18 @@ export function NfcStudio({ portfolio, onBack }: { portfolio: Portfolio; onBack:
     setCopied(true)
   }
 
+  const [selectedTier, setSelectedTier] = useState<'individual' | 'business' | 'enterprise'>('individual')
+
   return (
     <section className="nfc-studio">
       <header className="nfc-studio-heading">
         <div>
           <button className="back-button" onClick={onBack}>← Back to editor</button>
-          <p className="eyebrow">AMALINK / CARD STUDIO</p>
-          <h1>Make your work<br /><em>easy to share.</em></h1>
-          <p className="nfc-studio-intro">A tap-ready card, shaped around {identity.name}.</p>
+          <p className="eyebrow">SEWNET / CARD STUDIO</p>
+          <h1>One identity.<br /><em>One tap.</em></h1>
+          <p className="nfc-studio-intro">A tap-ready card, shaped around {identity.name}. Every connection measured.</p>
         </div>
-        <div className="nfc-studio-brand"><span className="brand-mark">A</span><span>amalink</span><small>NFC CARD / 85.6 × 54 MM</small></div>
+        <div className="nfc-studio-brand"><span className="brand-mark">S</span><span>sewnet</span><small>NFC CARD / 85.6 × 54 MM</small></div>
       </header>
 
       <div className="nfc-studio-grid">
@@ -206,20 +208,20 @@ export function NfcStudio({ portfolio, onBack }: { portfolio: Portfolio; onBack:
           <div className="nfc-template-list" role="tablist" aria-label="Card templates">
             {templates.map((template, index) => (
               <button key={template.id} role="tab" aria-selected={templateId === template.id} className={`nfc-template-option ${templateId === template.id ? 'active' : ''}`} onClick={() => { setTemplateId(template.id); setOrder(null) }}>
-                <span className={`nfc-mini-card nfc-mini-card--${template.id} ${colorMode === 'dark' ? 'nfc-mini-card--dark' : ''}`}><span className="mini-brand">A</span><span className="mini-lines" /></span>
+                <span className={`nfc-mini-card nfc-mini-card--${template.id} ${colorMode === 'dark' ? 'nfc-mini-card--dark' : ''}`}><span className="mini-brand">S</span><span className="mini-lines" /></span>
                 <span className="nfc-template-name"><strong>{template.name}</strong><small>{template.note}</small></span>
                 <span className="nfc-template-index">0{index + 1}</span>
               </button>
             ))}
           </div>
-          <div className="nfc-data-note"><span className="nfc-note-mark">A</span><p><strong>Built from your portfolio</strong><br />Name, role, address, and accent color come from your published page.</p></div>
+          <div className="nfc-data-note"><span className="nfc-note-mark">S</span><p><strong>Built from your portfolio</strong><br />Name, role, address, and accent color come from your live Sewnet profile.</p></div>
         </aside>
 
         <section className="nfc-preview-column" aria-label="Card preview">
           <div className="nfc-preview-label"><span>FRONT / LIVE PREVIEW</span><div className="nfc-mode-switch" role="group" aria-label="Card color mode"><button type="button" aria-pressed={colorMode === 'light'} className={colorMode === 'light' ? 'active' : ''} onClick={() => setColorMode('light')}>Light</button><button type="button" aria-pressed={colorMode === 'dark'} className={colorMode === 'dark' ? 'active' : ''} onClick={() => setColorMode('dark')}>Dark</button></div><span>85.6 × 54 MM</span></div>
           <div className="nfc-card-wrap">
             <article className={`nfc-card nfc-card--${templateId} nfc-card--${colorMode}`} style={cardStyle}>
-              <div className="nfc-card-brand"><span className="nfc-card-mark">A</span><strong>amalink</strong></div>
+              <div className="nfc-card-brand"><span className="nfc-card-mark">S</span><strong>sewnet</strong></div>
               <div className="nfc-card-content">
                 <span className="nfc-card-kicker">{templateId === 'signal' ? 'GOOD WORK TRAVELS' : templateId === 'atelier' ? 'MADE TO BE REMEMBERED' : templateId === 'frame' ? 'YOUR WORK, ONE TAP AWAY' : 'A PORTFOLIO, IN PERSON'}</span>
                 <h2>{identity.name}</h2>
@@ -230,10 +232,10 @@ export function NfcStudio({ portfolio, onBack }: { portfolio: Portfolio; onBack:
             </article>
           </div>
           <div className="nfc-preview-actions">
-            <span>Amalink identity stays on every design.</span>
+            <span>Sewnet identity stays on every design.</span>
             <button className="secondary-button" onClick={downloadTemplate} title="Download print-ready SVG">↓ Download SVG</button>
           </div>
-          <p className="nfc-export-note">SVG artwork is sized to standard card dimensions. Add bleed and chip placement with your print supplier.</p>
+          <p className="nfc-export-note">SVG artwork is sized to standard card dimensions (85.6 × 54 mm). Add bleed and chip placement with your print supplier.</p>
         </section>
 
         <aside className="nfc-order-column">
@@ -244,15 +246,46 @@ export function NfcStudio({ portfolio, onBack }: { portfolio: Portfolio; onBack:
             <div className="nfc-order-success" role="status"><span className="nfc-order-check">✓</span><p className="eyebrow">LINK CREATED</p><h2>Your tap destination is ready.</h2><p>Order status: <strong>{order.status}</strong></p><div className="nfc-short-link">{order.shortUrl}</div><button className="secondary-button" onClick={copyShortUrl}>{copied ? 'Copied' : 'Copy tap link'}</button><button className="text-button" onClick={() => setOrder(null)}>New card request</button></div>
           ) : (
             <form className="nfc-order-form" onSubmit={submitOrder}>
-              <p className="nfc-order-copy">Add a delivery address. Your NFC card will point to this portfolio.</p>
+              <p className="nfc-order-copy">Choose your card tier and delivery address in Ethiopia:</p>
+              <div style={{ display: 'grid', gap: 6, margin: '2px 0 10px' }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--ink)' }}>CARD TIER &amp; PRICING</span>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+                  {[
+                    { id: 'individual', name: 'Individual', price: '2,500 Birr' },
+                    { id: 'business', name: 'S&M Biz', price: '3,000 Birr' },
+                    { id: 'enterprise', name: 'Enterprise', price: '3,500 Birr' },
+                  ].map((tier) => (
+                    <button
+                      key={tier.id}
+                      type="button"
+                      onClick={() => setSelectedTier(tier.id as typeof selectedTier)}
+                      style={{
+                        padding: '7px 4px',
+                        border: selectedTier === tier.id ? '2px solid #e06b24' : '1px solid var(--line)',
+                        background: selectedTier === tier.id ? '#faece2' : '#fff',
+                        borderRadius: 3,
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 2,
+                      }}
+                    >
+                      <strong style={{ fontSize: 10, color: 'var(--ink)' }}>{tier.name}</strong>
+                      <span style={{ fontSize: 9, fontWeight: 700, color: '#e06b24' }}>{tier.price}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
               <label>Recipient name<input required maxLength={100} autoComplete="name" value={address.name} onChange={(event) => setAddress({ ...address, name: event.target.value })} /></label>
-              <label>Address line 1<input required maxLength={150} autoComplete="address-line1" value={address.addressLine1} onChange={(event) => setAddress({ ...address, addressLine1: event.target.value })} /></label>
+              <label>Address line 1<input required maxLength={150} autoComplete="address-line1" value={address.addressLine1} onChange={(event) => setAddress({ ...address, addressLine1: event.target.value })} placeholder="Subcity, Woreda, Building" /></label>
               <label>Address line 2 <small>OPTIONAL</small><input maxLength={150} autoComplete="address-line2" value={address.addressLine2} onChange={(event) => setAddress({ ...address, addressLine2: event.target.value })} /></label>
-              <div className="nfc-address-row"><label>City<input required maxLength={100} autoComplete="address-level2" value={address.city} onChange={(event) => setAddress({ ...address, city: event.target.value })} /></label><label>State / region<input required maxLength={100} autoComplete="address-level1" value={address.region} onChange={(event) => setAddress({ ...address, region: event.target.value })} /></label></div>
+              <div className="nfc-address-row"><label>City<input required maxLength={100} autoComplete="address-level2" value={address.city} onChange={(event) => setAddress({ ...address, city: event.target.value })} placeholder="Addis Ababa" /></label><label>Region / State<input required maxLength={100} autoComplete="address-level1" value={address.region} onChange={(event) => setAddress({ ...address, region: event.target.value })} /></label></div>
               <div className="nfc-address-row"><label>Postal code<input required maxLength={24} autoComplete="postal-code" value={address.postalCode} onChange={(event) => setAddress({ ...address, postalCode: event.target.value })} /></label><label>Country code<input required minLength={2} maxLength={2} pattern="[A-Za-z]{2}" autoComplete="country" value={address.countryCode} onChange={(event) => setAddress({ ...address, countryCode: event.target.value.toUpperCase() })} /></label></div>
               {error && <p className="notice error-notice" role="alert">{error}</p>}
-              <button className="primary-button" disabled={busy}>{busy ? 'Requesting...' : 'Create NFC order'}</button>
-              <small className="nfc-order-disclaimer">This creates a pending request and tap link. Printing and shipping are not processed in the app yet.</small>
+              <button className="primary-button" disabled={busy}>{busy ? 'Requesting...' : `Order Card (${selectedTier === 'individual' ? '2,500' : selectedTier === 'business' ? '3,000' : '3,500'} Birr)`}</button>
+              <small className="nfc-order-disclaimer">Payment will be collected via Telebirr or CBE upon card fulfillment.</small>
             </form>
           )}
         </aside>
