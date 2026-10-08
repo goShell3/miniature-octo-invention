@@ -61,7 +61,7 @@ export class PortfoliosService {
           owner: { id: ownerId } as UserEntity,
           subdomain,
           status: 'draft',
-          theme: input.theme ?? { id: 'minimal', accentColor: '#2563eb' },
+          theme: input.theme ?? { id: 'minimal', accentColor: '#e06b24' },
         }),
       );
       const content = await contentVersions.save(

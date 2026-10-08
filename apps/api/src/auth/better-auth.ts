@@ -39,7 +39,7 @@ const socialProviders = {
 };
 
 export const auth = betterAuth({
-  appName: 'Amalink',
+  appName: 'Sewnet',
   baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3000',
   basePath: '/api/auth',
   secret,
@@ -92,5 +92,8 @@ export const auth = betterAuth({
     'http://127.0.0.1:5173',
     'http://127.0.0.1:5174',
     'http://127.0.0.1:5175',
+    'http://localhost:5173',
+    'https://observer-portions-charger-polished.trycloudflare.com',
+    'https://ccd-cigarette-wonderfull-villa.trycloudflare.com', 
   ],
 });
