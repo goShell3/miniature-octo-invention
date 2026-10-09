@@ -38,21 +38,60 @@ const socialProviders = {
     : {}),
 };
 
-export const auth = betterAuth({
-  appName: 'Sewnet',
-  baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3000',
-  basePath: '/api/auth',
-  secret,
-  database: new PostgresDialect({
-    pool: new Pool({
+const dbUrl = process.env.DATABASE_URL;
+const isRemoteDb =
+  dbUrl &&
+  (dbUrl.includes('supabase.co') ||
+    dbUrl.includes('supabase.com') ||
+    dbUrl.includes('pooler.supabase.com') ||
+    dbUrl.includes('render.com') ||
+    dbUrl.includes('neon.tech') ||
+    dbUrl.includes('aws'));
+
+const pool = dbUrl
+  ? new Pool({
+      connectionString: dbUrl,
+      ssl:
+        process.env.DATABASE_SSL === 'false'
+          ? false
+          : process.env.DATABASE_SSL === 'true' || isRemoteDb
+          ? { rejectUnauthorized: false }
+          : undefined,
+      max: 10,
+    })
+  : new Pool({
       host: process.env.DATABASE_HOST ?? '127.0.0.1',
       port: Number(process.env.DATABASE_PORT ?? 5433),
       user: process.env.DATABASE_USERNAME ?? 'amalink',
       password: process.env.DATABASE_PASSWORD ?? 'amalink',
       database: process.env.DATABASE_NAME ?? 'amalink',
+      ssl:
+        process.env.DATABASE_SSL === 'true'
+          ? { rejectUnauthorized: false }
+          : undefined,
       max: 10,
-    }),
-  }),
+    });
+
+const defaultOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174',
+  'http://127.0.0.1:5175',
+];
+const envOrigins = (process.env.WEB_ORIGIN ?? '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+const trustedOrigins = [...new Set([...defaultOrigins, ...envOrigins])];
+
+export const auth = betterAuth({
+  appName: 'Sewnet',
+  baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3000',
+  basePath: '/api/auth',
+  secret,
+  database: new PostgresDialect({ pool }),
   user: {
     modelName: 'users',
     fields: {
@@ -62,6 +101,10 @@ export const auth = betterAuth({
     },
   },
   advanced: {
+    defaultCookieAttributes: {
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      secure: process.env.NODE_ENV === 'production',
+    },
     database: {
       generateId: ({ model }) =>
         model === 'user' || model === 'users' ? false : randomUUID(),
@@ -85,15 +128,5 @@ export const auth = betterAuth({
       emailVerification: false,
     },
   },
-  trustedOrigins: [
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:5175',
-    'http://127.0.0.1:5173',
-    'http://127.0.0.1:5174',
-    'http://127.0.0.1:5175',
-    'http://localhost:5173',
-    'https://observer-portions-charger-polished.trycloudflare.com',
-    'https://ccd-cigarette-wonderfull-villa.trycloudflare.com', 
-  ],
+  trustedOrigins,
 });

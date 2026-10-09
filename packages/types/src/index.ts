@@ -14,6 +14,11 @@ export interface HeroBlock {
     name: string;
     tagline: string;
     avatarUrl?: string;
+    company?: string;
+    location?: string;
+    phone?: string;
+    email?: string;
+    badge?: string;
   };
 }
 
@@ -21,6 +26,7 @@ export interface AboutBlock {
   type: 'about';
   data: {
     body: string;
+    title?: string;
   };
 }
 
@@ -36,18 +42,60 @@ export interface ProjectBlock {
   };
 }
 
+export type SocialPlatform =
+  | 'instagram'
+  | 'linkedin'
+  | 'telegram'
+  | 'whatsapp'
+  | 'twitter'
+  | 'x'
+  | 'tiktok'
+  | 'youtube'
+  | 'github'
+  | 'website'
+  | 'phone'
+  | 'email'
+  | 'other';
+
+export interface SocialLink {
+  platform: SocialPlatform | string;
+  url: string;
+  label?: string;
+  handle?: string;
+}
+
 export interface ContactBlock {
   type: 'contact';
   data: {
     email?: string;
-    socials?: Array<{
-      platform: string;
+    phone?: string;
+    whatsapp?: string;
+    telegram?: string;
+    location?: string;
+    website?: string;
+    socials?: SocialLink[];
+  };
+}
+
+export interface LinksBlock {
+  type: 'links';
+  data: {
+    title?: string;
+    items: Array<{
+      title: string;
       url: string;
+      platform?: SocialPlatform | string;
+      subtitle?: string;
     }>;
   };
 }
 
-export type PortfolioBlock = HeroBlock | AboutBlock | ProjectBlock | ContactBlock;
+export type PortfolioBlock =
+  | HeroBlock
+  | AboutBlock
+  | ProjectBlock
+  | ContactBlock
+  | LinksBlock;
 
 export interface PortfolioDocument {
   portfolioId: string;
