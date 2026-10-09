@@ -28,6 +28,7 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       allowedHosts: [
         'localhost',
+        '.localhost',
         '127.0.0.1',
         '.trycloudflare.com',   // wildcard — covers all quick-tunnel hostnames
         ...extraHosts,

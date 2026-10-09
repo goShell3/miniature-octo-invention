@@ -10,6 +10,10 @@
     "dev:web": "npm run dev --workspace @amalink/web",
     "dev:api": "npm run start:dev --workspace @amalink/api",
     "build": "npm run build --workspace @amalink/types && npm run build --workspace @amalink/api && npm run build --workspace @amalink/web",
+    "build:api": "npm run build --workspace @amalink/types && npm run build --workspace @amalink/api",
+    "build:web": "npm run build --workspace @amalink/types && npm run build --workspace @amalink/web",
+    "start:api": "npm run start:prod --workspace @amalink/api",
+    "db:migrate": "npm run migration:run --workspace @amalink/api",
     "test:api": "npm run test --workspace @amalink/api"
   },
   "engines": {
