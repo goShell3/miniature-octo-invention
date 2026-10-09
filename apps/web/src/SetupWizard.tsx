@@ -14,6 +14,10 @@ export interface WizardData {
   projectDescription: string
   projectLink: string
   email: string
+  phone?: string
+  instagram?: string
+  linkedin?: string
+  company?: string
   accentColor: `#${string}`
 }
 
@@ -33,7 +37,7 @@ const STEPS = [
   { key: 'identity', label: 'Identity', headline: 'What should we call you?',   sub: 'Your name and the role or tagline that describes your work.' },
   { key: 'about',    label: 'About',    headline: 'Tell us a little about you.', sub: 'A short paragraph about your practice — a few sentences is plenty.' },
   { key: 'work',     label: 'Work',     headline: 'Show your first piece.',      sub: 'Add one project to start. You can add more in the editor.' },
-  { key: 'finish',   label: 'Finish',   headline: 'One last touch.',             sub: 'Add a contact email and choose an accent color for your portfolio.' },
+  { key: 'finish',   label: 'Finish',   headline: 'One last touch.',             sub: 'Add your contact and social links for instant NFC sharing.' },
 ] as const
 
 type StepKey = (typeof STEPS)[number]['key']
@@ -55,6 +59,10 @@ export function SetupWizard({ onFinish, checkSubdomain, busy, error }: SetupWiza
     projectDescription: '',
     projectLink: '',
     email: '',
+    phone: '',
+    instagram: '',
+    linkedin: '',
+    company: '',
     accentColor: '#e06b24',
   })
 
@@ -201,7 +209,7 @@ export function SetupWizard({ onFinish, checkSubdomain, busy, error }: SetupWiza
                         }}
                         aria-describedby={`${uid}-subdomain-hint`}
                       />
-                      <span className="domain-suffix">.yoursite.com</span>
+                      <span className="domain-suffix">.localhost:5173</span>
                     </div>
                     <span id={`${uid}-subdomain-hint`} className="wizard-field-hint">
                       Lowercase letters, numbers, hyphens. 3–30 characters.
@@ -335,6 +343,42 @@ export function SetupWizard({ onFinish, checkSubdomain, busy, error }: SetupWiza
                     />
                   </div>
                   <div className="wizard-field">
+                    <label htmlFor={`${uid}-phone`}>
+                      Phone number (for NFC taps) <span className="wizard-optional">OPTIONAL</span>
+                    </label>
+                    <input
+                      id={`${uid}-phone`}
+                      type="tel"
+                      value={data.phone ?? ''}
+                      placeholder="+251 91 123 4567"
+                      onChange={(e) => patch({ phone: e.target.value })}
+                    />
+                  </div>
+                  <div className="wizard-field">
+                    <label htmlFor={`${uid}-insta`}>
+                      Instagram handle <span className="wizard-optional">OPTIONAL</span>
+                    </label>
+                    <input
+                      id={`${uid}-insta`}
+                      type="text"
+                      value={data.instagram ?? ''}
+                      placeholder="@yourhandle"
+                      onChange={(e) => patch({ instagram: e.target.value })}
+                    />
+                  </div>
+                  <div className="wizard-field">
+                    <label htmlFor={`${uid}-linkedin`}>
+                      LinkedIn profile or handle <span className="wizard-optional">OPTIONAL</span>
+                    </label>
+                    <input
+                      id={`${uid}-linkedin`}
+                      type="text"
+                      value={data.linkedin ?? ''}
+                      placeholder="in/yourprofile or URL"
+                      onChange={(e) => patch({ linkedin: e.target.value })}
+                    />
+                  </div>
+                  <div className="wizard-field">
                     <label htmlFor={`${uid}-color`}>Accent color</label>
                     <div className="wizard-color-row">
                       <input
@@ -363,7 +407,7 @@ export function SetupWizard({ onFinish, checkSubdomain, busy, error }: SetupWiza
                   <div className="wizard-summary">
                     <p className="wizard-summary-label">YOUR PORTFOLIO WILL INCLUDE</p>
                     <ul>
-                      <li><span>↗</span>{data.subdomain}.yoursite.com</li>
+                      <li><span>↗</span>{data.subdomain}.localhost:5173</li>
                       <li><span>↗</span>Hero — {data.name || '(name)'}</li>
                       {data.about && <li><span>↗</span>About section</li>}
                       {data.projectTitle && <li><span>↗</span>Project — {data.projectTitle}</li>}
@@ -403,7 +447,7 @@ export function SetupWizard({ onFinish, checkSubdomain, busy, error }: SetupWiza
         <aside className="wizard-preview-col" aria-label="Live preview">
           <div className="wizard-preview-label">
             <span><i className="preview-dot" aria-hidden="true" /> LIVE PREVIEW</span>
-            <span>{data.subdomain ? `${data.subdomain}.yoursite.com` : 'yoursite.com'}</span>
+            <span>{data.subdomain ? `${data.subdomain}.localhost:5173` : 'localhost:5173'}</span>
           </div>
           <WizardPreview blocks={previewBlocks} theme={previewTheme} activeStep={step.key} />
         </aside>
@@ -483,10 +527,53 @@ function WizardPreview({ blocks, theme, activeStep }: {
 
 /** Convert wizard data into the standard portfolio blocks array. */
 export function wizardDataToBlocks(data: WizardData): PortfolioBlock[] {
+  const socials = []
+  if (data.instagram?.trim()) {
+    const raw = data.instagram.trim()
+    const handle = raw.startsWith('@') ? raw : `@${raw}`
+    const url = raw.startsWith('http') ? raw : `https://instagram.com/${raw.replace(/^@/, '')}`
+    socials.push({ platform: 'instagram', url, label: 'Instagram', handle })
+  }
+  if (data.linkedin?.trim()) {
+    const raw = data.linkedin.trim()
+    const handle = raw.includes('linkedin.com') ? raw : `in/${raw.replace(/^in\//, '')}`
+    const url = raw.startsWith('http') ? raw : `https://linkedin.com/in/${raw.replace(/^in\//, '')}`
+    socials.push({ platform: 'linkedin', url, label: 'LinkedIn', handle })
+  }
+
   return [
-    { type: 'hero',     data: { name: data.name, tagline: data.tagline } },
-    { type: 'about',    data: { body: data.about } },
-    { type: 'projects', data: { items: [{ title: data.projectTitle, description: data.projectDescription, link: data.projectLink || undefined }] } },
-    { type: 'contact',  data: { email: data.email } },
+    {
+      type: 'hero',
+      data: {
+        name: data.name,
+        tagline: data.tagline,
+        company: data.company || '',
+        location: 'Addis Ababa, Ethiopia',
+        phone: data.phone || '',
+        email: data.email,
+      },
+    },
+    {
+      type: 'contact',
+      data: {
+        email: data.email,
+        phone: data.phone || '',
+        whatsapp: data.phone || '',
+        socials,
+      },
+    },
+    { type: 'about', data: { body: data.about } },
+    {
+      type: 'projects',
+      data: {
+        items: [
+          {
+            title: data.projectTitle,
+            description: data.projectDescription,
+            link: data.projectLink || undefined,
+          },
+        ],
+      },
+    },
   ]
 }
