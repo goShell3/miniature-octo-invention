@@ -132,10 +132,7 @@ export function HomePage({
               cards integrated with dynamic digital portfolios and real-time interaction metrics.
             </p>
 
-            <div className="hero-presenter">
-              <span>Presented by</span>
-              <strong>Roben Bayisa</strong>
-            </div>
+
 
             <div className="hero-ctas">
               <button
