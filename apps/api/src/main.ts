@@ -14,24 +14,48 @@ async function bootstrap() {
 
   app.enableCors({
     origin: (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      // Check wildcard origins in allowedOrigins list (e.g. *.vercel.app or *.sewnet.et)
+      const matchesWildcard = allowedOrigins.some((allowed) => {
+        if (allowed.includes('*')) {
+          const regexStr = '^' + allowed.replace(/\./g, '\\.').replace(/\*/g, '[a-z0-9-]+') + '$';
+          return new RegExp(regexStr, 'i').test(origin);
+        }
+        return false;
+      });
+      if (matchesWildcard) {
         callback(null, true);
         return;
       }
 
       const isLocalDevOrigin =
         process.env.NODE_ENV !== 'production' &&
-        /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
+        /^http:\/\/(?:[a-z0-9-]+\.)*(?:localhost|127\.0\.0\.1):\d+$/.test(origin);
       if (isLocalDevOrigin) {
         callback(null, true);
         return;
       }
 
-      callback(new Error('Not allowed by CORS'));
+      // Allow any Vercel preview or production deployment
+      if (origin.endsWith('.vercel.app')) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
   });
 
   app.useGlobalPipes(
@@ -44,6 +68,7 @@ async function bootstrap() {
 
   app.use('/api/auth', toNodeHandler(auth));
 
-  await app.listen(process.env.PORT ?? 3000);
+  const port = Number(process.env.PORT ?? 3000);
+  await app.listen(port, '0.0.0.0');
 }
 bootstrap();
