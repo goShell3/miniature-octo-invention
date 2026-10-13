@@ -14,7 +14,7 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: BETTER_AUTH_SECRET
-        generateValue: true
+        value: VgSHVwtSV5J7Rdwgz1EF5DlZLvMPbfYa
       - key: BETTER_AUTH_URL
         sync: false
       - key: WEB_ORIGIN
