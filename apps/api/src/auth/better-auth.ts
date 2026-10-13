@@ -88,7 +88,7 @@ const trustedOrigins = [...new Set([...defaultOrigins, ...envOrigins])];
 
 export const auth = betterAuth({
   appName: 'Sewnet',
-  baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3000',
+  baseURL: process.env.BETTER_AUTH_URL ?? 'https://sewnet.vercel.app/',
   basePath: '/api/auth',
   secret,
   database: new PostgresDialect({ pool }),
