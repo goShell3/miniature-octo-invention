@@ -35,6 +35,7 @@ export const dataSourceOptions: DataSourceOptions = {
     ? {
         url: dbUrl,
         ssl: sslOption,
+        extra: sslOption ? { ssl: { rejectUnauthorized: false } } : undefined,
       }
     : {
         host: process.env.DATABASE_HOST ?? 'localhost',
@@ -43,6 +44,7 @@ export const dataSourceOptions: DataSourceOptions = {
         port: Number(process.env.DATABASE_PORT ?? 5432),
         database: process.env.DATABASE_NAME ?? 'amalink',
         ssl: sslOption,
+        extra: sslOption ? { ssl: { rejectUnauthorized: false } } : undefined,
       }),
   entities: [
     UserEntity,
