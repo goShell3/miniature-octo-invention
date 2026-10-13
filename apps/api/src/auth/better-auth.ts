@@ -82,7 +82,7 @@ const defaultOrigins = [
 ];
 const envOrigins = (process.env.WEB_ORIGIN ?? '')
   .split(',')
-  .map((o) => o.trim())
+  .map((o) => o.trim().replace(/\/+$/, ''))
   .filter(Boolean);
 const trustedOrigins = [...new Set([...defaultOrigins, ...envOrigins])];
 

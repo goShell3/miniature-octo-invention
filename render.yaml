@@ -16,6 +16,6 @@ services:
       - key: BETTER_AUTH_SECRET
         value: VgSHVwtSV5J7Rdwgz1EF5DlZLvMPbfYa
       - key: BETTER_AUTH_URL
-        sync: false
+        value: https://sewnet-api.onrender.com
       - key: WEB_ORIGIN
-        sync: false
+        value: https://miniature-octo-invention-rouge.vercel.app

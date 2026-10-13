@@ -22,6 +22,23 @@ const isRemoteDb =
     dbUrl.includes('neon.tech') ||
     dbUrl.includes('aws'));
 
+if (
+  (dbUrl && dbUrl.includes('.supabase.co') && !dbUrl.includes('pooler.supabase.com')) ||
+  (process.env.DATABASE_HOST && process.env.DATABASE_HOST.includes('.supabase.co') && !process.env.DATABASE_HOST.includes('pooler.supabase.com'))
+) {
+  console.warn(
+    '\n================================================================================\n' +
+    '⚠️  [SUPABASE IPv6 CONNECTION WARNING]\n' +
+    'You are connecting to Supabase via Direct Connection (db.<ref>.supabase.co:5432).\n' +
+    'Direct connection is IPv6-only on AWS Supabase. Render does not support IPv6 outbound,\n' +
+    'which causes "Error: connect ENETUNREACH 2a05:...:5432".\n\n' +
+    'To fix this, switch your DATABASE_URL in Render to the Supabase Connection Pooler URI:\n' +
+    '👉 Supabase Dashboard -> Click "Connect" button at the top -> "Session Pooler" -> URI\n' +
+    'Format: postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres\n' +
+    '================================================================================\n'
+  );
+}
+
 const sslOption =
   process.env.DATABASE_SSL === 'false'
     ? false
