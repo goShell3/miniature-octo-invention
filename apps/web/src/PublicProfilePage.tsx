@@ -150,17 +150,17 @@ export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps)
           <div style={{ width: 44, height: 44, borderRadius: 8, background: '#e06b24', color: '#fff', fontSize: 24, fontWeight: 800, display: 'grid', placeItems: 'center', margin: '0 auto 16px' }}>S</div>
           <h2 style={{ fontSize: 22, fontWeight: 800, margin: '0 0 10px', color: '#191513' }}>Profile Not Found</h2>
           <p style={{ fontSize: 13, color: '#7a7269', lineHeight: 1.55, margin: '0 0 24px' }}>
-            The subdomain <strong>{subdomain}.localhost:5173</strong> is either not registered or currently saved as a draft.
+            The profile <strong>"{subdomain}"</strong> was not found or is currently saved as an unpublished draft.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <a
-              href="http://localhost:5173"
+              href="/"
               style={{ display: 'inline-block', padding: '12px 18px', background: '#e06b24', color: '#fff', borderRadius: 6, fontWeight: 700, fontSize: 13, textDecoration: 'none' }}
             >
               Go to Workspace / Sign In →
             </a>
             <a
-              href="http://localhost:5173"
+              href="/"
               style={{ fontSize: 12, color: '#7a7269', textDecoration: 'none' }}
             >
               Return to Sewnet Home
@@ -230,8 +230,8 @@ export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps)
             <span className="nfc-pulse-dot" style={!isPublished ? { background: '#f48935', boxShadow: 'none' } : undefined} />
             <span>
               {isPublished
-                ? `LIVE ON SUBDOMAIN · ${subdomain}.localhost:5173`
-                : `DRAFT PREVIEW · ${subdomain}.localhost:5173`}
+                ? `LIVE PROFILE · ${subdomain}`
+                : `DRAFT PREVIEW · ${subdomain}`}
             </span>
           </div>
           <div className="nfc-sewnet-tag">
@@ -422,7 +422,7 @@ export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps)
 
         {/* Footer */}
         <footer className="nfc-preview-footer">
-          <a href="http://localhost:5173" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none', color: '#191513', marginBottom: 6 }}>
+          <a href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none', color: '#191513', marginBottom: 6 }}>
             <span style={{ background: accentColor, color: '#fff', width: 18, height: 18, borderRadius: 4, display: 'grid', placeItems: 'center', fontSize: 11, fontWeight: 800 }}>S</span>
             <strong style={{ fontSize: 13 }}>sewnet</strong>
           </a>
@@ -430,7 +430,7 @@ export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps)
             One identity. One tap. Every connection measured.
           </div>
           <a
-            href="http://localhost:5173"
+            href="/"
             style={{ fontSize: 11, color: accentColor, fontWeight: 700, textDecoration: 'none' }}
           >
             Order your own NFC Smart Business Card →

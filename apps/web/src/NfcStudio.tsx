@@ -111,7 +111,11 @@ function createCardSvg(templateId: TemplateId, colorMode: ColorMode, portfolio: 
   const safeTagline = toLines(tagline, 27).map(escapeXml)
   const nameSvg = safeName.map((line, index) => `<text x="56" y="${286 + index * 58}" class="name">${line}</text>`).join('')
   const taglineSvg = safeTagline.map((line, index) => `<text x="58" y="${390 + index * 28}" class="tagline">${line}</text>`).join('')
-  const domain = escapeXml(`${portfolio.subdomain}.localhost:5173`)
+  const domain = escapeXml(
+    typeof window !== 'undefined'
+      ? (window.location.hostname.endsWith('localhost') ? `${portfolio.subdomain}.localhost:5173` : `${portfolio.subdomain}.${window.location.host}`)
+      : `${portfolio.subdomain}.sewnet.et`
+  )
 
   const artwork: Record<TemplateId, string> = {
     paper: `<rect width="856" height="540" rx="28" fill="${palette.background}"/><rect x="0" y="0" width="18" height="540" fill="${palette.accent}"/><circle cx="760" cy="110" r="132" fill="${palette.spotlight}"/><circle cx="760" cy="110" r="92" fill="none" stroke="${palette.accent}" stroke-width="2"/><path d="M650 110h220M760 0v220" stroke="${palette.accent}" stroke-opacity=".28"/><rect x="56" y="54" width="44" height="44" rx="4" fill="${palette.accent}"/><text x="78" y="85" text-anchor="middle" class="brand-initial">S</text><text x="116" y="82" class="brand">sewnet</text><text x="58" y="226" class="eyebrow">DIGITAL IDENTITY &amp; NETWORKING</text>${nameSvg}${taglineSvg}<path d="M58 456h740" stroke="${palette.rule}"/><text x="58" y="493" class="domain">${domain}</text><text x="798" y="493" text-anchor="end" class="nfc">TAP TO OPEN  /  NFC</text>`,
@@ -227,7 +231,7 @@ export function NfcStudio({ portfolio, onBack }: { portfolio: Portfolio; onBack:
                 <h2>{identity.name}</h2>
                 <p>{identity.tagline}</p>
               </div>
-              <div className="nfc-card-foot"><span>{portfolio.subdomain}.localhost:5173</span><b><i className="nfc-wave" /> TAP TO OPEN</b></div>
+              <div className="nfc-card-foot"><span>{portfolio.subdomain}</span><b><i className="nfc-wave" /> TAP TO OPEN</b></div>
               <span className="nfc-card-graphic" aria-hidden="true" />
             </article>
           </div>

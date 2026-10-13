@@ -16,7 +16,7 @@ export function getSubdomain(): string | null {
   const hostname = window.location.hostname.toLowerCase()
   const searchParams = new URLSearchParams(window.location.search)
 
-  // Explicit query param takes priority (useful for local simulation/testing e.g. localhost:5173?subdomain=robben)
+  // 1. Explicit query param takes priority (e.g. ?subdomain=robben)
   const querySub = searchParams.get('subdomain')
   if (querySub) {
     const clean = querySub.trim().toLowerCase()
@@ -25,7 +25,7 @@ export function getSubdomain(): string | null {
     }
   }
 
-  // Check localhost subdomains: e.g. "robben.localhost"
+  // 2. Localhost subdomains: e.g. "robben.localhost"
   if (hostname.endsWith('.localhost')) {
     const sub = hostname.slice(0, -'.localhost'.length)
     if (sub && sub !== 'www' && sub !== 'app' && sub !== 'api') {
@@ -33,12 +33,31 @@ export function getSubdomain(): string | null {
     }
   }
 
-  // Plain local hostnames - not a portfolio subdomain
+  // 3. Plain local hostnames - main app workspace
   if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
     return null
   }
 
-  // Multi-level production domain: e.g. robben.sewnet.et
+  // 4. Cloud deployment hostnames (Vercel, Render, Cloudflare, etc.) are the main application
+  if (
+    hostname.endsWith('.vercel.app') ||
+    hostname.endsWith('.onrender.com') ||
+    hostname.endsWith('.pages.dev') ||
+    hostname.endsWith('.trycloudflare.com')
+  ) {
+    return null
+  }
+
+  // 5. Custom Domain via VITE_ROOT_DOMAIN (e.g. sewnet.et)
+  const rootDomain = import.meta.env.VITE_ROOT_DOMAIN?.toLowerCase()
+  if (rootDomain && hostname.endsWith(`.${rootDomain}`)) {
+    const sub = hostname.slice(0, -(`.${rootDomain}`).length)
+    if (sub && sub !== 'www' && sub !== 'app' && sub !== 'api') {
+      return sub
+    }
+  }
+
+  // 6. Generic Multi-level production domain (e.g. robben.sewnet.et)
   const parts = hostname.split('.')
   if (parts.length > 2) {
     const sub = parts[0]
@@ -51,14 +70,54 @@ export function getSubdomain(): string | null {
 }
 
 export function getPortfolioSubdomainUrl(subdomain: string, preview = false): string {
+  if (typeof window === 'undefined') return `?subdomain=${encodeURIComponent(subdomain)}`
+  const hostname = window.location.hostname.toLowerCase()
   const port = window.location.port ? `:${window.location.port}` : ''
-  const previewQuery = preview ? '?preview=true' : ''
-  if (window.location.hostname.endsWith('localhost') || window.location.hostname === '127.0.0.1') {
-    return `http://${subdomain}.localhost${port}/${previewQuery}`
+  const previewParam = preview ? 'preview=true' : ''
+
+  // 1. Localhost: use native <subdomain>.localhost:<port>
+  if (hostname.endsWith('.localhost') || hostname === 'localhost' || hostname === '127.0.0.1') {
+    const query = previewParam ? `?${previewParam}` : ''
+    return `http://${subdomain}.localhost${port}/${query}`
   }
-  const hostParts = window.location.hostname.split('.')
-  const rootHost = hostParts.length > 2 ? hostParts.slice(1).join('.') : window.location.hostname
-  return `${window.location.protocol}//${subdomain}.${rootHost}${port}/${previewQuery}`
+
+  // 2. Vercel / Render cloud domains: route via query param since wildcards don't exist on *.vercel.app
+  if (hostname.endsWith('.vercel.app') || hostname.endsWith('.onrender.com')) {
+    const query = `?subdomain=${encodeURIComponent(subdomain)}${preview ? '&preview=true' : ''}`
+    return `${window.location.protocol}//${window.location.host}/${query}`
+  }
+
+  // 3. Custom domain via VITE_ROOT_DOMAIN (e.g. sewnet.et)
+  const rootDomain = import.meta.env.VITE_ROOT_DOMAIN?.toLowerCase()
+  if (rootDomain) {
+    const query = previewParam ? `?${previewParam}` : ''
+    return `${window.location.protocol}//${subdomain}.${rootDomain}${port}/${query}`
+  }
+
+  // 4. Custom multi-level domain (e.g. sewnet.et -> robben.sewnet.et)
+  const hostParts = hostname.split('.')
+  const rootHost = hostParts.length > 2 ? hostParts.slice(1).join('.') : hostname
+  const query = previewParam ? `?${previewParam}` : ''
+  return `${window.location.protocol}//${subdomain}.${rootHost}${port}/${query}`
+}
+
+export function getPortfolioDomainLabel(subdomain: string): string {
+  if (typeof window === 'undefined') return subdomain
+  const hostname = window.location.hostname.toLowerCase()
+  if (hostname.endsWith('.localhost') || hostname === 'localhost' || hostname === '127.0.0.1') {
+    const port = window.location.port ? `:${window.location.port}` : ''
+    return `${subdomain}.localhost${port}`
+  }
+  if (hostname.endsWith('.vercel.app') || hostname.endsWith('.onrender.com')) {
+    return `${window.location.host}/?subdomain=${subdomain}`
+  }
+  const rootDomain = import.meta.env.VITE_ROOT_DOMAIN?.toLowerCase()
+  if (rootDomain) {
+    return `${subdomain}.${rootDomain}`
+  }
+  const hostParts = hostname.split('.')
+  const rootHost = hostParts.length > 2 ? hostParts.slice(1).join('.') : hostname
+  return `${subdomain}.${rootHost}`
 }
 
 interface User {
@@ -278,7 +337,7 @@ function WorkspaceApp() {
       })
       setSelected(updated)
       setPortfolios((current) => current.map((item) => item.id === updated.id ? updated : item))
-      setMessage(`Draft saved! Preview at http://${updated.subdomain}.localhost:5173`)
+      setMessage(`Draft saved! Preview at ${getPortfolioSubdomainUrl(updated.subdomain, true)}`)
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Unable to save draft')
     } finally {
@@ -294,7 +353,7 @@ function WorkspaceApp() {
       const updated = await apiRequest<Portfolio>(`/portfolios/${selected.id}/publish`, { method: 'POST' })
       setSelected(updated)
       setPortfolios((current) => current.map((item) => item.id === updated.id ? updated : item))
-      setMessage(`Published! Live at http://${updated.subdomain}.localhost:5173`)
+      setMessage(`Published! Live at ${getPortfolioSubdomainUrl(updated.subdomain, false)}`)
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Unable to publish portfolio')
     } finally {
@@ -456,7 +515,7 @@ function WorkspaceApp() {
                       <span className="row-number">{String(index + 1).padStart(2, '0')}</span>
                       <span className="row-main">
                         <strong>{portfolio.subdomain}</strong>
-                        <small>{portfolio.subdomain}.localhost:5173</small>
+                        <small>{getPortfolioDomainLabel(portfolio.subdomain)}</small>
                       </span>
                       <span className={`status status-${portfolio.status}`}>{portfolio.status}</span>
                       <span className="row-arrow" aria-hidden="true">✎</span>
@@ -466,7 +525,7 @@ function WorkspaceApp() {
                       target="_blank"
                       rel="noreferrer"
                       className="secondary-button"
-                      title={`Open ${portfolio.subdomain}.localhost:5173 in new tab`}
+                      title={`Open ${getPortfolioDomainLabel(portfolio.subdomain)} in new tab`}
                       style={{
                         height: 48,
                         padding: '0 16px',
@@ -517,11 +576,10 @@ function WorkspaceApp() {
                   href={getPortfolioSubdomainUrl(selected.subdomain, selected.status === 'draft')}
                   target="_blank"
                   rel="noreferrer"
-                  title={`Open ${selected.subdomain}.localhost:5173`}
+                  title={`Open ${getPortfolioDomainLabel(selected.subdomain)}`}
                   style={{ color: 'inherit', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                 >
                   <span>{selected.subdomain}</span>
-                  <span style={{ color: 'var(--muted)', fontWeight: 400 }}>.localhost:5173</span>
                   <span style={{ fontSize: 13, color: 'var(--accent)' }}>↗</span>
                 </a>
               </h1>

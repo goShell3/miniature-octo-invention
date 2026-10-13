@@ -209,7 +209,9 @@ export function SetupWizard({ onFinish, checkSubdomain, busy, error }: SetupWiza
                         }}
                         aria-describedby={`${uid}-subdomain-hint`}
                       />
-                      <span className="domain-suffix">.localhost:5173</span>
+                      <span className="domain-suffix">
+                        {typeof window !== 'undefined' && window.location.hostname.endsWith('localhost') ? '.localhost:5173' : ''}
+                      </span>
                     </div>
                     <span id={`${uid}-subdomain-hint`} className="wizard-field-hint">
                       Lowercase letters, numbers, hyphens. 3–30 characters.
@@ -404,10 +406,10 @@ export function SetupWizard({ onFinish, checkSubdomain, busy, error }: SetupWiza
                     </div>
                   </div>
 
-                  <div className="wizard-summary">
+                    <div className="wizard-summary">
                     <p className="wizard-summary-label">YOUR PORTFOLIO WILL INCLUDE</p>
                     <ul>
-                      <li><span>↗</span>{data.subdomain}.localhost:5173</li>
+                      <li><span>↗</span>{data.subdomain || 'your-address'}</li>
                       <li><span>↗</span>Hero — {data.name || '(name)'}</li>
                       {data.about && <li><span>↗</span>About section</li>}
                       {data.projectTitle && <li><span>↗</span>Project — {data.projectTitle}</li>}
@@ -447,7 +449,7 @@ export function SetupWizard({ onFinish, checkSubdomain, busy, error }: SetupWiza
         <aside className="wizard-preview-col" aria-label="Live preview">
           <div className="wizard-preview-label">
             <span><i className="preview-dot" aria-hidden="true" /> LIVE PREVIEW</span>
-            <span>{data.subdomain ? `${data.subdomain}.localhost:5173` : 'localhost:5173'}</span>
+            <span>{data.subdomain ? data.subdomain : 'preview'}</span>
           </div>
           <WizardPreview blocks={previewBlocks} theme={previewTheme} activeStep={step.key} />
         </aside>
