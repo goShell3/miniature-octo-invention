@@ -18,4 +18,4 @@ services:
       - key: BETTER_AUTH_URL
         value: https://sewnet-api.onrender.com
       - key: WEB_ORIGIN
-        value: https://miniature-octo-invention-rouge.vercel.app
+        value: https://sewnet.vercel.app,https://miniature-octo-invention-rouge.vercel.app

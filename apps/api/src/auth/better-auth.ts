@@ -79,6 +79,13 @@ const defaultOrigins = [
   'http://127.0.0.1:5173',
   'http://127.0.0.1:5174',
   'http://127.0.0.1:5175',
+  'https://sewnet.vercel.app',
+  'https://miniature-octo-invention-rouge.vercel.app',
+  'https://*.vercel.app',
+  'https://*.onrender.com',
+  'http://*.localhost:*',
+  'http://localhost:*',
+  'http://127.0.0.1:*',
 ];
 const envOrigins = (process.env.WEB_ORIGIN ?? '')
   .split(',')
@@ -88,7 +95,7 @@ const trustedOrigins = [...new Set([...defaultOrigins, ...envOrigins])];
 
 export const auth = betterAuth({
   appName: 'Sewnet',
-  baseURL: process.env.BETTER_AUTH_URL ?? 'https://sewnet.vercel.app/',
+  baseURL: (process.env.BETTER_AUTH_URL ?? 'https://sewnet-api.onrender.com').replace(/\/+$/, ''),
   basePath: '/api/auth',
   secret,
   database: new PostgresDialect({ pool }),

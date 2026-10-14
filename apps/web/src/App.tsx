@@ -7,9 +7,8 @@ import { SetupWizard, wizardDataToBlocks } from './SetupWizard'
 import type { WizardData } from './SetupWizard'
 import { NfcStudio } from './NfcStudio'
 import { PublicProfilePage } from './PublicProfilePage'
+import { API_URL } from './config'
 import './Builder.css'
-
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
 export function getSubdomain(): string | null {
   if (typeof window === 'undefined') return null

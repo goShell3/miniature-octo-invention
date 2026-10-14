@@ -30,6 +30,8 @@ export default defineConfig(({ mode }) => {
         'localhost',
         '.localhost',
         '127.0.0.1',
+        '.vercel.app',
+        '.onrender.com',
         '.trycloudflare.com',   // wildcard — covers all quick-tunnel hostnames
         ...extraHosts,
       ],

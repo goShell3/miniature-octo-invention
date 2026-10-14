@@ -139,7 +139,7 @@ export function HomePage({
                 className="btn-hero-order"
                 onClick={() => scrollToSection('pricing')}
               >
-                Order NFC Card — From 2,500 Birr
+                Order NFC Card — From 1,999 ETB
               </button>
               <button
                 className="btn-hero-secondary"
@@ -266,7 +266,7 @@ export function HomePage({
         </div>
       </section>
 
-      {/* ── Pricing Section (Card Order Purchase: 2,500 - 3,500 Birr) ── */}
+      {/* ── Pricing Section (Card Order Purchase: 1,999 - 2,999 ETB) ── */}
       <section id="pricing" className="home-pricing">
         <div className="pricing-container">
           <div className="section-header">
@@ -283,42 +283,28 @@ export function HomePage({
             <div className="pricing-card">
               <div>
                 <h3 className="card-tier-name">Individual</h3>
-                <p className="card-tier-target">
-                  For freelancers, creators, professionals, and solo practitioners.
-                </p>
+                <p className="card-tier-target">For one person</p>
 
                 <div className="card-price-wrap">
-                  <span className="card-price-amount">2,500</span>
-                  <span className="card-price-currency">Birr (ETB)</span>
+                  <span className="card-price-amount">2,999</span>
+                  <span className="card-price-currency">ETB</span>
                 </div>
-                <span className="card-price-period">One-time card purchase · Lifetime profile</span>
+                <span className="card-price-period">per card</span>
 
                 <div className="pricing-divider" />
 
                 <ul className="pricing-features-list">
                   <li>
                     <span className="check-icon">✓</span>
-                    <span><strong>1× Matte NFC Smart Business Card</strong></span>
+                    <span>Tap-to-share card</span>
                   </li>
                   <li>
                     <span className="check-icon">✓</span>
-                    <span>Personalized digital portfolio profile</span>
+                    <span>QR code profile</span>
                   </li>
                   <li>
                     <span className="check-icon">✓</span>
-                    <span>Unlimited contact taps &amp; shares</span>
-                  </li>
-                  <li>
-                    <span className="check-icon">✓</span>
-                    <span>Dynamic portfolio editor &amp; instant updates</span>
-                  </li>
-                  <li>
-                    <span className="check-icon">✓</span>
-                    <span>Standard tap analytics &amp; vCard downloads</span>
-                  </li>
-                  <li>
-                    <span className="check-icon">✓</span>
-                    <span>High-contrast dynamic fallback QR code</span>
+                    <span>Edit any time</span>
                   </li>
                 </ul>
               </div>
@@ -327,51 +313,113 @@ export function HomePage({
                 className="btn-pricing-action secondary"
                 onClick={() => openAuth('signup')}
               >
-                Order Individual — 2,500 Birr
+                Choose Individual
               </button>
             </div>
 
-            {/* Tier 2: S&M Business (Featured) */}
-            <div className="pricing-card featured">
-              <span className="pricing-badge">MOST POPULAR</span>
+            {/* Tier 2: S&M Business */}
+            <div className="pricing-card">
               <div>
                 <h3 className="card-tier-name">S&amp;M Business</h3>
-                <p className="card-tier-target">
-                  For growing agencies, consultants, partnerships, and small-to-medium teams.
-                </p>
+                <p className="card-tier-target">For small and medium teams</p>
 
                 <div className="card-price-wrap">
-                  <span className="card-price-amount">3,000</span>
-                  <span className="card-price-currency">Birr (ETB)</span>
+                  <span className="card-price-amount">2,800</span>
+                  <span className="card-price-currency">ETB</span>
                 </div>
-                <span className="card-price-period">Per card · Full business &amp; branding suite</span>
+                <span className="card-price-period">per card</span>
 
                 <div className="pricing-divider" />
 
                 <ul className="pricing-features-list">
                   <li>
                     <span className="check-icon">✓</span>
-                    <span><strong>Everything in Individual</strong></span>
+                    <span>Tap-to-share card</span>
                   </li>
                   <li>
                     <span className="check-icon">✓</span>
-                    <span>Custom company logo &amp; brand color print</span>
+                    <span>QR code profile</span>
                   </li>
                   <li>
                     <span className="check-icon">✓</span>
-                    <span>Direct lead capture form on your profile</span>
+                    <span>Edit any time</span>
+                  </li>
+                </ul>
+              </div>
+
+              <button
+                className="btn-pricing-action secondary"
+                onClick={() => openAuth('signup')}
+              >
+                Choose S&amp;M
+              </button>
+            </div>
+
+            {/* Tier 3: Enterprise */}
+            <div className="pricing-card">
+              <div>
+                <h3 className="card-tier-name">Enterprise</h3>
+                <p className="card-tier-target">For large teams and events</p>
+
+                <div className="card-price-wrap">
+                  <span className="card-price-amount">2,500</span>
+                  <span className="card-price-currency">ETB</span>
+                </div>
+                <span className="card-price-period">per card</span>
+
+                <div className="pricing-divider" />
+
+                <ul className="pricing-features-list">
+                  <li>
+                    <span className="check-icon">✓</span>
+                    <span>Tap-to-share card</span>
                   </li>
                   <li>
                     <span className="check-icon">✓</span>
-                    <span>Advanced tap analytics &amp; referral insights</span>
+                    <span>QR code profile</span>
                   </li>
                   <li>
                     <span className="check-icon">✓</span>
-                    <span>Centralized team profiles dashboard</span>
+                    <span>Edit any time</span>
+                  </li>
+                </ul>
+              </div>
+
+              <button
+                className="btn-pricing-action secondary"
+                onClick={() => openAuth('signup')}
+              >
+                Choose Enterprise
+              </button>
+            </div>
+
+            {/* Tier 4: Corporate (Lowest per card) */}
+            <div className="pricing-card featured">
+              <span className="pricing-badge">Lowest per card</span>
+              <div>
+                <h3 className="card-tier-name">Corporate</h3>
+                <p className="card-tier-target">For company-wide rollout</p>
+
+                <div className="card-price-wrap">
+                  <span className="card-price-amount">1,999</span>
+                  <span className="card-price-currency">ETB</span>
+                </div>
+                <span className="card-price-period">per card</span>
+
+                <div className="pricing-divider" />
+
+                <ul className="pricing-features-list">
+                  <li>
+                    <span className="check-icon">✓</span>
+                    <span>Tap-to-share card</span>
                   </li>
                   <li>
                     <span className="check-icon">✓</span>
-                    <span>Fast-track courier dispatch in Addis Ababa</span>
+                    <span>QR code profile</span>
+                  </li>
+                  <li>
+                    <span className="check-icon">✓</span>
+                    <span>Edit any time</span>
                   </li>
                 </ul>
               </div>
@@ -380,59 +428,7 @@ export function HomePage({
                 className="btn-pricing-action primary"
                 onClick={() => openAuth('signup')}
               >
-                Order S&amp;M Business — 3,000 Birr
-              </button>
-            </div>
-
-            {/* Tier 3: Enterprise */}
-            <div className="pricing-card">
-              <div>
-                <h3 className="card-tier-name">Enterprise</h3>
-                <p className="card-tier-target">
-                  For established corporations, institutions, and executive leadership teams.
-                </p>
-
-                <div className="card-price-wrap">
-                  <span className="card-price-amount">3,500</span>
-                  <span className="card-price-currency">Birr (ETB)</span>
-                </div>
-                <span className="card-price-period">Per card · Volume discounts for 20+ cards</span>
-
-                <div className="pricing-divider" />
-
-                <ul className="pricing-features-list">
-                  <li>
-                    <span className="check-icon">✓</span>
-                    <span><strong>Everything in S&amp;M Business</strong></span>
-                  </li>
-                  <li>
-                    <span className="check-icon">✓</span>
-                    <span>Premium metallic or hybrid finish options</span>
-                  </li>
-                  <li>
-                    <span className="check-icon">✓</span>
-                    <span>Custom domain integration (connect.company.et)</span>
-                  </li>
-                  <li>
-                    <span className="check-icon">✓</span>
-                    <span>Bulk employee onboarding &amp; CSV provisioning</span>
-                  </li>
-                  <li>
-                    <span className="check-icon">✓</span>
-                    <span>Dedicated account manager &amp; design proofing</span>
-                  </li>
-                  <li>
-                    <span className="check-icon">✓</span>
-                    <span>Lifetime card replacement guarantee &amp; SLA</span>
-                  </li>
-                </ul>
-              </div>
-
-              <button
-                className="btn-pricing-action secondary"
-                onClick={() => openAuth('signup')}
-              >
-                Order Enterprise — 3,500 Birr
+                Choose Corporate
               </button>
             </div>
           </div>

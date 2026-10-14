@@ -13,10 +13,24 @@ if (dns.setDefaultResultOrder) {
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  const allowedOrigins = (process.env.WEB_ORIGIN ?? 'http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174')
+  const configuredOrigins = (process.env.WEB_ORIGIN ?? '')
     .split(',')
     .map((origin) => origin.trim().replace(/\/+$/, ''))
     .filter(Boolean);
+
+  const standardOrigins = [
+    'https://sewnet.vercel.app',
+    'https://miniature-octo-invention-rouge.vercel.app',
+    'https://sewnet-api.onrender.com',
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:5175',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:5174',
+    'http://127.0.0.1:5175',
+  ];
+
+  const allowedOrigins = [...new Set([...standardOrigins, ...configuredOrigins])];
 
   app.enableCors({
     origin: (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) => {
@@ -25,16 +39,18 @@ async function bootstrap() {
         return;
       }
 
-      if (allowedOrigins.includes(origin)) {
+      const cleanOrigin = origin.trim().replace(/\/+$/, '');
+
+      if (allowedOrigins.includes(cleanOrigin)) {
         callback(null, true);
         return;
       }
 
-      // Check wildcard origins in allowedOrigins list (e.g. *.vercel.app or *.sewnet.et)
+      // Check wildcard origins in configured list (e.g. *.vercel.app or *.sewnet.et)
       const matchesWildcard = allowedOrigins.some((allowed) => {
         if (allowed.includes('*')) {
           const regexStr = '^' + allowed.replace(/\./g, '\\.').replace(/\*/g, '[a-z0-9-]+') + '$';
-          return new RegExp(regexStr, 'i').test(origin);
+          return new RegExp(regexStr, 'i').test(cleanOrigin);
         }
         return false;
       });
@@ -43,20 +59,26 @@ async function bootstrap() {
         return;
       }
 
-      const isLocalDevOrigin =
-        process.env.NODE_ENV !== 'production' &&
-        /^http:\/\/(?:[a-z0-9-]+\.)*(?:localhost|127\.0\.0\.1):\d+$/.test(origin);
-      if (isLocalDevOrigin) {
+      // Allow any Vercel deployment (preview, production, subdomains)
+      if (cleanOrigin.endsWith('.vercel.app')) {
         callback(null, true);
         return;
       }
 
-      // Allow any Vercel preview or production deployment
-      if (origin.endsWith('.vercel.app')) {
+      // Allow any Render deployment
+      if (cleanOrigin.endsWith('.onrender.com')) {
         callback(null, true);
         return;
       }
 
+      // Allow local development (any port and any localhost subdomain, e.g. user.localhost:5173)
+      const isLocalHost = /^https?:\/\/(?:[a-z0-9-]+\.)*(?:localhost|127\.0\.0\.1)(?::\d+)?$/.test(cleanOrigin);
+      if (isLocalHost) {
+        callback(null, true);
+        return;
+      }
+
+      console.warn(`[CORS] Blocked request from origin: ${origin}`);
       callback(new Error(`Origin ${origin} not allowed by CORS`));
     },
     credentials: true,

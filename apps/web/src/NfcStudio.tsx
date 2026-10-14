@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
 import type { PortfolioBlock, PortfolioTheme } from '@amalink/types'
+import { API_URL } from './config'
 import './NfcStudio.css'
 import './NfcStudioModes.css'
-
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
 interface Portfolio {
   id: string
@@ -192,7 +191,7 @@ export function NfcStudio({ portfolio, onBack }: { portfolio: Portfolio; onBack:
     setCopied(true)
   }
 
-  const [selectedTier, setSelectedTier] = useState<'individual' | 'business' | 'enterprise'>('individual')
+  const [selectedTier, setSelectedTier] = useState<'individual' | 'business' | 'enterprise' | 'corporate'>('individual')
 
   return (
     <section className="nfc-studio">
@@ -253,11 +252,12 @@ export function NfcStudio({ portfolio, onBack }: { portfolio: Portfolio; onBack:
               <p className="nfc-order-copy">Choose your card tier and delivery address in Ethiopia:</p>
               <div style={{ display: 'grid', gap: 6, margin: '2px 0 10px' }}>
                 <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--ink)' }}>CARD TIER &amp; PRICING</span>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
                   {[
-                    { id: 'individual', name: 'Individual', price: '2,500 Birr' },
-                    { id: 'business', name: 'S&M Biz', price: '3,000 Birr' },
-                    { id: 'enterprise', name: 'Enterprise', price: '3,500 Birr' },
+                    { id: 'individual', name: 'Individual', price: '2,999 ETB' },
+                    { id: 'business', name: 'S&M Biz', price: '2,800 ETB' },
+                    { id: 'enterprise', name: 'Enterprise', price: '2,500 ETB' },
+                    { id: 'corporate', name: 'Corporate', price: '1,999 ETB' },
                   ].map((tier) => (
                     <button
                       key={tier.id}
@@ -276,8 +276,8 @@ export function NfcStudio({ portfolio, onBack }: { portfolio: Portfolio; onBack:
                         gap: 2,
                       }}
                     >
-                      <strong style={{ fontSize: 10, color: 'var(--ink)' }}>{tier.name}</strong>
-                      <span style={{ fontSize: 9, fontWeight: 700, color: '#e06b24' }}>{tier.price}</span>
+                      <strong style={{ fontSize: 9, color: 'var(--ink)' }}>{tier.name}</strong>
+                      <span style={{ fontSize: 8, fontWeight: 700, color: '#e06b24' }}>{tier.price}</span>
                     </button>
                   ))}
                 </div>
@@ -288,7 +288,19 @@ export function NfcStudio({ portfolio, onBack }: { portfolio: Portfolio; onBack:
               <div className="nfc-address-row"><label>City<input required maxLength={100} autoComplete="address-level2" value={address.city} onChange={(event) => setAddress({ ...address, city: event.target.value })} placeholder="Addis Ababa" /></label><label>Region / State<input required maxLength={100} autoComplete="address-level1" value={address.region} onChange={(event) => setAddress({ ...address, region: event.target.value })} /></label></div>
               <div className="nfc-address-row"><label>Postal code<input required maxLength={24} autoComplete="postal-code" value={address.postalCode} onChange={(event) => setAddress({ ...address, postalCode: event.target.value })} /></label><label>Country code<input required minLength={2} maxLength={2} pattern="[A-Za-z]{2}" autoComplete="country" value={address.countryCode} onChange={(event) => setAddress({ ...address, countryCode: event.target.value.toUpperCase() })} /></label></div>
               {error && <p className="notice error-notice" role="alert">{error}</p>}
-              <button className="primary-button" disabled={busy}>{busy ? 'Requesting...' : `Order Card (${selectedTier === 'individual' ? '2,500' : selectedTier === 'business' ? '3,000' : '3,500'} Birr)`}</button>
+              <button className="primary-button" disabled={busy}>
+                {busy
+                  ? 'Requesting...'
+                  : `Order Card (${
+                      selectedTier === 'individual'
+                        ? '2,999'
+                        : selectedTier === 'business'
+                        ? '2,800'
+                        : selectedTier === 'enterprise'
+                        ? '2,500'
+                        : '1,999'
+                    } ETB)`}
+              </button>
               <small className="nfc-order-disclaimer">Payment will be collected via Telebirr or CBE upon card fulfillment.</small>
             </form>
           )}
