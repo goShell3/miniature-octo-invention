@@ -26,6 +26,7 @@ export function HomePage({
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup')
   const [tapCount, setTapCount] = useState(148)
   const [simFeedback, setSimFeedback] = useState<string | null>(null)
+  const [openFaq, setOpenFaq] = useState<number | null>(null)
 
   function openAuth(mode: 'login' | 'signup') {
     if (user && onOpenApp) {
@@ -51,6 +52,25 @@ export function HomePage({
     }
   }
 
+  const faqs = [
+    {
+      q: 'How does the Sewnet NFC Smart Card work?',
+      a: 'The card contains an embedded contactless NTAG216 microchip. When you tap the card against any modern smartphone (iOS or Android), your custom Sewnet digital profile opens instantly in their browser. For older phones without NFC, a dynamic laser-etched QR code on the back provides an immediate fallback scan.',
+    },
+    {
+      q: 'Does the other person need to install an app?',
+      a: 'No app is required! The recipient simply taps or scans your card and your profile launches directly in their default browser (Safari, Chrome, etc.). From there, they can save your contact directly to their phone address book with a single click.',
+    },
+    {
+      q: 'Can I edit my portfolio and contact info after the card is printed?',
+      a: 'Yes, absolutely. The card links directly to your cloud-hosted Sewnet identity. You can change your phone number, social links, project portfolio, or theme colors anytime in your Sewnet dashboard, and your card will automatically reflect the newest updates instantly.',
+    },
+    {
+      q: 'How do payment and card delivery work in Ethiopia?',
+      a: 'We accept payments via Telebirr and Commercial Bank of Ethiopia (CBE). Orders within Addis Ababa are delivered by courier within 24 to 48 hours. Regional deliveries across Ethiopia are handled via EMS or regional courier hubs.',
+    },
+  ]
+
   return (
     <div className="home-shell">
       {/* ── Navigation Bar ────────────────────────────────────────── */}
@@ -70,35 +90,16 @@ export function HomePage({
           <a href="#pricing" className="home-nav-link" onClick={(e) => { e.preventDefault(); scrollToSection('pricing') }}>
             Pricing
           </a>
-          <a href="#about" className="home-nav-link" onClick={(e) => { e.preventDefault(); scrollToSection('about') }}>
-            About
+          <a href="#faq" className="home-nav-link" onClick={(e) => { e.preventDefault(); scrollToSection('faq') }}>
+            FAQ
           </a>
         </div>
 
         <div className="home-nav-actions">
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              fontSize: 12,
-              fontWeight: 700,
-              color: apiStatus === 'online' ? '#e06b24' : '#9c4b3d',
-              marginRight: 10,
-            }}
-            title={`API is ${apiStatus}`}
-          >
-            <span
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                background: apiStatus === 'online' ? '#e06b24' : '#c95b46',
-                display: 'inline-block',
-              }}
-            />
-            {apiStatus === 'online' ? 'Live' : 'Offline'}
-          </span>
+          <div className="nav-status-pill" title={`API is ${apiStatus}`}>
+            <span className={`nav-status-dot ${apiStatus}`} />
+            <span>{apiStatus === 'online' ? 'Live' : apiStatus === 'checking' ? 'Connecting…' : 'Offline'}</span>
+          </div>
 
           {user ? (
             <button className="btn-nav-primary" onClick={onOpenApp}>
@@ -230,7 +231,7 @@ export function HomePage({
       </section>
 
       {/* ── NFC Card Showcase Section ────────────────────────────── */}
-      <section id="nfc-cards" style={{ padding: '40px 5vw 80px', maxWidth: 1240, margin: '0 auto' }}>
+      <section id="nfc-cards" className="showcase-section">
         <div className="section-header">
           <span className="section-eyebrow">PREMIUM CRAFTSMANSHIP</span>
           <h2 className="section-title">Built to make lasting impressions</h2>
@@ -239,28 +240,28 @@ export function HomePage({
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
-          <div style={{ background: '#fff', border: '1px solid var(--sewnet-line)', borderRadius: 8, padding: 28 }}>
-            <div style={{ fontSize: 24, marginBottom: 12 }}>💳</div>
-            <h4 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 700 }}>Dual NFC &amp; Dynamic QR</h4>
-            <p style={{ margin: 0, fontSize: 13, color: 'var(--sewnet-muted)', lineHeight: 1.55 }}>
+        <div className="showcase-grid">
+          <div className="showcase-card">
+            <span className="showcase-icon">💳</span>
+            <h4 className="showcase-title">Dual NFC &amp; Dynamic QR</h4>
+            <p className="showcase-desc">
               Tap on any NFC-enabled phone or scan the high-contrast laser-etched QR code for older devices.
             </p>
           </div>
 
-          <div style={{ background: '#fff', border: '1px solid var(--sewnet-line)', borderRadius: 8, padding: 28 }}>
-            <div style={{ fontSize: 24, marginBottom: 12 }}>🛡️</div>
-            <h4 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 700 }}>Durable &amp; Water Resistant</h4>
-            <p style={{ margin: 0, fontSize: 13, color: 'var(--sewnet-muted)', lineHeight: 1.55 }}>
+          <div className="showcase-card">
+            <span className="showcase-icon">🛡️</span>
+            <h4 className="showcase-title">Durable &amp; Water Resistant</h4>
+            <p className="showcase-desc">
               Precision laminated with scratch-resistant coating, immune to water damage and daily pocket wear.
             </p>
           </div>
 
-          <div style={{ background: '#fff', border: '1px solid var(--sewnet-line)', borderRadius: 8, padding: 28 }}>
-            <div style={{ fontSize: 24, marginBottom: 12 }}>🇪🇹</div>
-            <h4 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 700 }}>Localized in Ethiopia</h4>
-            <p style={{ margin: 0, fontSize: 13, color: 'var(--sewnet-muted)', lineHeight: 1.55 }}>
-              Support in Ethiopian Birr, fast delivery across Addis Ababa, and local customer assistance.
+          <div className="showcase-card">
+            <span className="showcase-icon">🇪🇹</span>
+            <h4 className="showcase-title">Localized in Ethiopia</h4>
+            <p className="showcase-desc">
+              Support in Ethiopian Birr, fast courier delivery in Addis Ababa, and local CBE / Telebirr settlement.
             </p>
           </div>
         </div>
@@ -449,6 +450,42 @@ export function HomePage({
           <div className="assurance-item">
             <h4>Delivered Locally</h4>
             <p>Prompt delivery across Addis Ababa and major regions in Ethiopia.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FAQ Section ───────────────────────────────────────────── */}
+      <section id="faq" className="home-faq">
+        <div className="faq-container">
+          <div className="section-header">
+            <span className="section-eyebrow">COMMON QUESTIONS</span>
+            <h2 className="section-title">Everything you need to know</h2>
+            <p className="section-desc">
+              Have questions about how Sewnet works? Here are answers to the most common inquiries.
+            </p>
+          </div>
+
+          <div className="faq-list">
+            {faqs.map((faq, idx) => (
+              <div key={idx} className="faq-item">
+                <button
+                  type="button"
+                  className="faq-question"
+                  onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                  aria-expanded={openFaq === idx}
+                >
+                  <span>{faq.q}</span>
+                  <span className="faq-icon" aria-hidden="true">
+                    {openFaq === idx ? '−' : '+'}
+                  </span>
+                </button>
+                {openFaq === idx && (
+                  <div className="faq-answer">
+                    <p style={{ margin: 0 }}>{faq.a}</p>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </section>

@@ -722,11 +722,165 @@
 }
 
 /* ------------------------------------------------------------------
+   Navigation Status Pill
+   ------------------------------------------------------------------ */
+.nav-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: var(--sewnet-surface);
+  border: 1px solid var(--sewnet-line);
+  margin-right: 6px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.nav-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+
+.nav-status-dot.online {
+  background: var(--sewnet-orange);
+  box-shadow: 0 0 8px rgba(224, 107, 36, 0.6);
+}
+
+.nav-status-dot.offline {
+  background: #c95b46;
+}
+
+.nav-status-dot.checking {
+  background: #c4b5a5;
+  animation: pulse 1.2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+/* ------------------------------------------------------------------
+   NFC Card Showcase Section
+   ------------------------------------------------------------------ */
+.showcase-section {
+  padding: 80px 5vw 90px;
+  max-width: 1240px;
+  margin: 0 auto;
+}
+
+.showcase-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 28px;
+}
+
+.showcase-card {
+  background: var(--sewnet-surface);
+  border: 1px solid var(--sewnet-line);
+  border-radius: 8px;
+  padding: 32px 28px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.showcase-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(25, 21, 19, 0.06);
+}
+
+.showcase-icon {
+  font-size: 28px;
+  margin-bottom: 16px;
+  display: inline-block;
+}
+
+.showcase-title {
+  margin: 0 0 10px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--sewnet-ink);
+}
+
+.showcase-desc {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--sewnet-muted);
+  line-height: 1.6;
+}
+
+/* ------------------------------------------------------------------
+   FAQ Section
+   ------------------------------------------------------------------ */
+.home-faq {
+  padding: 90px 5vw;
+  background: var(--sewnet-surface);
+  border-bottom: 1px solid var(--sewnet-line);
+}
+
+.faq-container {
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 40px;
+}
+
+.faq-item {
+  border: 1px solid var(--sewnet-line);
+  border-radius: 8px;
+  background: var(--sewnet-bg);
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.faq-item:hover {
+  border-color: var(--sewnet-orange);
+}
+
+.faq-question {
+  width: 100%;
+  padding: 20px 24px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--sewnet-ink);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.faq-icon {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--sewnet-orange);
+  transition: transform 0.2s ease;
+}
+
+.faq-answer {
+  padding: 0 24px 22px;
+  font-size: 14px;
+  color: var(--sewnet-muted);
+  line-height: 1.65;
+}
+
+/* ------------------------------------------------------------------
    FAQ / Assurance strip
    ------------------------------------------------------------------ */
 .home-assurance {
   padding: 60px 5vw;
-  background: var(--sewnet-surface);
+  background: var(--sewnet-bg);
   border-bottom: 1px solid var(--sewnet-line);
 }
 

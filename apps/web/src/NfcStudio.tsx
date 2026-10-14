@@ -126,24 +126,25 @@ function createCardSvg(templateId: TemplateId, colorMode: ColorMode, portfolio: 
 }
 
 export function NfcStudio({ portfolio, onBack }: { portfolio: Portfolio; onBack: () => void }) {
+  const identity = getIdentity(portfolio)
+  const accent = portfolio.theme.accentColor
+  const cardStyle = { '--card-accent': accent } as CSSProperties
+
   const [templateId, setTemplateId] = useState<TemplateId>('paper')
   const [colorMode, setColorMode] = useState<ColorMode>('light')
   const [address, setAddress] = useState<Address>({
-    name: '',
+    name: identity.name || '',
     addressLine1: '',
     addressLine2: '',
-    city: '',
-    region: '',
+    city: 'Addis Ababa',
+    region: 'Addis Ababa',
     postalCode: '',
-    countryCode: 'US',
+    countryCode: 'ET',
   })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [order, setOrder] = useState<OrderResult | null>(null)
   const [copied, setCopied] = useState(false)
-  const identity = getIdentity(portfolio)
-  const accent = portfolio.theme.accentColor
-  const cardStyle = { '--card-accent': accent } as CSSProperties
 
   function downloadTemplate() {
     const svg = createCardSvg(templateId, colorMode, portfolio)
@@ -282,11 +283,11 @@ export function NfcStudio({ portfolio, onBack }: { portfolio: Portfolio; onBack:
                   ))}
                 </div>
               </div>
-              <label>Recipient name<input required maxLength={100} autoComplete="name" value={address.name} onChange={(event) => setAddress({ ...address, name: event.target.value })} /></label>
-              <label>Address line 1<input required maxLength={150} autoComplete="address-line1" value={address.addressLine1} onChange={(event) => setAddress({ ...address, addressLine1: event.target.value })} placeholder="Subcity, Woreda, Building" /></label>
-              <label>Address line 2 <small>OPTIONAL</small><input maxLength={150} autoComplete="address-line2" value={address.addressLine2} onChange={(event) => setAddress({ ...address, addressLine2: event.target.value })} /></label>
-              <div className="nfc-address-row"><label>City<input required maxLength={100} autoComplete="address-level2" value={address.city} onChange={(event) => setAddress({ ...address, city: event.target.value })} placeholder="Addis Ababa" /></label><label>Region / State<input required maxLength={100} autoComplete="address-level1" value={address.region} onChange={(event) => setAddress({ ...address, region: event.target.value })} /></label></div>
-              <div className="nfc-address-row"><label>Postal code<input required maxLength={24} autoComplete="postal-code" value={address.postalCode} onChange={(event) => setAddress({ ...address, postalCode: event.target.value })} /></label><label>Country code<input required minLength={2} maxLength={2} pattern="[A-Za-z]{2}" autoComplete="country" value={address.countryCode} onChange={(event) => setAddress({ ...address, countryCode: event.target.value.toUpperCase() })} /></label></div>
+              <label>Recipient name<input required maxLength={100} autoComplete="name" value={address.name} onChange={(event) => setAddress({ ...address, name: event.target.value })} placeholder="Full name of card owner" /></label>
+              <label>Delivery address<input required maxLength={150} autoComplete="address-line1" value={address.addressLine1} onChange={(event) => setAddress({ ...address, addressLine1: event.target.value })} placeholder="Subcity, Woreda, Building or Street" /></label>
+              <label>Office / Apartment / Floor <small>OPTIONAL</small><input maxLength={150} autoComplete="address-line2" value={address.addressLine2} onChange={(event) => setAddress({ ...address, addressLine2: event.target.value })} placeholder="Suite, floor, or room number" /></label>
+              <div className="nfc-address-row"><label>City<input required maxLength={100} autoComplete="address-level2" value={address.city} onChange={(event) => setAddress({ ...address, city: event.target.value })} placeholder="Addis Ababa" /></label><label>Region / State<input required maxLength={100} autoComplete="address-level1" value={address.region} onChange={(event) => setAddress({ ...address, region: event.target.value })} placeholder="Addis Ababa" /></label></div>
+              <div className="nfc-address-row"><label>Phone or Postal code<input required maxLength={24} autoComplete="postal-code" value={address.postalCode} onChange={(event) => setAddress({ ...address, postalCode: event.target.value })} placeholder="+251 9..." /></label><label>Country code<input required minLength={2} maxLength={2} pattern="[A-Za-z]{2}" autoComplete="country" value={address.countryCode} onChange={(event) => setAddress({ ...address, countryCode: event.target.value.toUpperCase() })} placeholder="ET" /></label></div>
               {error && <p className="notice error-notice" role="alert">{error}</p>}
               <button className="primary-button" disabled={busy}>
                 {busy
@@ -301,7 +302,7 @@ export function NfcStudio({ portfolio, onBack }: { portfolio: Portfolio; onBack:
                         : '1,999'
                     } ETB)`}
               </button>
-              <small className="nfc-order-disclaimer">Payment will be collected via Telebirr or CBE upon card fulfillment.</small>
+              <small className="nfc-order-disclaimer">Payment will be collected via Telebirr or CBE upon card fulfillment and delivery.</small>
             </form>
           )}
         </aside>

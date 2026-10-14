@@ -504,10 +504,10 @@ function WorkspaceApp() {
         </button>
         <div className="topbar-right">
           <button className="text-button" onClick={() => setViewLanding(true)}>NFC Cards &amp; Pricing</button>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, color: apiStatus === 'online' ? '#e06b24' : '#9c4b3d', fontWeight: 700 }}>
-            <span style={{ width: 9, height: 9, borderRadius: '50%', background: apiStatus === 'online' ? '#e06b24' : '#c95b46', display: 'inline-block' }} />
-            {apiStatus === 'online' ? 'Connected' : 'Offline'}
-          </span>
+          <div className="nav-status-pill" title={`API is ${apiStatus}`}>
+            <span className={`nav-status-dot ${apiStatus}`} />
+            <span>{apiStatus === 'online' ? 'Connected' : apiStatus === 'checking' ? 'Connecting…' : 'Offline'}</span>
+          </div>
           <span className="user-email">{user.email}</span>
           <button className="text-button" onClick={signOut}>Sign out</button>
         </div>
