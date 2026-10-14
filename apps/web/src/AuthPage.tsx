@@ -87,7 +87,7 @@ export function AuthPage({ onAuthenticated, apiStatus, authProviders, initialMod
       }
 
       // No error but no user either — fetch the session to confirm
-      const { data: session, error: sessionError } = await authClient.getSession()
+      const { data: session, error: sessionError } = await authClient.getSession({})
       if (sessionError) throw new Error(sessionError.message ?? 'Session check failed')
       if (session?.user) {
         onAuthenticated({ id: session.user.id, email: session.user.email })

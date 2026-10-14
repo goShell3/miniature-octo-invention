@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import type { CSSProperties } from 'react'
 import type { PortfolioBlock, PortfolioTheme, SocialLink } from '@amalink/types'
 import { authClient } from './auth-client'
 import { HomePage } from './HomePage'
@@ -9,115 +8,9 @@ import { NfcStudio } from './NfcStudio'
 import { PublicProfilePage } from './PublicProfilePage'
 import { API_URL } from './config'
 import './Builder.css'
-
-export function getSubdomain(): string | null {
-  if (typeof window === 'undefined') return null
-  const hostname = window.location.hostname.toLowerCase()
-  const searchParams = new URLSearchParams(window.location.search)
-
-  // 1. Explicit query param takes priority (e.g. ?subdomain=robben)
-  const querySub = searchParams.get('subdomain')
-  if (querySub) {
-    const clean = querySub.trim().toLowerCase()
-    if (clean && clean !== 'www' && clean !== 'app' && clean !== 'api') {
-      return clean
-    }
-  }
-
-  // 2. Localhost subdomains: e.g. "robben.localhost"
-  if (hostname.endsWith('.localhost')) {
-    const sub = hostname.slice(0, -'.localhost'.length)
-    if (sub && sub !== 'www' && sub !== 'app' && sub !== 'api') {
-      return sub
-    }
-  }
-
-  // 3. Plain local hostnames - main app workspace
-  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0') {
-    return null
-  }
-
-  // 4. Cloud deployment hostnames (Vercel, Render, Cloudflare, etc.) are the main application
-  if (
-    hostname.endsWith('.vercel.app') ||
-    hostname.endsWith('.onrender.com') ||
-    hostname.endsWith('.pages.dev') ||
-    hostname.endsWith('.trycloudflare.com')
-  ) {
-    return null
-  }
-
-  // 5. Custom Domain via VITE_ROOT_DOMAIN (e.g. sewnet.et)
-  const rootDomain = import.meta.env.VITE_ROOT_DOMAIN?.toLowerCase()
-  if (rootDomain && hostname.endsWith(`.${rootDomain}`)) {
-    const sub = hostname.slice(0, -(`.${rootDomain}`).length)
-    if (sub && sub !== 'www' && sub !== 'app' && sub !== 'api') {
-      return sub
-    }
-  }
-
-  // 6. Generic Multi-level production domain (e.g. robben.sewnet.et)
-  const parts = hostname.split('.')
-  if (parts.length > 2) {
-    const sub = parts[0]
-    if (sub && sub !== 'www' && sub !== 'app' && sub !== 'api') {
-      return sub
-    }
-  }
-
-  return null
-}
-
-export function getPortfolioSubdomainUrl(subdomain: string, preview = false): string {
-  if (typeof window === 'undefined') return `?subdomain=${encodeURIComponent(subdomain)}`
-  const hostname = window.location.hostname.toLowerCase()
-  const port = window.location.port ? `:${window.location.port}` : ''
-  const previewParam = preview ? 'preview=true' : ''
-
-  // 1. Localhost: use native <subdomain>.localhost:<port>
-  if (hostname.endsWith('.localhost') || hostname === 'localhost' || hostname === '127.0.0.1') {
-    const query = previewParam ? `?${previewParam}` : ''
-    return `http://${subdomain}.localhost${port}/${query}`
-  }
-
-  // 2. Vercel / Render cloud domains: route via query param since wildcards don't exist on *.vercel.app
-  if (hostname.endsWith('.vercel.app') || hostname.endsWith('.onrender.com')) {
-    const query = `?subdomain=${encodeURIComponent(subdomain)}${preview ? '&preview=true' : ''}`
-    return `${window.location.protocol}//${window.location.host}/${query}`
-  }
-
-  // 3. Custom domain via VITE_ROOT_DOMAIN (e.g. sewnet.et)
-  const rootDomain = import.meta.env.VITE_ROOT_DOMAIN?.toLowerCase()
-  if (rootDomain) {
-    const query = previewParam ? `?${previewParam}` : ''
-    return `${window.location.protocol}//${subdomain}.${rootDomain}${port}/${query}`
-  }
-
-  // 4. Custom multi-level domain (e.g. sewnet.et -> robben.sewnet.et)
-  const hostParts = hostname.split('.')
-  const rootHost = hostParts.length > 2 ? hostParts.slice(1).join('.') : hostname
-  const query = previewParam ? `?${previewParam}` : ''
-  return `${window.location.protocol}//${subdomain}.${rootHost}${port}/${query}`
-}
-
-export function getPortfolioDomainLabel(subdomain: string): string {
-  if (typeof window === 'undefined') return subdomain
-  const hostname = window.location.hostname.toLowerCase()
-  if (hostname.endsWith('.localhost') || hostname === 'localhost' || hostname === '127.0.0.1') {
-    const port = window.location.port ? `:${window.location.port}` : ''
-    return `${subdomain}.localhost${port}`
-  }
-  if (hostname.endsWith('.vercel.app') || hostname.endsWith('.onrender.com')) {
-    return `${window.location.host}/?subdomain=${subdomain}`
-  }
-  const rootDomain = import.meta.env.VITE_ROOT_DOMAIN?.toLowerCase()
-  if (rootDomain) {
-    return `${subdomain}.${rootDomain}`
-  }
-  const hostParts = hostname.split('.')
-  const rootHost = hostParts.length > 2 ? hostParts.slice(1).join('.') : hostname
-  return `${subdomain}.${rootHost}`
-}
+import { getSubdomain, getPortfolioDomainLabel, getPortfolioSubdomainUrl } from './url-helpers'
+export { getSubdomain, getPortfolioSubdomainUrl, getPortfolioDomainLabel }
+import { DigitalCard } from './DigitalCard'
 
 interface User {
   id: string
@@ -224,7 +117,7 @@ function WorkspaceApp() {
   // Restore session on mount
   useEffect(() => {
     let isCurrent = true
-    authClient.getSession().then(({ data, error: sessionError }) => {
+    authClient.getSession({}).then(({ data, error: sessionError }) => {
       if (!isCurrent) return
       if (sessionError) console.warn('Session restore error:', sessionError.message)
       setUser(data?.user ? { id: data.user.id, email: data.user.email } : null)
@@ -447,7 +340,7 @@ function WorkspaceApp() {
   }
 
   async function signOut() {
-    await authClient.signOut()
+    await authClient.signOut({})
     setUser(null)
     setPortfolios([])
     setSelected(null)
@@ -718,7 +611,7 @@ function WorkspaceApp() {
                 <span><i /> LIVE PREVIEW</span>
                 <span>{selected.status.toUpperCase()}</span>
               </div>
-              <PortfolioPreview blocks={blocks} theme={theme} />
+              <PortfolioPreview blocks={blocks} theme={theme} subdomain={selected.subdomain} />
             </div>
           </div>
         </section>
@@ -990,59 +883,7 @@ function BlockForm({ block, onChange }: { block: PortfolioBlock; onChange: (bloc
   )
 }
 
-function renderSocialIcon(platform: string) {
-  switch (platform.toLowerCase()) {
-    case 'instagram':
-      return (
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-          <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-          <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
-        </svg>
-      )
-    case 'linkedin':
-      return (
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-          <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-        </svg>
-      )
-    case 'telegram':
-      return (
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-          <path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.295-.6.295-.002 0-.003 0-.005 0l.213-3.054 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.828.942z"/>
-        </svg>
-      )
-    case 'whatsapp':
-      return (
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-          <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
-        </svg>
-      )
-    case 'phone':
-      return (
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-        </svg>
-      )
-    case 'email':
-      return (
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-          <polyline points="22,6 12,13 2,6"/>
-        </svg>
-      )
-    default:
-      return (
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="2" y1="12" x2="22" y2="12"/>
-          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-        </svg>
-      )
-  }
-}
-
-function PortfolioPreview({ blocks, theme }: { blocks: PortfolioBlock[]; theme: PortfolioTheme }) {
+function PortfolioPreview({ blocks, theme, subdomain }: { blocks: PortfolioBlock[]; theme: PortfolioTheme; subdomain?: string }) {
   const [downloadNote, setDownloadNote] = useState<string | null>(null)
 
   const hero = blocks.find((b) => b.type === 'hero')
@@ -1069,23 +910,16 @@ function PortfolioPreview({ blocks, theme }: { blocks: PortfolioBlock[]; theme: 
   }
 
   const name = heroData.name || 'Your Name'
-  const tagline = heroData.tagline || 'Your Role & Expertise'
+  const title = heroData.tagline || ''
   const company = heroData.company || ''
-  const location = heroData.location || ''
+  const bio = (about?.type === 'about' && about.data?.body) ? about.data.body : ''
   const phone = contactData.phone || heroData.phone || ''
   const email = contactData.email || heroData.email || ''
-  const whatsapp = contactData.whatsapp || (phone ? phone.replace(/[^0-9]/g, '') : '')
-  const telegram = contactData.telegram ? contactData.telegram.replace(/^@/, '') : ''
-
   const socials = contactData.socials ?? []
 
-  const initials = name
-    .split(' ')
-    .map((part) => part[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join('')
-    .toUpperCase() || 'S'
+  const currentSubdomain = subdomain || 'yourname'
+  const profileUrl = getPortfolioSubdomainUrl(currentSubdomain, true)
+  const displayUrl = getPortfolioDomainLabel(currentSubdomain)
 
   function handleTestVcardDownload() {
     const parts = name.trim().split(' ')
@@ -1098,7 +932,7 @@ function PortfolioPreview({ blocks, theme }: { blocks: PortfolioBlock[]; theme: 
       `FN:${name}`,
     ]
     if (company) lines.push(`ORG:${company}`)
-    if (tagline) lines.push(`TITLE:${tagline}`)
+    if (title) lines.push(`TITLE:${title}`)
     if (phone) lines.push(`TEL;TYPE=CELL,VOICE:${phone}`)
     if (email) lines.push(`EMAIL;TYPE=INTERNET,PREF:${email}`)
     if (socials) {
@@ -1124,152 +958,79 @@ function PortfolioPreview({ blocks, theme }: { blocks: PortfolioBlock[]; theme: 
   }
 
   return (
-    <div className="nfc-preview-shell" style={{ '--preview-accent': theme.accentColor } as CSSProperties}>
-      {/* Top NFC Status Bar */}
-      <div className="nfc-top-status">
-        <span className="nfc-live-pill">
-          <span className="nfc-dot" />
-          <span>NFC PREVIEW CONNECTED</span>
+    <div style={{
+      background: 'radial-gradient(circle at 50% 20%, #1f1a17 0%, #12100e 100%)',
+      padding: '24px 16px',
+      borderRadius: '24px',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+    }}>
+      <div style={{
+        width: '100%',
+        maxWidth: 380,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 16,
+      }}>
+        <span style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '4px 10px',
+          borderRadius: 9999,
+          background: 'rgba(255, 255, 255, 0.08)',
+          fontSize: 10,
+          fontWeight: 800,
+          letterSpacing: 0.8,
+          color: '#a89f91',
+        }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: theme.accentColor || '#eb6307' }} />
+          <span>NFC PREVIEW</span>
         </span>
-        <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ background: theme.accentColor, color: '#fff', width: 16, height: 16, borderRadius: 3, display: 'grid', placeItems: 'center', fontSize: 10, fontWeight: 900 }}>S</span>
-          sewnet
+        <span style={{ fontSize: 11, fontWeight: 700, color: '#f6f5f2' }}>
+          {displayUrl}
         </span>
       </div>
 
-      {/* Profile Hero */}
-      <div className="nfc-preview-hero">
-        <div className="nfc-avatar-container">
-          {heroData.avatarUrl ? (
-            <img className="nfc-avatar-img" src={heroData.avatarUrl} alt={name} />
-          ) : (
-            <div className="nfc-avatar-fallback">{initials}</div>
-          )}
-          <span className="nfc-verified-badge" title="Sewnet Verified">✓</span>
-        </div>
-
-        <h3 className="nfc-profile-name">{name}</h3>
-        <p className="nfc-profile-role">{tagline}</p>
-
-        {(company || location) && (
-          <div className="nfc-badges-wrap">
-            {company && <span className="nfc-meta-pill">🏢 {company}</span>}
-            {location && <span className="nfc-meta-pill">📍 {location}</span>}
-          </div>
-        )}
-
-        {/* Primary NFC Action: Save to Contacts */}
-        <button
-          type="button"
-          className="nfc-vcard-btn"
-          onClick={handleTestVcardDownload}
-          title="Download and test saving contact card"
-        >
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-            <circle cx="8.5" cy="7" r="4"/>
-            <line x1="20" y1="8" x2="20" y2="14"/>
-            <line x1="23" y1="11" x2="17" y2="11"/>
-          </svg>
-          <span>Save to Contacts (.vcf)</span>
-        </button>
+      <div style={{ width: '100%', maxWidth: 380 }}>
+        <DigitalCard
+          name={name}
+          title={title}
+          company={company}
+          bio={bio}
+          avatarUrl={heroData.avatarUrl}
+          phone={phone}
+          email={email}
+          socials={socials}
+          accentColor={theme.accentColor || '#eb6307'}
+          profileUrl={profileUrl}
+          displayUrl={displayUrl}
+          onSaveVcard={handleTestVcardDownload}
+        />
         {downloadNote && (
-          <span style={{ fontSize: 10, color: theme.accentColor, fontWeight: 700, marginBottom: 10 }}>
+          <div style={{ marginTop: 10, textAlign: 'center', fontSize: 11, color: '#f48935', fontWeight: 700 }}>
             {downloadNote}
-          </span>
+          </div>
         )}
-
-        {/* Quick Actions Row */}
-        <div className="nfc-quick-bar">
-          {phone && (
-            <a href={`tel:${phone}`} className="nfc-quick-item" title="Call">
-              <span className="nfc-quick-circle">{renderSocialIcon('phone')}</span>
-              <span>Call</span>
-            </a>
-          )}
-          {email && (
-            <a href={`mailto:${email}`} className="nfc-quick-item" title="Email">
-              <span className="nfc-quick-circle">{renderSocialIcon('email')}</span>
-              <span>Email</span>
-            </a>
-          )}
-          {whatsapp && (
-            <a href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="nfc-quick-item" title="WhatsApp">
-              <span className="nfc-quick-circle">{renderSocialIcon('whatsapp')}</span>
-              <span>WhatsApp</span>
-            </a>
-          )}
-          {telegram && (
-            <a href={`https://t.me/${telegram}`} target="_blank" rel="noreferrer" className="nfc-quick-item" title="Telegram">
-              <span className="nfc-quick-circle">{renderSocialIcon('telegram')}</span>
-              <span>Telegram</span>
-            </a>
-          )}
-        </div>
       </div>
 
-      {/* Social & Digital Networks Section */}
-      {socials.length > 0 && (
-        <div className="nfc-preview-section">
-          <div className="nfc-section-title">Connect &amp; Socials</div>
-          <div className="nfc-social-cards">
-            {socials.map((soc, idx) => (
-              <a
-                key={`prev-soc-${idx}`}
-                href={soc.url || '#'}
-                target="_blank"
-                rel="noreferrer"
-                className="nfc-social-row"
-                data-platform={soc.platform.toLowerCase()}
-              >
-                <div className="nfc-social-left">
-                  <span className="nfc-social-icon">{renderSocialIcon(soc.platform)}</span>
-                  <div className="nfc-social-meta">
-                    <strong>{soc.label || soc.platform}</strong>
-                    <span>{soc.handle || soc.url || 'Connect'}</span>
-                  </div>
-                </div>
-                <span className="nfc-social-arrow">↗</span>
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* About Section */}
-      {about?.type === 'about' && about.data?.body && (
-        <div className="nfc-preview-section">
-          <div className="nfc-section-title">{about.data.title || 'About'}</div>
-          <div className="nfc-preview-about-box">{about.data.body}</div>
-        </div>
-      )}
-
-      {/* Projects Section */}
+      {/* If any projects exist, display them neatly below */}
       {projects?.type === 'projects' && Array.isArray(projects.data?.items) && projects.data.items.length > 0 && (
-        <div className="nfc-preview-section">
-          <div className="nfc-section-title">Featured Work</div>
+        <div style={{ width: '100%', maxWidth: 380, marginTop: 24, borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: '#a89f91', letterSpacing: 1, marginBottom: 12 }}>
+            FEATURED PROJECTS
+          </div>
           {projects.data.items.map((proj, pIdx) => (
-            <div key={`prev-proj-${pIdx}`} className="nfc-preview-project-card">
-              <span className="nfc-project-tag">{String(pIdx + 1).padStart(2, '0')}</span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="nfc-project-title">{proj.title || 'Project Title'}</div>
-                {proj.description && <div className="nfc-project-desc">{proj.description}</div>}
-                {proj.link && (
-                  <a href={proj.link} target="_blank" rel="noreferrer" className="nfc-project-link">
-                    View Project ↗
-                  </a>
-                )}
-              </div>
+            <div key={pIdx} style={{ background: '#1c1815', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 10, padding: 12, marginBottom: 8, color: '#f6f5f2' }}>
+              <div style={{ fontWeight: 700, fontSize: 13 }}>{proj.title}</div>
+              {proj.description && <div style={{ fontSize: 12, color: '#a89f91', marginTop: 4 }}>{proj.description}</div>}
+              {proj.link && <a href={proj.link} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#eb6307', textDecoration: 'none', display: 'inline-block', marginTop: 6, fontWeight: 700 }}>View Project ↗</a>}
             </div>
           ))}
         </div>
       )}
-
-      {/* Preview Footer */}
-      <div className="nfc-preview-footer">
-        <div><strong>SEWNET NFC SMART CARD</strong></div>
-        <div style={{ marginTop: 4 }}>One identity. One tap. Every connection measured.</div>
-      </div>
     </div>
   )
 }

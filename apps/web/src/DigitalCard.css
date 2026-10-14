@@ -1,0 +1,259 @@
+/* =====================================================================
+   DigitalCard — NFC Smart Digital Business Card Mockup
+   Matches the design from uploaded media:
+   - Outer card frame: 38px radius, clean warm off-white #f6f5f2
+   - Top banner: vibrant #eb6307
+   - Overlapping circular avatar: 104px, 5px white ring, beige fill
+   - Call (terracotta) & Email (warm cream) side-by-side pills
+   - Centerpiece QR code with live target URL
+   - Domain / profile address footer
+   ===================================================================== */
+
+.digital-card-container {
+  --card-accent: #eb6307;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.digital-card {
+  width: 100%;
+  max-width: 380px;
+  background: #f6f5f2;
+  border-radius: 38px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  position: relative;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #191513;
+  margin: 0 auto;
+}
+
+/* ── Top Orange Banner ────────────────────────────────────────────── */
+.card-top-banner {
+  height: 140px;
+  background: var(--card-accent);
+  width: 100%;
+  position: relative;
+}
+
+/* ── Overlapping Avatar ───────────────────────────────────────────── */
+.card-avatar-wrapper {
+  position: relative;
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  margin: -52px auto 0;
+  border: 5px solid #ffffff;
+  background: #ebd7c7;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  z-index: 2;
+  overflow: hidden;
+}
+
+.card-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.card-avatar-fallback {
+  font-size: 36px;
+  font-weight: 800;
+  color: #1a1614;
+  line-height: 1;
+  user-select: none;
+}
+
+/* ── Card Content Body ────────────────────────────────────────────── */
+.card-content {
+  padding: 16px 24px 28px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.card-name {
+  font-size: 24px;
+  font-weight: 800;
+  color: #191513;
+  letter-spacing: -0.015em;
+  margin: 0 0 5px;
+  line-height: 1.2;
+}
+
+.card-title-company {
+  font-size: 15px;
+  font-weight: 450;
+  color: #59534c;
+  margin: 0 0 7px;
+  line-height: 1.35;
+}
+
+.card-bio {
+  font-size: 14px;
+  line-height: 1.45;
+  color: #6b645d;
+  max-width: 300px;
+  margin: 0 0 20px;
+  word-break: break-word;
+}
+
+/* ── Call & Email Action Pills ────────────────────────────────────── */
+.card-action-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  max-width: 280px;
+  margin-bottom: 14px;
+}
+
+.card-pill-btn {
+  flex: 1;
+  height: 42px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 0;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.card-pill-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.card-pill-btn:active {
+  transform: translateY(0);
+}
+
+.card-pill-btn.call-btn {
+  background: #f2be9b;
+  color: #8c4f2d;
+}
+
+.card-pill-btn.email-btn {
+  background: #eae6df;
+  color: #5f5952;
+}
+
+/* ── Social Networks Row ──────────────────────────────────────────── */
+.card-social-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 4px;
+  margin-bottom: 16px;
+}
+
+.card-social-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #eae6df;
+  color: #59534c;
+  display: grid;
+  place-items: center;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s, transform 0.15s;
+}
+
+.card-social-btn:hover {
+  background: #dfd8cf;
+  color: #191513;
+  transform: scale(1.08);
+}
+
+/* ── Centerpiece QR Code ──────────────────────────────────────────── */
+.card-qr-box {
+  margin: 18px auto 8px;
+  width: 180px;
+  height: 180px;
+  display: grid;
+  place-items: center;
+}
+
+.card-qr-image {
+  width: 180px;
+  height: 180px;
+  object-fit: contain;
+  display: block;
+}
+
+.card-qr-skeleton {
+  width: 180px;
+  height: 180px;
+  border-radius: 8px;
+  background: #eae6df;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.3; }
+}
+
+/* ── Profile URL Footer ───────────────────────────────────────────── */
+.card-url-footer {
+  margin-top: 4px;
+}
+
+.card-url-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #59534c;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.card-url-text:hover {
+  color: #191513;
+  text-decoration: underline;
+}
+
+/* ── Save Contact Action Bar (vCard) ──────────────────────────────── */
+.card-vcard-action-bar {
+  margin-top: 20px;
+  width: 100%;
+  max-width: 380px;
+}
+
+.card-save-vcard-btn {
+  width: 100%;
+  height: 48px;
+  border-radius: 14px;
+  background: #201c18;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  transition: background 0.15s, transform 0.15s;
+}
+
+.card-save-vcard-btn:hover {
+  background: #2a2520;
+  transform: translateY(-1px);
+}
+
+.card-save-vcard-btn:active {
+  transform: translateY(0);
+}
