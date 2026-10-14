@@ -237,27 +237,53 @@ function WorkspaceApp() {
     return () => { isCurrent = false }
   }, [])
 
-  // Poll API health
+  // Poll API health with auto-recovery for cold starts (Render free tier)
   useEffect(() => {
     let isCurrent = true
+    let timer: ReturnType<typeof setTimeout> | null = null
+
     function check() {
-      fetch(`${API_URL}/health`)
-        .then((r) => { if (isCurrent) setApiStatus(r.ok ? 'online' : 'offline') })
-        .catch(() => { if (isCurrent) setApiStatus('offline') })
+      fetch(`${API_URL}/health`, { cache: 'no-store' })
+        .then((r) => {
+          if (isCurrent) {
+            setApiStatus(r.ok ? 'online' : 'offline')
+            // If online, check every 25s; if offline/cold start, retry in 4s to catch wake-up
+            timer = setTimeout(check, r.ok ? 25000 : 4000)
+          }
+        })
+        .catch(() => {
+          if (isCurrent) {
+            setApiStatus('offline')
+            timer = setTimeout(check, 4000)
+          }
+        })
     }
     check()
-    return () => { isCurrent = false }
+    return () => {
+      isCurrent = false
+      if (timer) clearTimeout(timer)
+    }
   }, [])
 
   // Fetch available OAuth providers
   useEffect(() => {
     let isCurrent = true
-    fetch(`${API_URL}/auth/providers`)
-      .then((r) => r.ok ? r.json() as Promise<typeof authProviders> : null)
-      .then((providers) => { if (isCurrent && providers) setAuthProviders(providers) })
-      .catch(() => undefined)
-    return () => { isCurrent = false }
-  }, [])
+    function loadProviders() {
+      fetch(`${API_URL}/auth/providers`, { cache: 'no-store' })
+        .then((r) => (r.ok ? (r.json() as Promise<typeof authProviders>) : null))
+        .then((providers) => {
+          if (isCurrent && providers) setAuthProviders(providers)
+        })
+        .catch(() => undefined)
+    }
+    loadProviders()
+    if (apiStatus === 'online') {
+      loadProviders()
+    }
+    return () => {
+      isCurrent = false
+    }
+  }, [apiStatus])
 
   // Load portfolios when user is known
   useEffect(() => {

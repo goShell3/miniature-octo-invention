@@ -290,7 +290,7 @@ export function AuthPage({ onAuthenticated, apiStatus, authProviders, initialMod
             <button
               type="submit"
               className="auth-submit"
-              disabled={busy || apiStatus === 'offline'}
+              disabled={busy}
             >
               {busy
                 ? 'Please wait…'
@@ -301,7 +301,7 @@ export function AuthPage({ onAuthenticated, apiStatus, authProviders, initialMod
 
             {apiStatus === 'offline' && (
               <p className="auth-offline-notice" role="status">
-                The API is unreachable. Make sure the backend is running.
+                Connecting to API… (If dormant, Render takes ~30s to wake up). You can still submit.
               </p>
             )}
           </form>
