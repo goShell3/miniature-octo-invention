@@ -24,8 +24,6 @@ export function HomePage({
 }: HomePageProps) {
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup')
-  const [tapCount, setTapCount] = useState(148)
-  const [simFeedback, setSimFeedback] = useState<string | null>(null)
   const [openFaq, setOpenFaq] = useState<number | null>(null)
 
   function openAuth(mode: 'login' | 'signup') {
@@ -35,14 +33,6 @@ export function HomePage({
     }
     setAuthMode(mode)
     setAuthModalOpen(true)
-  }
-
-  function handleSimulateTap() {
-    setTapCount((prev) => prev + 1)
-    setSimFeedback('Card tapped! Profile loaded.')
-    setTimeout(() => {
-      setSimFeedback(null)
-    }, 2200)
   }
 
   function scrollToSection(id: string) {
@@ -55,19 +45,19 @@ export function HomePage({
   const faqs = [
     {
       q: 'How does the Sewnet NFC Smart Card work?',
-      a: 'The card contains an embedded contactless NTAG216 microchip. When you tap the card against any modern smartphone (iOS or Android), your custom Sewnet digital profile opens instantly in their browser. For older phones without NFC, a dynamic laser-etched QR code on the back provides an immediate fallback scan.',
+      a: 'The card contains an embedded contactless NTAG216 microchip. When tapped against any modern iPhone or Android smartphone, your custom Sewnet digital profile opens instantly in their browser. For older devices, a dynamic QR code on the back provides an immediate fallback scan.',
     },
     {
       q: 'Does the other person need to install an app?',
-      a: 'No app is required! The recipient simply taps or scans your card and your profile launches directly in their default browser (Safari, Chrome, etc.). From there, they can save your contact directly to their phone address book with a single click.',
+      a: 'No app is required! The recipient simply taps or scans your card and your profile launches directly in their native browser (Safari, Chrome, etc.). From there, they can save your contact directly to their phonebook with a single tap.',
     },
     {
-      q: 'Can I edit my portfolio and contact info after the card is printed?',
-      a: 'Yes, absolutely. The card links directly to your cloud-hosted Sewnet identity. You can change your phone number, social links, project portfolio, or theme colors anytime in your Sewnet dashboard, and your card will automatically reflect the newest updates instantly.',
+      q: 'Can I edit my contact info and portfolio after receiving the card?',
+      a: 'Yes, anytime. The card links directly to your digital Sewnet identity. You can update your phone number, social links, short bio, or appearance whenever you want from your dashboard, and your card will automatically reflect the latest information instantly.',
     },
     {
-      q: 'How do payment and card delivery work in Ethiopia?',
-      a: 'We accept payments via Telebirr and Commercial Bank of Ethiopia (CBE). Orders within Addis Ababa are delivered by courier within 24 to 48 hours. Regional deliveries across Ethiopia are handled via EMS or regional courier hubs.',
+      q: 'How do payment and delivery work in Ethiopia?',
+      a: 'We accept local payments via Telebirr and Commercial Bank of Ethiopia (CBE). Orders in Addis Ababa are delivered by courier within 24 to 48 hours. Regional deliveries across Ethiopia are handled via EMS or regional courier hubs.',
     },
   ]
 
@@ -84,8 +74,8 @@ export function HomePage({
           <a href="#features" className="home-nav-link" onClick={(e) => { e.preventDefault(); scrollToSection('features') }}>
             Features
           </a>
-          <a href="#nfc-cards" className="home-nav-link" onClick={(e) => { e.preventDefault(); scrollToSection('nfc-cards') }}>
-            NFC Cards
+          <a href="#cards" className="home-nav-link" onClick={(e) => { e.preventDefault(); scrollToSection('cards') }}>
+            Smart Cards
           </a>
           <a href="#pricing" className="home-nav-link" onClick={(e) => { e.preventDefault(); scrollToSection('pricing') }}>
             Pricing
@@ -98,7 +88,7 @@ export function HomePage({
         <div className="home-nav-actions">
           <div className="nav-status-pill" title={`API is ${apiStatus}`}>
             <span className={`nav-status-dot ${apiStatus}`} />
-            <span>{apiStatus === 'online' ? 'Live' : apiStatus === 'checking' ? 'Connecting…' : 'Offline'}</span>
+            <span>{apiStatus === 'online' ? 'Connected' : apiStatus === 'checking' ? 'Connecting…' : 'Offline'}</span>
           </div>
 
           {user ? (
@@ -122,68 +112,57 @@ export function HomePage({
       <header className="home-hero">
         <div className="home-hero-container">
           <div className="hero-copy">
-            <span className="hero-eyebrow">DIGITAL IDENTITY &amp; NETWORKING PLATFORM</span>
+            <span className="hero-eyebrow">SMART NFC DIGITAL IDENTITY</span>
             <h1 className="hero-headline">
               <span>One identity.</span>
               <span>One tap.</span>
               <span>Every connection measured.</span>
             </h1>
             <p className="hero-subtitle">
-              Step into the future of professional networking. Contactless smart NFC business
-              cards integrated with dynamic digital portfolios and real-time interaction metrics.
+              The contactless smart business card for modern professionals. Tap on any smartphone
+              to share your live profile, contact details, and social links with zero friction.
             </p>
-
-
 
             <div className="hero-ctas">
               <button
-                className="btn-hero-order"
+                className="btn-hero-primary"
                 onClick={() => scrollToSection('pricing')}
               >
-                Order NFC Card — From 1,999 ETB
+                Order Smart Card — From 1,999 ETB
               </button>
               <button
                 className="btn-hero-secondary"
                 onClick={() => openAuth('signup')}
               >
-                {user ? 'Open Workspace' : 'Create Free Portfolio'}
+                {user ? 'Open Workspace' : 'Create Free Portfolio →'}
               </button>
             </div>
           </div>
 
-          <div className="hero-visual">
-            <div className="mockup-card-wrapper" role="img" aria-label="Sewnet NFC Smart Card mockup">
-              <div className="mockup-card-sheen" />
-              <div className="mockup-card-top">
-                <div className="mockup-brand">
-                  <span className="mockup-brand-mark">S</span>
+          <div className="hero-visual" id="cards">
+            <div className="hero-card-showcase" role="img" aria-label="Sewnet Contactless Smart Card">
+              <div className="card-gloss" />
+              <div className="card-header-row">
+                <div className="card-brand-mark">
+                  <span className="card-mini-s">S</span>
                   <span>sewnet</span>
                 </div>
-                <div className="mockup-nfc-icon">
-                  <span className="mockup-wave" />
-                  <span>CONTACTLESS</span>
+                <div className="card-nfc-wave" title="Contactless NFC">
+                  <span className="nfc-signal" />
+                  <span>NFC</span>
                 </div>
               </div>
 
-              <div className="mockup-card-body">
-                <div className="mockup-kicker">DIGITAL IDENTITY</div>
-                <div className="mockup-name">Roben Bayisa</div>
-                <div className="mockup-title">Founder &amp; Technology Strategist</div>
+              <div className="card-center-body">
+                <div className="card-holder-name">Roben Bayisa</div>
+                <div className="card-holder-role">Founder &amp; Technology Strategist</div>
+                <div className="card-holder-bio">Building next-generation contactless digital identity platforms.</div>
               </div>
 
-              <div className="mockup-card-bottom">
-                <span className="mockup-domain">sewnet.et/roben</span>
-                <span className="mockup-tap-tag">NFC // 2.4GHz</span>
+              <div className="card-footer-row">
+                <span className="card-url">roben.sewnet.et</span>
+                <span className="card-chip-tag">NTAG216</span>
               </div>
-            </div>
-
-            <div className="hero-tap-simulator">
-              <button className="btn-tap-sim" onClick={handleSimulateTap}>
-                Simulate Tap
-              </button>
-              <span className="sim-counter">
-                {simFeedback ? simFeedback : `${tapCount} card interactions recorded`}
-              </span>
             </div>
           </div>
         </div>
@@ -195,123 +174,85 @@ export function HomePage({
           <span className="section-eyebrow">WHY SEWNET</span>
           <h2 className="section-title">One card. Endless possibilities.</h2>
           <p className="section-desc">
-            No more outdated paper business cards. Keep your personal brand, projects,
-            and contact details constantly synchronized with the people you meet.
+            Replace outdated paper cards with an intelligent, reusable digital identity that keeps
+            your contact information, work, and links continuously updated.
           </p>
         </div>
 
         <div className="features-grid">
-          <div className="feature-box">
-            <div className="feature-icon-wrap">⚡</div>
+          <div className="feature-card">
+            <div className="feature-icon">⚡</div>
             <h3>Instant Contactless Sharing</h3>
             <p>
-              Hold your card near any modern iPhone or Android device. Your complete profile
-              opens instantly in their browser with no app installation required.
+              Hold your card near any modern iPhone or Android device. Your full profile and contact
+              details open instantly in their browser with no app required.
             </p>
           </div>
 
-          <div className="feature-box">
-            <div className="feature-icon-wrap">🌐</div>
-            <h3>Dynamic Digital Portfolio</h3>
+          <div className="feature-card">
+            <div className="feature-icon">🌐</div>
+            <h3>Dynamic Digital Profile</h3>
             <p>
-              Changed your phone number or updated your work? Edit your profile anytime from
-              your Sewnet dashboard—your card always links to the freshest content.
+              Changed your phone number or bio? Update your profile anytime from your Sewnet
+              dashboard—your physical card always links to your latest information.
             </p>
           </div>
 
-          <div className="feature-box">
-            <div className="feature-icon-wrap">📊</div>
-            <h3>Every Connection Measured</h3>
+          <div className="feature-card">
+            <div className="feature-icon">📇</div>
+            <h3>Direct Phonebook Sync</h3>
             <p>
-              Quantify your networking impact. Monitor card tap counts, portfolio visits,
-              and vCard downloads in real time with built-in analytics.
+              Recipients can add your complete contact card directly into their smartphone address
+              book with a single tap, eliminating typing errors and lost connections.
             </p>
           </div>
         </div>
       </section>
 
-      {/* ── NFC Card Showcase Section ────────────────────────────── */}
-      <section id="nfc-cards" className="showcase-section">
-        <div className="section-header">
-          <span className="section-eyebrow">PREMIUM CRAFTSMANSHIP</span>
-          <h2 className="section-title">Built to make lasting impressions</h2>
-          <p className="section-desc">
-            Engineered with industrial-grade NTAG216 microchips and high-definition matte finishes.
-          </p>
-        </div>
-
-        <div className="showcase-grid">
-          <div className="showcase-card">
-            <span className="showcase-icon">💳</span>
-            <h4 className="showcase-title">Dual NFC &amp; Dynamic QR</h4>
-            <p className="showcase-desc">
-              Tap on any NFC-enabled phone or scan the high-contrast laser-etched QR code for older devices.
-            </p>
-          </div>
-
-          <div className="showcase-card">
-            <span className="showcase-icon">🛡️</span>
-            <h4 className="showcase-title">Durable &amp; Water Resistant</h4>
-            <p className="showcase-desc">
-              Precision laminated with scratch-resistant coating, immune to water damage and daily pocket wear.
-            </p>
-          </div>
-
-          <div className="showcase-card">
-            <span className="showcase-icon">🇪🇹</span>
-            <h4 className="showcase-title">Localized in Ethiopia</h4>
-            <p className="showcase-desc">
-              Support in Ethiopian Birr, fast courier delivery in Addis Ababa, and local CBE / Telebirr settlement.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Pricing Section (Card Order Purchase: 1,999 - 2,999 ETB) ── */}
+      {/* ── Pricing Section (4 Exact Tiers) ──────────────────────── */}
       <section id="pricing" className="home-pricing">
         <div className="pricing-container">
           <div className="section-header">
-            <span className="section-eyebrow">CARD ORDER PURCHASE</span>
-            <h2 className="section-title">Transparent pricing for every professional</h2>
+            <span className="section-eyebrow">TRANSPARENT PRICING</span>
+            <h2 className="section-title">Choose the right card for your team</h2>
             <p className="section-desc">
-              Get your custom physical Sewnet NFC card delivered to you. One-time hardware purchase,
-              unlimited networking, and lifelong profile hosting.
+              High-durability contactless NFC smart business cards delivered directly to you in Ethiopia.
             </p>
           </div>
 
           <div className="pricing-grid">
             {/* Tier 1: Individual */}
             <div className="pricing-card">
-              <div>
-                <h3 className="card-tier-name">Individual</h3>
-                <p className="card-tier-target">For one person</p>
+              <div className="pricing-content">
+                <h3 className="pricing-tier-name">Individual</h3>
+                <p className="pricing-tier-target">For one person</p>
 
-                <div className="card-price-wrap">
-                  <span className="card-price-amount">2,999</span>
-                  <span className="card-price-currency">ETB</span>
+                <div className="pricing-figure">
+                  <span className="pricing-val">2,999</span>
+                  <span className="pricing-curr">ETB</span>
                 </div>
-                <span className="card-price-period">per card</span>
+                <span className="pricing-unit">per card</span>
 
-                <div className="pricing-divider" />
+                <div className="pricing-sep" />
 
-                <ul className="pricing-features-list">
+                <ul className="pricing-list">
                   <li>
-                    <span className="check-icon">✓</span>
+                    <span className="check">✓</span>
                     <span>Tap-to-share card</span>
                   </li>
                   <li>
-                    <span className="check-icon">✓</span>
+                    <span className="check">✓</span>
                     <span>QR code profile</span>
                   </li>
                   <li>
-                    <span className="check-icon">✓</span>
+                    <span className="check">✓</span>
                     <span>Edit any time</span>
                   </li>
                 </ul>
               </div>
 
               <button
-                className="btn-pricing-action secondary"
+                className="pricing-btn secondary"
                 onClick={() => openAuth('signup')}
               >
                 Choose Individual
@@ -320,36 +261,36 @@ export function HomePage({
 
             {/* Tier 2: S&M Business */}
             <div className="pricing-card">
-              <div>
-                <h3 className="card-tier-name">S&amp;M Business</h3>
-                <p className="card-tier-target">For small and medium teams</p>
+              <div className="pricing-content">
+                <h3 className="pricing-tier-name">S&amp;M Business</h3>
+                <p className="pricing-tier-target">For small and medium teams</p>
 
-                <div className="card-price-wrap">
-                  <span className="card-price-amount">2,800</span>
-                  <span className="card-price-currency">ETB</span>
+                <div className="pricing-figure">
+                  <span className="pricing-val">2,800</span>
+                  <span className="pricing-curr">ETB</span>
                 </div>
-                <span className="card-price-period">per card</span>
+                <span className="pricing-unit">per card</span>
 
-                <div className="pricing-divider" />
+                <div className="pricing-sep" />
 
-                <ul className="pricing-features-list">
+                <ul className="pricing-list">
                   <li>
-                    <span className="check-icon">✓</span>
+                    <span className="check">✓</span>
                     <span>Tap-to-share card</span>
                   </li>
                   <li>
-                    <span className="check-icon">✓</span>
+                    <span className="check">✓</span>
                     <span>QR code profile</span>
                   </li>
                   <li>
-                    <span className="check-icon">✓</span>
+                    <span className="check">✓</span>
                     <span>Edit any time</span>
                   </li>
                 </ul>
               </div>
 
               <button
-                className="btn-pricing-action secondary"
+                className="pricing-btn secondary"
                 onClick={() => openAuth('signup')}
               >
                 Choose S&amp;M
@@ -358,75 +299,75 @@ export function HomePage({
 
             {/* Tier 3: Enterprise */}
             <div className="pricing-card">
-              <div>
-                <h3 className="card-tier-name">Enterprise</h3>
-                <p className="card-tier-target">For large teams and events</p>
+              <div className="pricing-content">
+                <h3 className="pricing-tier-name">Enterprise</h3>
+                <p className="pricing-tier-target">For large teams and events</p>
 
-                <div className="card-price-wrap">
-                  <span className="card-price-amount">2,500</span>
-                  <span className="card-price-currency">ETB</span>
+                <div className="pricing-figure">
+                  <span className="pricing-val">2,500</span>
+                  <span className="pricing-curr">ETB</span>
                 </div>
-                <span className="card-price-period">per card</span>
+                <span className="pricing-unit">per card</span>
 
-                <div className="pricing-divider" />
+                <div className="pricing-sep" />
 
-                <ul className="pricing-features-list">
+                <ul className="pricing-list">
                   <li>
-                    <span className="check-icon">✓</span>
+                    <span className="check">✓</span>
                     <span>Tap-to-share card</span>
                   </li>
                   <li>
-                    <span className="check-icon">✓</span>
+                    <span className="check">✓</span>
                     <span>QR code profile</span>
                   </li>
                   <li>
-                    <span className="check-icon">✓</span>
+                    <span className="check">✓</span>
                     <span>Edit any time</span>
                   </li>
                 </ul>
               </div>
 
               <button
-                className="btn-pricing-action secondary"
+                className="pricing-btn secondary"
                 onClick={() => openAuth('signup')}
               >
                 Choose Enterprise
               </button>
             </div>
 
-            {/* Tier 4: Corporate (Lowest per card) */}
+            {/* Tier 4: Corporate */}
             <div className="pricing-card featured">
               <span className="pricing-badge">Lowest per card</span>
-              <div>
-                <h3 className="card-tier-name">Corporate</h3>
-                <p className="card-tier-target">For company-wide rollout</p>
+              <div className="pricing-content">
+                <h3 className="pricing-tier-name">Corporate</h3>
+                <p className="pricing-tier-target">For company-wide rollout</p>
 
-                <div className="card-price-wrap">
-                  <span className="card-price-amount">1,999</span>
-                  <span className="card-price-currency">ETB</span>
+                <div className="pricing-figure">
+                  <span className="pricing-val">1,999</span>
+                  <span className="pricing-curr">ETB</span>
                 </div>
-                <span className="card-price-period">per card</span>
+                <span className="pricing-unit">per card</span>
 
-                <div className="pricing-divider" />
+                <div className="pricing-sep" />
 
-                <ul className="pricing-features-list">
+                <ul className="pricing-list">
                   <li>
-                    <span className="check-icon">✓</span>
+                    <span className="check">✓</span>
                     <span>Tap-to-share card</span>
                   </li>
                   <li>
-                    <span className="check-icon">✓</span>
+                    <span className="check">✓</span>
                     <span>QR code profile</span>
                   </li>
                   <li>
-                    <span className="check-icon">✓</span>
+                    <span className="check">✓</span>
                     <span>Edit any time</span>
                   </li>
                 </ul>
               </div>
 
               <button
-                className="btn-pricing-action primary"
+                className="pricing-btn primary"
                 onClick={() => openAuth('signup')}
               >
                 Choose Corporate
@@ -436,32 +377,14 @@ export function HomePage({
         </div>
       </section>
 
-      {/* ── Assurance / Guarantees Strip ─────────────────────────── */}
-      <section id="about" className="home-assurance">
-        <div className="assurance-grid">
-          <div className="assurance-item">
-            <h4>No App Needed</h4>
-            <p>Compatible out of the box with over 95% of modern iOS and Android smartphones.</p>
-          </div>
-          <div className="assurance-item">
-            <h4>Zero Recurring Fees</h4>
-            <p>No monthly subscription fees to keep your standard card and portfolio working.</p>
-          </div>
-          <div className="assurance-item">
-            <h4>Delivered Locally</h4>
-            <p>Prompt delivery across Addis Ababa and major regions in Ethiopia.</p>
-          </div>
-        </div>
-      </section>
-
       {/* ── FAQ Section ───────────────────────────────────────────── */}
       <section id="faq" className="home-faq">
         <div className="faq-container">
           <div className="section-header">
             <span className="section-eyebrow">COMMON QUESTIONS</span>
-            <h2 className="section-title">Everything you need to know</h2>
+            <h2 className="section-title">Frequently asked questions</h2>
             <p className="section-desc">
-              Have questions about how Sewnet works? Here are answers to the most common inquiries.
+              Everything you need to know about getting started with Sewnet smart cards.
             </p>
           </div>
 
@@ -493,16 +416,16 @@ export function HomePage({
       {/* ── Footer ────────────────────────────────────────────────── */}
       <footer className="home-footer">
         <div className="footer-container">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span className="brand-badge" style={{ width: 28, height: 28, fontSize: 15 }}>S</span>
+          <div className="footer-brand">
+            <span className="brand-badge" style={{ width: 28, height: 28, fontSize: 14 }}>S</span>
             <span style={{ fontWeight: 800, fontSize: 16 }}>sewnet</span>
           </div>
 
-          <div className="footer-copy">
-            Presented by <strong>Roben Bayisa</strong> · Digital Identity &amp; Networking Platform
+          <div className="footer-note">
+            Contactless Digital Identity &amp; Smart Networking · Addis Ababa, Ethiopia
           </div>
 
-          <div style={{ fontSize: 12, color: 'var(--sewnet-muted)' }}>
+          <div className="footer-copy">
             © {new Date().getFullYear()} Sewnet. All rights reserved.
           </div>
         </div>

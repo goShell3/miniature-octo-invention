@@ -213,9 +213,17 @@ function WorkspaceApp() {
           theme: { id: 'minimal', accentColor: data.accentColor },
         }),
       })
+      let livePortfolio = portfolio
+      if (portfolio.status !== 'published') {
+        try {
+          livePortfolio = await apiRequest<Portfolio>(`/portfolios/${portfolio.id}/publish`, { method: 'POST' })
+        } catch {
+          // Ignore if already published
+        }
+      }
       const next: Portfolio = {
-        ...portfolio,
-        content: portfolio.content ?? { version: 1, blocks: wizardDataToBlocks(data) },
+        ...livePortfolio,
+        content: livePortfolio.content ?? { version: 1, blocks: wizardDataToBlocks(data) },
       }
       setPortfolios((current) => [next, ...current])
       setShowWizard(false)

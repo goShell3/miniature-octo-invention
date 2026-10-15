@@ -56,11 +56,12 @@ export class PortfoliosService {
     return this.dataSource.transaction(async (manager) => {
       const portfolios = manager.getRepository(PortfolioEntity);
       const contentVersions = manager.getRepository(PortfolioContentEntity);
+      const hasContent = Array.isArray(input.blocks) && input.blocks.length > 0;
       const portfolio = await portfolios.save(
         portfolios.create({
           owner: { id: ownerId } as UserEntity,
           subdomain,
-          status: 'draft',
+          status: hasContent ? 'published' : 'draft',
           theme: input.theme ?? { id: 'minimal', accentColor: '#e06b24' },
         }),
       );
@@ -69,7 +70,7 @@ export class PortfoliosService {
           portfolio,
           version: 1,
           blocks: input.blocks ?? [],
-          isPublished: false,
+          isPublished: hasContent,
         }),
       );
       return { ...portfolio, content };

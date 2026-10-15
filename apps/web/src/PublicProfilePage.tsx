@@ -154,6 +154,9 @@ export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps)
     }
   }, [profile, vcardUrl, subdomain])
 
+  const projects = blocks.find((b) => b.type === 'projects')
+  const linksBlock = blocks.find((b) => b.type === 'links')
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -259,6 +262,63 @@ export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps)
           vcardFilename={`${subdomain}-contact.vcf`}
         />
       </main>
+
+      {/* Featured Projects if any exist in the portfolio */}
+      {projects?.type === 'projects' && Array.isArray(projects.data?.items) && projects.data.items.length > 0 && (
+        <section style={{ width: '100%', maxWidth: 380, marginTop: 20 }}>
+          <h2 style={{ fontSize: 11, fontWeight: 800, color: '#a89f91', letterSpacing: 1, textTransform: 'uppercase', margin: '0 0 10px 4px' }}>
+            Featured Work
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {projects.data.items.map((proj, pIdx) => (
+              <div key={pIdx} style={{ background: '#1c1815', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 12, padding: 14, color: '#f6f5f2' }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: '#fff' }}>{proj.title}</div>
+                {proj.description && <div style={{ fontSize: 12, color: '#a89f91', marginTop: 4, lineHeight: 1.45 }}>{proj.description}</div>}
+                {proj.link && (
+                  <a href={proj.link} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: accentColor, textDecoration: 'none', display: 'inline-block', marginTop: 8, fontWeight: 700 }}>
+                    View Project ↗
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Custom Links if any exist */}
+      {linksBlock?.type === 'links' && Array.isArray(linksBlock.data?.items) && linksBlock.data.items.length > 0 && (
+        <section style={{ width: '100%', maxWidth: 380, marginTop: 20 }}>
+          <h2 style={{ fontSize: 11, fontWeight: 800, color: '#a89f91', letterSpacing: 1, textTransform: 'uppercase', margin: '0 0 10px 4px' }}>
+            {linksBlock.data.title || 'Links'}
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {linksBlock.data.items.map((item, lIdx) => (
+              <a
+                key={lIdx}
+                href={item.url}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  background: '#1c1815',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: 12,
+                  padding: '12px 16px',
+                  color: '#fff',
+                  textDecoration: 'none',
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
+              >
+                <span>{item.title}</span>
+                <span style={{ color: accentColor }}>↗</span>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Subtle Footer */}
       <footer style={{ marginTop: 28, textAlign: 'center', maxWidth: 360 }}>

@@ -18,10 +18,8 @@ interface AuthPageProps {
 
 type AuthMode = 'login' | 'signup'
 
-// Extract the first meaningful message from a better-auth error response.
 function extractErrorMessage(reason: unknown, fallback: string): string {
   if (reason instanceof Error) {
-    // better-auth wraps API error messages in Error.message
     const msg = reason.message
     if (msg && msg !== 'undefined' && msg !== 'null') return msg
   }
@@ -34,8 +32,14 @@ function extractErrorMessage(reason: unknown, fallback: string): string {
   return fallback
 }
 
-export function AuthPage({ onAuthenticated, apiStatus, authProviders, initialMode, onClose }: AuthPageProps) {
-  const [mode, setMode] = useState<AuthMode>(initialMode ?? 'signup')
+export function AuthPage({
+  onAuthenticated,
+  apiStatus,
+  authProviders,
+  initialMode = 'login',
+  onClose,
+}: AuthPageProps) {
+  const [mode, setMode] = useState<AuthMode>(initialMode)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -56,8 +60,8 @@ export function AuthPage({ onAuthenticated, apiStatus, authProviders, initialMod
       setError('Please enter your email address.')
       return
     }
-    if (password.length < 12) {
-      setError('Password must be at least 12 characters.')
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.')
       return
     }
 
@@ -86,13 +90,13 @@ export function AuthPage({ onAuthenticated, apiStatus, authProviders, initialMod
         }
       }
 
-      // No error but no user either — fetch the session to confirm
+      // Session fallback verification
       const { data: session, error: sessionError } = await authClient.getSession({})
       if (sessionError) throw new Error(sessionError.message ?? 'Session check failed')
       if (session?.user) {
         onAuthenticated({ id: session.user.id, email: session.user.email })
       } else {
-        throw new Error('Authentication succeeded but no session was returned.')
+        throw new Error('Authentication succeeded but session could not be established.')
       }
     } catch (reason) {
       setError(extractErrorMessage(reason, mode === 'signup' ? 'Unable to create account.' : 'Unable to sign in.'))
@@ -110,7 +114,6 @@ export function AuthPage({ onAuthenticated, apiStatus, authProviders, initialMod
         callbackURL: window.location.origin,
       })
       if (authError) throw new Error(authError.message ?? `Sign in with ${provider} failed`)
-      // Social sign-in redirects, so no further action here.
     } catch (reason) {
       setError(extractErrorMessage(reason, `Unable to sign in with ${provider}.`))
       setBusy(false)
@@ -120,204 +123,189 @@ export function AuthPage({ onAuthenticated, apiStatus, authProviders, initialMod
   const hasSocial = authProviders.google || authProviders.facebook
 
   return (
-    <main className="auth-page">
-      {onClose && (
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close"
-          style={{
-            position: 'absolute',
-            top: 24,
-            right: 24,
-            width: 36,
-            height: 36,
-            borderRadius: '50%',
-            border: '1px solid var(--line)',
-            background: '#ffffff',
-            color: 'var(--ink)',
-            fontSize: 16,
-            fontWeight: 700,
-            cursor: 'pointer',
-            display: 'grid',
-            placeItems: 'center',
-            zIndex: 100,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
-          }}
-        >
-          ✕
-        </button>
-      )}
-      {/* Brand */}
-      <header className="auth-brand">
-        <span className="brand-mark">S</span>
-        <span className="brand-name">sewnet</span>
-      </header>
+    <div className="auth-container">
+      <div className="auth-box">
+        {onClose && (
+          <button
+            type="button"
+            className="auth-close-btn"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            ✕
+          </button>
+        )}
 
-      {/* API status badge */}
-      <div className="auth-api-status" data-status={apiStatus} aria-live="polite">
-        <span className="api-status-dot" aria-hidden="true" />
-        {apiStatus === 'online' ? 'API online' : apiStatus === 'offline' ? 'API offline' : 'Checking API…'}
-      </div>
-
-      {/* Auth card */}
-      <section className="auth-card" aria-label={mode === 'signup' ? 'Create an account' : 'Sign in'}>
-        {/* Left: copy */}
-        <div className="auth-card-copy">
-          <p className="auth-eyebrow">DIGITAL IDENTITY &amp; NETWORKING PLATFORM</p>
-          <h1 className="auth-headline">
-            {mode === 'signup' ? 'One identity.\nOne tap.' : 'Welcome\nback.'}
-          </h1>
-          <p className="auth-sub">
-            {mode === 'signup'
-              ? 'One identity. One tap. Every connection measured.'
-              : 'Good to have you back. Your network is waiting.'}
-          </p>
-          <div className="auth-art" aria-hidden="true">
-            <div className="art-card">
-              <span className="art-label">DIGITAL IDENTITY</span>
-              <strong className="art-title">
-                One identity.<br />One tap.<br /><em>Every connection measured.</em>
-              </strong>
-              <div className="art-rule" />
-              <span className="art-foot">SEWNET / 2026</span>
-            </div>
-            <div className="art-badge">S / 01</div>
+        {/* Brand header */}
+        <div className="auth-header">
+          <div className="auth-brand-lockup">
+            <span className="auth-brand-logo">S</span>
+            <span className="auth-brand-name">sewnet</span>
           </div>
+          <h1 className="auth-title">
+            {mode === 'login' ? 'Welcome back' : 'Create your account'}
+          </h1>
+          <p className="auth-subtitle">
+            {mode === 'login'
+              ? 'Sign in to manage your digital cards & portfolios'
+              : 'One identity. One tap. Start your digital presence'}
+          </p>
         </div>
 
-        {/* Right: form */}
-        <div className="auth-card-form">
-          {/* Mode tabs */}
-          <div className="auth-tabs" role="tablist">
-            <button
-              role="tab"
-              aria-selected={mode === 'signup'}
-              className={mode === 'signup' ? 'active' : ''}
-              onClick={() => switchMode('signup')}
+        {/* Mode Selector */}
+        <div className="auth-mode-pills" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === 'login'}
+            className={`auth-pill ${mode === 'login' ? 'active' : ''}`}
+            onClick={() => switchMode('login')}
+            disabled={busy}
+          >
+            Sign In
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === 'signup'}
+            className={`auth-pill ${mode === 'signup' ? 'active' : ''}`}
+            onClick={() => switchMode('signup')}
+            disabled={busy}
+          >
+            Create Account
+          </button>
+        </div>
+
+        {/* Social auth buttons if configured */}
+        {hasSocial && (
+          <div className="auth-social-stack">
+            {authProviders.google && (
+              <button
+                type="button"
+                className="auth-social-btn"
+                onClick={() => handleSocialSignIn('google')}
+                disabled={busy}
+              >
+                <GoogleIcon />
+                <span>Continue with Google</span>
+              </button>
+            )}
+            {authProviders.facebook && (
+              <button
+                type="button"
+                className="auth-social-btn"
+                onClick={() => handleSocialSignIn('facebook')}
+                disabled={busy}
+              >
+                <FacebookIcon />
+                <span>Continue with Facebook</span>
+              </button>
+            )}
+            <div className="auth-sep">
+              <span>or email</span>
+            </div>
+          </div>
+        )}
+
+        {/* Email & Password Form */}
+        <form onSubmit={handleSubmit} className="auth-form-body" noValidate>
+          <div className="auth-input-group">
+            <label htmlFor="auth-email">Email</label>
+            <input
+              id="auth-email"
+              type="email"
+              autoComplete="email"
+              required
+              placeholder="you@domain.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               disabled={busy}
-              type="button"
-            >
-              Create account
-            </button>
-            <button
-              role="tab"
-              aria-selected={mode === 'login'}
-              className={mode === 'login' ? 'active' : ''}
-              onClick={() => switchMode('login')}
-              disabled={busy}
-              type="button"
-            >
-              Sign in
-            </button>
+            />
           </div>
 
-          {/* Social buttons */}
-          {hasSocial && (
-            <div className="auth-social">
-              {authProviders.google && (
-                <button
-                  type="button"
-                  className="social-button"
-                  onClick={() => handleSocialSignIn('google')}
-                  disabled={busy}
-                >
-                  <GoogleIcon />
-                  Continue with Google
-                </button>
+          <div className="auth-input-group">
+            <div className="auth-label-row">
+              <label htmlFor="auth-password">Password</label>
+              {mode === 'signup' && (
+                <span className="auth-hint">Min. 8 characters</span>
               )}
-              {authProviders.facebook && (
-                <button
-                  type="button"
-                  className="social-button"
-                  onClick={() => handleSocialSignIn('facebook')}
-                  disabled={busy}
-                >
-                  <FacebookIcon />
-                  Continue with Facebook
-                </button>
-              )}
-              <div className="auth-divider" aria-hidden="true">
-                <span>or continue with email</span>
-              </div>
+            </div>
+            <input
+              id="auth-password"
+              type="password"
+              autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+              required
+              placeholder={mode === 'signup' ? 'Create a secure password' : 'Enter your password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={busy}
+            />
+          </div>
+
+          {error && (
+            <div className="auth-alert" role="alert">
+              <span>✕</span>
+              <span>{error}</span>
             </div>
           )}
 
-          {/* Email/password form */}
-          <form onSubmit={handleSubmit} className="auth-form" noValidate>
-            <div className="auth-field">
-              <label htmlFor="auth-email">Email address</label>
-              <input
-                id="auth-email"
-                type="email"
-                autoComplete="email"
-                required
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={busy}
-                aria-describedby={error ? 'auth-error' : undefined}
-              />
-            </div>
-
-            <div className="auth-field">
-              <label htmlFor="auth-password">Password</label>
-              <input
-                id="auth-password"
-                type="password"
-                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-                required
-                minLength={12}
-                placeholder={mode === 'signup' ? 'At least 12 characters' : 'Your password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={busy}
-              />
-              {mode === 'signup' && (
-                <span className="auth-field-hint">
-                  Use at least 12 characters — the longer, the better.
-                </span>
-              )}
-            </div>
-
-            {/* Error message */}
-            {error && (
-              <p id="auth-error" className="auth-error" role="alert" aria-live="assertive">
-                {error}
-              </p>
+          <button
+            type="submit"
+            className="auth-primary-btn"
+            disabled={busy}
+          >
+            {busy ? (
+              <span className="auth-spinner-wrap">
+                <span className="auth-spinner" />
+                <span>Connecting…</span>
+              </span>
+            ) : mode === 'login' ? (
+              'Sign In →'
+            ) : (
+              'Create Account →'
             )}
+          </button>
 
-            <button
-              type="submit"
-              className="auth-submit"
-              disabled={busy}
-            >
-              {busy
-                ? 'Please wait…'
-                : mode === 'signup'
-                  ? 'Create account'
-                  : 'Sign in'}
-            </button>
+          {apiStatus === 'offline' && (
+            <p style={{ fontSize: 11.5, color: '#a89f91', textAlign: 'center', margin: '4px 0 0' }}>
+              API reconnecting. You can submit and requests will process.
+            </p>
+          )}
+        </form>
 
-            {apiStatus === 'offline' && (
-              <p className="auth-offline-notice" role="status">
-                Connecting to API… (If dormant, Render takes ~30s to wake up). You can still submit.
-              </p>
-            )}
-          </form>
-
-          <p className="auth-switch-hint">
-            {mode === 'signup'
-              ? <>Already have an account?{' '}<button type="button" className="auth-switch-btn" onClick={() => switchMode('login')} disabled={busy}>Sign in</button></>
-              : <>New to Sewnet?{' '}<button type="button" className="auth-switch-btn" onClick={() => switchMode('signup')} disabled={busy}>Create an account</button></>}
-          </p>
+        {/* Footer switch */}
+        <div className="auth-switch-footer">
+          {mode === 'signup' ? (
+            <span>
+              Already have an account?{' '}
+              <button
+                type="button"
+                className="auth-link-btn"
+                onClick={() => switchMode('login')}
+                disabled={busy}
+              >
+                Sign In
+              </button>
+            </span>
+          ) : (
+            <span>
+              New to Sewnet?{' '}
+              <button
+                type="button"
+                className="auth-link-btn"
+                onClick={() => switchMode('signup')}
+                disabled={busy}
+              >
+                Create Account
+              </button>
+            </span>
+          )}
         </div>
-      </section>
-    </main>
+      </div>
+    </div>
   )
 }
 
-// Inline SVG icons — no external dependency needed.
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">

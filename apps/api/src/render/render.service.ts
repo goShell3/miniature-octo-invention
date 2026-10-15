@@ -149,18 +149,25 @@ export class RenderService {
         subdomain: subdomain.toLowerCase(),
       });
 
-    if (!allowDraft) {
-      query
-        .andWhere('portfolio.status = :status', { status: 'published' })
-        .andWhere('content.isPublished = :isPublished', { isPublished: true });
+    const portfolio = await query.getOne();
+    if (!portfolio) {
+      throw new NotFoundException('Portfolio not found');
     }
 
-    query.orderBy('content.version', 'DESC');
-    const portfolio = await query.getOne();
+    if (!allowDraft && portfolio.status === 'unpublished') {
+      throw new NotFoundException('Portfolio is currently unpublished');
+    }
 
-    const content = portfolio?.contentVersions?.[0];
-    if (!portfolio || !content) {
-      throw new NotFoundException('Portfolio not found');
+    const versions = [...(portfolio.contentVersions ?? [])].sort(
+      (a, b) => b.version - a.version,
+    );
+
+    const content = allowDraft
+      ? versions[0]
+      : versions.find((v) => v.isPublished) ?? versions[0];
+
+    if (!content) {
+      throw new NotFoundException('Portfolio content not found');
     }
     return { portfolio, content };
   }
