@@ -1,4 +1,4 @@
-import { useState, useId } from 'react'
+import { useState, useId, useEffect } from 'react'
 import type { CSSProperties } from 'react'
 import type { PortfolioBlock } from '@amalink/types'
 import { DigitalCard } from './DigitalCard'
@@ -35,34 +35,7 @@ interface SetupWizardProps {
   error: string
 }
 
-// ─── Step definitions ─────────────────────────────────────────────────────────
-
-const STEPS = [
-  {
-    key: 'address',
-    label: 'Address',
-    headline: 'Your profile address.',
-    sub: 'Claim your personal URL for tap-to-share and instant QR profile access.',
-  },
-  {
-    key: 'personal',
-    label: 'Personal',
-    headline: 'Personal information.',
-    sub: 'Fill in your details for your digital business card.',
-  },
-  {
-    key: 'socials',
-    label: 'Socials',
-    headline: 'Social & digital addresses.',
-    sub: 'Connect your profiles and customize your card accent color.',
-  },
-] as const
-
-// ─── Main component ────────────────────────────────────────────────────────────
-
 export function SetupWizard({ onFinish, checkSubdomain, busy, error }: SetupWizardProps) {
-  const [stepIndex, setStepIndex] = useState(0)
-  const [direction, setDirection] = useState<'forward' | 'back'>('forward')
   const [subdomainStatus, setSubdomainStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle')
   const [fieldError, setFieldError] = useState('')
 
@@ -81,106 +54,75 @@ export function SetupWizard({ onFinish, checkSubdomain, busy, error }: SetupWiza
     instagram: '',
     twitter: '',
     website: '',
-    accentColor: '#eb6307', // vibrant orange default matching the attached mockup
+    accentColor: '#eb6307', // vibrant orange default matching the card design
   })
 
   const uid = useId()
-  const step = STEPS[stepIndex]
-  const isLast = stepIndex === STEPS.length - 1
-  const progress = (stepIndex / (STEPS.length - 1)) * 100
 
   function patch(update: Partial<WizardData>) {
     setData((d) => ({ ...d, ...update }))
     setFieldError('')
   }
 
-  // ── Subdomain check ──────────────────────────────────────────────────────────
-  async function handleCheckSubdomain() {
-    const val = data.subdomain.trim()
+  // ── Debounced Subdomain Availability Check ────────────────────────────────────
+  useEffect(() => {
+    const val = data.subdomain.trim().toLowerCase()
     if (!val) {
-      setFieldError('Enter a profile address first.')
-      return
-    }
-    if (!/^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/.test(val)) {
-      setFieldError('Use 3–30 lowercase letters, numbers, or hyphens. Cannot start or end with a hyphen.')
-      return
-    }
-    setSubdomainStatus('checking')
-    setFieldError('')
-    try {
-      const available = await checkSubdomain(val)
-      setSubdomainStatus(available ? 'available' : 'taken')
-      if (!available) setFieldError('That address is already taken. Try another.')
-    } catch {
       setSubdomainStatus('idle')
-      setFieldError('Could not check availability. Try again.')
-    }
-  }
-
-  // ── Navigation ───────────────────────────────────────────────────────────────
-  function canAdvance(): boolean {
-    switch (step.key) {
-      case 'address':
-        return subdomainStatus === 'available'
-      case 'personal':
-        return data.firstName.trim().length > 0
-      case 'socials':
-        return true
-    }
-  }
-
-  function goNext() {
-    if (!canAdvance()) {
-      if (step.key === 'address' && subdomainStatus !== 'available') {
-        setFieldError('Please check and claim an available address before continuing.')
-      } else if (step.key === 'personal' && !data.firstName.trim()) {
-        setFieldError('Please enter at least your first name.')
-      }
       return
     }
-    setDirection('forward')
-    setFieldError('')
-    if (isLast) {
-      void onFinish(data)
-    } else {
-      setStepIndex((i) => i + 1)
+
+    if (!/^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/.test(val)) {
+      setSubdomainStatus('idle')
+      return
     }
-  }
 
-  function goBack() {
-    if (stepIndex === 0) return
-    setDirection('back')
-    setFieldError('')
-    setStepIndex((i) => i - 1)
-  }
+    setSubdomainStatus('checking')
+    const timer = setTimeout(async () => {
+      try {
+        const available = await checkSubdomain(val)
+        setSubdomainStatus(available ? 'available' : 'taken')
+      } catch {
+        setSubdomainStatus('idle')
+      }
+    }, 350)
 
-  function goToStep(index: number) {
-    if (index >= stepIndex) return // only allow going back
-    setDirection('back')
+    return () => clearTimeout(timer)
+  }, [data.subdomain, checkSubdomain])
+
+  // ── Submission Validation ─────────────────────────────────────────────────────
+  const isFormValid =
+    data.subdomain.trim().length >= 3 &&
+    subdomainStatus === 'available' &&
+    data.firstName.trim().length > 0
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!data.subdomain.trim()) {
+      setFieldError('Please choose a profile address.')
+      return
+    }
+    if (subdomainStatus !== 'available') {
+      setFieldError('Please choose an available address before proceeding.')
+      return
+    }
+    if (!data.firstName.trim()) {
+      setFieldError('Please enter your first name.')
+      return
+    }
+
     setFieldError('')
-    setStepIndex(index)
+    await onFinish(data)
   }
 
   // Derive preview socials
   const previewSocials: CardSocial[] = []
-  if (data.telegram?.trim()) {
-    previewSocials.push({ platform: 'telegram', label: 'Telegram' })
-  }
-  if (data.whatsapp?.trim() || data.phone?.trim()) {
-    previewSocials.push({ platform: 'whatsapp', label: 'WhatsApp' })
-  }
-  if (data.linkedin?.trim()) {
-    previewSocials.push({ platform: 'linkedin', label: 'LinkedIn' })
-  }
-  if (data.instagram?.trim()) {
-    previewSocials.push({ platform: 'instagram', label: 'Instagram' })
-  }
-  if (data.twitter?.trim()) {
-    previewSocials.push({ platform: 'twitter', label: 'X / Twitter' })
-  }
-  if (data.website?.trim()) {
-    previewSocials.push({ platform: 'website', label: 'Website' })
-  }
+  if (data.telegram?.trim()) previewSocials.push({ platform: 'telegram', label: 'Telegram' })
+  if (data.whatsapp?.trim() || data.phone?.trim()) previewSocials.push({ platform: 'whatsapp', label: 'WhatsApp' })
+  if (data.linkedin?.trim()) previewSocials.push({ platform: 'linkedin', label: 'LinkedIn' })
+  if (data.instagram?.trim()) previewSocials.push({ platform: 'instagram', label: 'Instagram' })
+  if (data.twitter?.trim()) previewSocials.push({ platform: 'twitter', label: 'X / Twitter' })
+  if (data.website?.trim()) previewSocials.push({ platform: 'website', label: 'Website' })
 
   const fullName = `${data.firstName} ${data.lastName}`.trim() || 'Your Name'
   const profileUrl = getPortfolioSubdomainUrl(data.subdomain || 'yourname', false)
@@ -188,371 +130,308 @@ export function SetupWizard({ onFinish, checkSubdomain, busy, error }: SetupWiza
 
   return (
     <div className="wizard-shell">
-      {/* ── Progress track ─────────────────────────────────────────── */}
+      {/* ── Top Header ────────────────────────────────────────────── */}
       <header className="wizard-header">
         <div className="wizard-brand">
           <span className="brand-mark" style={{ background: data.accentColor }}>S</span>
           <span>sewnet</span>
         </div>
-        <nav className="wizard-steps" aria-label="Setup progress">
-          {STEPS.map((s, i) => (
-            <button
-              key={s.key}
-              className={`wizard-step-dot ${i === stepIndex ? 'active' : ''} ${i < stepIndex ? 'done' : ''}`}
-              onClick={() => goToStep(i)}
-              disabled={i >= stepIndex}
-              aria-label={`${s.label}${i < stepIndex ? ' (completed)' : i === stepIndex ? ' (current)' : ''}`}
-              aria-current={i === stepIndex ? 'step' : undefined}
-            >
-              <span className="dot-number">{i < stepIndex ? '✓' : String(i + 1)}</span>
-              <span className="dot-label">{s.label}</span>
-            </button>
-          ))}
-          <div className="wizard-progress-bar" role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100}>
-            <div className="wizard-progress-fill" style={{ width: `${progress}%`, background: data.accentColor }} />
-          </div>
-        </nav>
-        <div className="wizard-step-count" aria-hidden="true">
-          {String(stepIndex + 1).padStart(2, '0')} / {String(STEPS.length).padStart(2, '0')}
+        <div className="wizard-header-title">
+          <span>Smart NFC Card Setup</span>
         </div>
       </header>
 
-      {/* ── Two-column body ────────────────────────────────────────── */}
+      {/* ── Two-Column Layout: Form + Live Card Preview ────────────── */}
       <div className="wizard-body">
-        {/* Left: step form */}
-        <section
-          className={`wizard-form-col ${direction}`}
-          key={step.key}
-          aria-label={`Step ${stepIndex + 1}: ${step.label}`}
-        >
+        {/* Left: Streamlined Creation Form */}
+        <section className="wizard-form-col" aria-label="Create your digital card">
           <div className="wizard-form-inner">
-            <p className="wizard-eyebrow">STEP {String(stepIndex + 1).padStart(2, '0')} — {step.label.toUpperCase()}</p>
-            <h2 className="wizard-headline">{step.headline}</h2>
-            <p className="wizard-sub">{step.sub}</p>
+            <div className="wizard-form-intro">
+              <span className="wizard-eyebrow">PORTFOLIO REGISTRATION</span>
+              <h1 className="wizard-headline">Create your digital card.</h1>
+              <p className="wizard-sub">
+                Fill in your essential details to activate your personal tap-to-share card and QR code contact sync.
+              </p>
+            </div>
 
-            <div className="wizard-fields">
-              {/* ── STEP 1: Address ──────────────────────────────── */}
-              {step.key === 'address' && (
-                <>
-                  <div className="wizard-field">
-                    <label htmlFor={`${uid}-subdomain`}>Your profile address</label>
-                    <div className="wizard-domain-row">
-                      <input
-                        id={`${uid}-subdomain`}
-                        type="text"
-                        value={data.subdomain}
-                        autoFocus
-                        autoCapitalize="none"
-                        autoComplete="off"
-                        spellCheck={false}
-                        maxLength={30}
-                        placeholder="yourname"
-                        onChange={(e) => {
-                          const val = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')
-                          patch({ subdomain: val })
-                          setSubdomainStatus('idle')
-                        }}
-                        aria-describedby={`${uid}-subdomain-hint`}
-                      />
-                      <span className="domain-suffix">
-                        {typeof window !== 'undefined' && window.location.hostname.endsWith('localhost') ? '.localhost:5173' : ''}
-                      </span>
-                    </div>
-                    <span id={`${uid}-subdomain-hint`} className="wizard-field-hint">
-                      Lowercase letters, numbers, hyphens. 3–30 characters.
-                    </span>
+            <form onSubmit={handleSubmit} className="wizard-fields">
+              {/* ── 1. Profile Address (Domain) ──────────────────── */}
+              <div className="wizard-form-section">
+                <div className="wizard-section-header">
+                  <span className="section-step-num">01</span>
+                  <div>
+                    <h3 className="section-step-title">Your Profile Address</h3>
+                    <p className="section-step-sub">This is your unique link for NFC taps and QR scanning.</p>
                   </div>
-                  <div className="wizard-check-row">
-                    <button
-                      type="button"
-                      className="secondary-button"
-                      onClick={handleCheckSubdomain}
-                      disabled={!data.subdomain || subdomainStatus === 'checking'}
-                    >
-                      {subdomainStatus === 'checking' ? 'Checking…' : 'Check availability'}
-                    </button>
-                    {subdomainStatus === 'available' && (
-                      <span className="wizard-status available" role="status">✓ Available</span>
-                    )}
-                    {subdomainStatus === 'taken' && (
-                      <span className="wizard-status taken" role="status">✗ Already taken</span>
-                    )}
-                  </div>
-                </>
-              )}
+                </div>
 
-              {/* ── STEP 2: Personal information ─────────────────── */}
-              {step.key === 'personal' && (
-                <>
-                  <div className="wizard-field-row-2">
-                    <div className="wizard-field">
-                      <label htmlFor={`${uid}-fname`}>First name</label>
-                      <input
-                        id={`${uid}-fname`}
-                        type="text"
-                        value={data.firstName}
-                        autoFocus
-                        autoComplete="given-name"
-                        placeholder="First name"
-                        onChange={(e) => patch({ firstName: e.target.value })}
-                      />
-                    </div>
-                    <div className="wizard-field">
-                      <label htmlFor={`${uid}-lname`}>Last name</label>
-                      <input
-                        id={`${uid}-lname`}
-                        type="text"
-                        value={data.lastName}
-                        autoComplete="family-name"
-                        placeholder="Last name"
-                        onChange={(e) => patch({ lastName: e.target.value })}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="wizard-field-row-2">
-                    <div className="wizard-field">
-                      <label htmlFor={`${uid}-title`}>
-                        Title <span className="wizard-optional">OPTIONAL</span>
-                      </label>
-                      <input
-                        id={`${uid}-title`}
-                        type="text"
-                        value={data.title}
-                        placeholder="e.g. Lead Designer / Founder"
-                        onChange={(e) => patch({ title: e.target.value })}
-                      />
-                    </div>
-                    <div className="wizard-field">
-                      <label htmlFor={`${uid}-company`}>
-                        Company <span className="wizard-optional">OPTIONAL</span>
-                      </label>
-                      <input
-                        id={`${uid}-company`}
-                        type="text"
-                        value={data.company}
-                        placeholder="e.g. Sewnet / Acme Inc."
-                        onChange={(e) => patch({ company: e.target.value })}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="wizard-field-row-2">
-                    <div className="wizard-field">
-                      <label htmlFor={`${uid}-email`}>
-                        Email <span className="wizard-optional">OPTIONAL</span>
-                      </label>
-                      <input
-                        id={`${uid}-email`}
-                        type="email"
-                        value={data.email}
-                        autoComplete="email"
-                        placeholder="hello@example.com"
-                        onChange={(e) => patch({ email: e.target.value })}
-                      />
-                    </div>
-                    <div className="wizard-field">
-                      <label htmlFor={`${uid}-phone`}>
-                        Phone <span className="wizard-optional">OPTIONAL</span>
-                      </label>
-                      <input
-                        id={`${uid}-phone`}
-                        type="tel"
-                        value={data.phone}
-                        autoComplete="tel"
-                        placeholder="+251 91 123 4567"
-                        onChange={(e) => patch({ phone: e.target.value })}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="wizard-field">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                      <label htmlFor={`${uid}-bio`}>Short bio</label>
-                      <span
-                        className="wizard-bio-counter"
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 600,
-                          color: data.bio.length >= 135 ? '#e06b24' : '#8f857a',
-                        }}
-                      >
-                        {data.bio.length}/140
-                      </span>
-                    </div>
-                    <textarea
-                      id={`${uid}-bio`}
-                      rows={3}
-                      maxLength={140}
-                      value={data.bio}
-                      placeholder="Your short bio appears here."
-                      onChange={(e) => patch({ bio: e.target.value.slice(0, 140) })}
+                <div className="wizard-field">
+                  <div className="wizard-domain-bar">
+                    <span className="domain-protocol">https://</span>
+                    <input
+                      id={`${uid}-subdomain`}
+                      type="text"
+                      value={data.subdomain}
+                      autoFocus
+                      autoCapitalize="none"
+                      autoComplete="off"
+                      spellCheck={false}
+                      maxLength={30}
+                      placeholder="yourname"
+                      onChange={(e) => {
+                        const val = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')
+                        patch({ subdomain: val })
+                      }}
+                      className="wizard-domain-input"
                     />
-                    <span className="wizard-field-hint">
-                      Up to 140 characters.
+                    <span className="domain-suffix">
+                      {typeof window !== 'undefined' && window.location.hostname.endsWith('localhost')
+                        ? '.localhost:5173'
+                        : '.sewnet.et'}
+                    </span>
+                    <div className="domain-status-badge">
+                      {subdomainStatus === 'checking' && (
+                        <span className="domain-badge checking">⟳ Checking…</span>
+                      )}
+                      {subdomainStatus === 'available' && (
+                        <span className="domain-badge available">✓ Available</span>
+                      )}
+                      {subdomainStatus === 'taken' && (
+                        <span className="domain-badge taken">✗ Already taken</span>
+                      )}
+                    </div>
+                  </div>
+                  <span className="wizard-field-hint">
+                    Use 3–30 lowercase letters, numbers, or hyphens.
+                  </span>
+                </div>
+              </div>
+
+              {/* ── 2. Personal Information ──────────────────────── */}
+              <div className="wizard-form-section">
+                <div className="wizard-section-header">
+                  <span className="section-step-num">02</span>
+                  <div>
+                    <h3 className="section-step-title">Personal Information</h3>
+                    <p className="section-step-sub">Details synced directly to visitors' phonebooks when scanned.</p>
+                  </div>
+                </div>
+
+                <div className="wizard-field-row-2">
+                  <div className="wizard-field">
+                    <label htmlFor={`${uid}-fname`}>First name *</label>
+                    <input
+                      id={`${uid}-fname`}
+                      type="text"
+                      value={data.firstName}
+                      autoComplete="given-name"
+                      placeholder="e.g. Roben"
+                      onChange={(e) => patch({ firstName: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="wizard-field">
+                    <label htmlFor={`${uid}-lname`}>Last name</label>
+                    <input
+                      id={`${uid}-lname`}
+                      type="text"
+                      value={data.lastName}
+                      autoComplete="family-name"
+                      placeholder="e.g. Bayisa"
+                      onChange={(e) => patch({ lastName: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="wizard-field-row-2">
+                  <div className="wizard-field">
+                    <label htmlFor={`${uid}-title`}>Title / Role</label>
+                    <input
+                      id={`${uid}-title`}
+                      type="text"
+                      value={data.title}
+                      placeholder="e.g. Lead Designer / Founder"
+                      onChange={(e) => patch({ title: e.target.value })}
+                    />
+                  </div>
+                  <div className="wizard-field">
+                    <label htmlFor={`${uid}-company`}>Company / Org</label>
+                    <input
+                      id={`${uid}-company`}
+                      type="text"
+                      value={data.company}
+                      placeholder="e.g. Sewnet Digital"
+                      onChange={(e) => patch({ company: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="wizard-field-row-2">
+                  <div className="wizard-field">
+                    <label htmlFor={`${uid}-phone`}>Phone number (for direct call &amp; vCard sync)</label>
+                    <input
+                      id={`${uid}-phone`}
+                      type="tel"
+                      value={data.phone}
+                      autoComplete="tel"
+                      placeholder="+251 91 123 4567"
+                      onChange={(e) => patch({ phone: e.target.value })}
+                    />
+                  </div>
+                  <div className="wizard-field">
+                    <label htmlFor={`${uid}-email`}>Email address (for direct email &amp; vCard sync)</label>
+                    <input
+                      id={`${uid}-email`}
+                      type="email"
+                      value={data.email}
+                      autoComplete="email"
+                      placeholder="you@domain.com"
+                      onChange={(e) => patch({ email: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="wizard-field">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <label htmlFor={`${uid}-bio`}>Short bio</label>
+                    <span
+                      className="wizard-bio-counter"
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: data.bio.length >= 135 ? '#eb6307' : '#8f857a',
+                      }}
+                    >
+                      {data.bio.length}/140
                     </span>
                   </div>
-                </>
-              )}
+                  <textarea
+                    id={`${uid}-bio`}
+                    rows={3}
+                    maxLength={140}
+                    value={data.bio}
+                    placeholder="A brief introduction about what you do (up to 140 characters)."
+                    onChange={(e) => patch({ bio: e.target.value.slice(0, 140) })}
+                  />
+                  <span className="wizard-field-hint">Up to 140 characters.</span>
+                </div>
+              </div>
 
-              {/* ── STEP 3: Socials & Digital Addresses ──────────── */}
-              {step.key === 'socials' && (
-                <>
-                  <div className="wizard-field-row-2">
-                    <div className="wizard-field">
-                      <label htmlFor={`${uid}-telegram`}>
-                        Telegram <span className="wizard-optional">OPTIONAL</span>
-                      </label>
-                      <input
-                        id={`${uid}-telegram`}
-                        type="text"
-                        value={data.telegram ?? ''}
-                        placeholder="@username"
-                        onChange={(e) => patch({ telegram: e.target.value })}
-                      />
-                    </div>
-                    <div className="wizard-field">
-                      <label htmlFor={`${uid}-whatsapp`}>
-                        WhatsApp <span className="wizard-optional">OPTIONAL</span>
-                      </label>
-                      <input
-                        id={`${uid}-whatsapp`}
-                        type="text"
-                        value={data.whatsapp ?? ''}
-                        placeholder="+251 91 123 4567"
-                        onChange={(e) => patch({ whatsapp: e.target.value })}
-                      />
-                    </div>
+              {/* ── 3. Quick Socials ─────────────────────────────── */}
+              <div className="wizard-form-section">
+                <div className="wizard-section-header">
+                  <span className="section-step-num">03</span>
+                  <div>
+                    <h3 className="section-step-title">Social Addresses <span className="wizard-optional">OPTIONAL</span></h3>
+                    <p className="section-step-sub">Connect your professional platforms for one-tap networking.</p>
                   </div>
+                </div>
 
-                  <div className="wizard-field-row-2">
-                    <div className="wizard-field">
-                      <label htmlFor={`${uid}-linkedin`}>
-                        LinkedIn <span className="wizard-optional">OPTIONAL</span>
-                      </label>
-                      <input
-                        id={`${uid}-linkedin`}
-                        type="text"
-                        value={data.linkedin ?? ''}
-                        placeholder="in/yourprofile or URL"
-                        onChange={(e) => patch({ linkedin: e.target.value })}
-                      />
-                    </div>
-                    <div className="wizard-field">
-                      <label htmlFor={`${uid}-instagram`}>
-                        Instagram <span className="wizard-optional">OPTIONAL</span>
-                      </label>
-                      <input
-                        id={`${uid}-instagram`}
-                        type="text"
-                        value={data.instagram ?? ''}
-                        placeholder="@username"
-                        onChange={(e) => patch({ instagram: e.target.value })}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="wizard-field-row-2">
-                    <div className="wizard-field">
-                      <label htmlFor={`${uid}-twitter`}>
-                        X / Twitter <span className="wizard-optional">OPTIONAL</span>
-                      </label>
-                      <input
-                        id={`${uid}-twitter`}
-                        type="text"
-                        value={data.twitter ?? ''}
-                        placeholder="@handle"
-                        onChange={(e) => patch({ twitter: e.target.value })}
-                      />
-                    </div>
-                    <div className="wizard-field">
-                      <label htmlFor={`${uid}-website`}>
-                        Website <span className="wizard-optional">OPTIONAL</span>
-                      </label>
-                      <input
-                        id={`${uid}-website`}
-                        type="text"
-                        value={data.website ?? ''}
-                        placeholder="yoursite.com"
-                        onChange={(e) => patch({ website: e.target.value })}
-                      />
-                    </div>
-                  </div>
-
+                <div className="wizard-field-row-2">
                   <div className="wizard-field">
-                    <label htmlFor={`${uid}-color`}>Card banner color</label>
-                    <div className="wizard-color-row">
-                      <input
-                        id={`${uid}-color`}
-                        type="color"
-                        value={data.accentColor}
-                        onChange={(e) => patch({ accentColor: e.target.value as `#${string}` })}
+                    <label htmlFor={`${uid}-telegram`}>Telegram</label>
+                    <input
+                      id={`${uid}-telegram`}
+                      type="text"
+                      value={data.telegram ?? ''}
+                      placeholder="@username"
+                      onChange={(e) => patch({ telegram: e.target.value })}
+                    />
+                  </div>
+                  <div className="wizard-field">
+                    <label htmlFor={`${uid}-whatsapp`}>WhatsApp</label>
+                    <input
+                      id={`${uid}-whatsapp`}
+                      type="text"
+                      value={data.whatsapp ?? ''}
+                      placeholder="+251 91 123 4567"
+                      onChange={(e) => patch({ whatsapp: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="wizard-field-row-2">
+                  <div className="wizard-field">
+                    <label htmlFor={`${uid}-linkedin`}>LinkedIn</label>
+                    <input
+                      id={`${uid}-linkedin`}
+                      type="text"
+                      value={data.linkedin ?? ''}
+                      placeholder="in/yourprofile or URL"
+                      onChange={(e) => patch({ linkedin: e.target.value })}
+                    />
+                  </div>
+                  <div className="wizard-field">
+                    <label htmlFor={`${uid}-instagram`}>Instagram</label>
+                    <input
+                      id={`${uid}-instagram`}
+                      type="text"
+                      value={data.instagram ?? ''}
+                      placeholder="@username"
+                      onChange={(e) => patch({ instagram: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* ── 4. Card Theme Color ──────────────────────────── */}
+              <div className="wizard-form-section">
+                <div className="wizard-section-header">
+                  <span className="section-step-num">04</span>
+                  <div>
+                    <h3 className="section-step-title">Card Banner Color</h3>
+                    <p className="section-step-sub">Choose your signature accent tone.</p>
+                  </div>
+                </div>
+
+                <div className="wizard-color-row">
+                  <input
+                    id={`${uid}-color`}
+                    type="color"
+                    value={data.accentColor}
+                    onChange={(e) => patch({ accentColor: e.target.value as `#${string}` })}
+                  />
+                  <div className="wizard-color-swatches" role="group" aria-label="Color presets">
+                    {(['#eb6307', '#ea580c', '#191513', '#2563eb', '#0f766e', '#7c3aed'] as const).map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        className={`color-swatch ${data.accentColor === c ? 'selected' : ''}`}
+                        style={{ '--swatch-color': c } as CSSProperties}
+                        onClick={() => patch({ accentColor: c })}
+                        aria-label={`Color ${c}`}
+                        aria-pressed={data.accentColor === c}
                       />
-                      <div className="wizard-color-swatches" role="group" aria-label="Color presets">
-                        {(['#eb6307', '#ea580c', '#191513', '#2563eb', '#0f766e', '#7c3aed'] as const).map((c) => (
-                          <button
-                            key={c}
-                            type="button"
-                            className={`color-swatch ${data.accentColor === c ? 'selected' : ''}`}
-                            style={{ '--swatch-color': c } as CSSProperties}
-                            onClick={() => patch({ accentColor: c })}
-                            aria-label={`Color ${c}`}
-                            aria-pressed={data.accentColor === c}
-                          />
-                        ))}
-                      </div>
-                      <code className="wizard-color-code">{data.accentColor}</code>
-                    </div>
+                    ))}
                   </div>
+                  <code className="wizard-color-code">{data.accentColor}</code>
+                </div>
+              </div>
 
-                  <div className="wizard-summary">
-                    <p className="wizard-summary-label">YOUR DIGITAL NFC CARD INCLUDES</p>
-                    <ul>
-                      <li><span>↗</span>Address: {data.subdomain || 'your-address'}</li>
-                      <li><span>↗</span>Name: {fullName}</li>
-                      {(data.title || data.company) && (
-                        <li><span>↗</span>{data.title && data.company ? `${data.title} at ${data.company}` : data.title || data.company}</li>
-                      )}
-                      {data.bio && <li><span>↗</span>Bio ({data.bio.length}/140 chars)</li>}
-                      {data.phone && <li><span>↗</span>Call action — {data.phone}</li>}
-                      {data.email && <li><span>↗</span>Email action — {data.email}</li>}
-                      <li><span>↗</span>Dynamic QR Code &amp; vCard contact download</li>
-                    </ul>
-                    <p className="wizard-summary-note">Everything can be updated anytime in your workspace.</p>
-                  </div>
-                </>
+              {/* Errors */}
+              {(fieldError || error) && (
+                <p className="wizard-error" role="alert">{fieldError || error}</p>
               )}
-            </div>
 
-            {/* Errors */}
-            {(fieldError || error) && (
-              <p className="wizard-error" role="alert">{fieldError || error}</p>
-            )}
-
-            {/* Navigation */}
-            <div className="wizard-nav">
-              {stepIndex > 0 && (
-                <button type="button" className="wizard-back-btn" onClick={goBack} disabled={busy}>
-                  ← Back
+              {/* Submit CTA */}
+              <div className="wizard-submit-wrap">
+                <button
+                  type="submit"
+                  className="primary-button wizard-submit-btn"
+                  disabled={!isFormValid || busy}
+                  style={{ background: data.accentColor, borderColor: data.accentColor }}
+                >
+                  {busy ? 'Creating your card & syncing…' : 'Create My Card & Sync URL →'}
                 </button>
-              )}
-              <button
-                type="button"
-                className="primary-button wizard-next-btn"
-                onClick={goNext}
-                disabled={!canAdvance() || busy}
-                style={{ background: data.accentColor, borderColor: data.accentColor }}
-              >
-                {busy ? 'Creating your card…' : isLast ? 'Create my digital card →' : 'Continue →'}
-              </button>
-            </div>
+              </div>
+            </form>
           </div>
         </section>
 
-        {/* Right: live preview matching mockup */}
+        {/* Right: Live Digital Card Preview */}
         <aside className="wizard-preview-col" aria-label="Live preview">
           <div className="wizard-preview-label" style={{ color: '#a89f91', width: '100%', maxWidth: 380 }}>
-            <span><i className="preview-dot" style={{ background: data.accentColor }} aria-hidden="true" /> LIVE PREVIEW</span>
+            <span><i className="preview-dot" style={{ background: data.accentColor }} aria-hidden="true" /> LIVE PREVIEW (TEST SCAN)</span>
             <span>{data.subdomain ? displayUrl : 'preview'}</span>
           </div>
 
@@ -569,6 +448,7 @@ export function SetupWizard({ onFinish, checkSubdomain, busy, error }: SetupWiza
               profileUrl={profileUrl}
               displayUrl={displayUrl}
               previewOnly={true}
+              initialQrMode="vcard"
             />
           </div>
         </aside>
@@ -579,7 +459,7 @@ export function SetupWizard({ onFinish, checkSubdomain, busy, error }: SetupWiza
 
 // ─── Helpers used by App.tsx ──────────────────────────────────────────────────
 
-/** Convert wizard data into the standard portfolio blocks array. */
+/** Convert wizard data into the standard portfolio blocks array (hero, about, contact). No projects. */
 export function wizardDataToBlocks(data: WizardData): PortfolioBlock[] {
   const socials = []
   if (data.telegram?.trim()) {

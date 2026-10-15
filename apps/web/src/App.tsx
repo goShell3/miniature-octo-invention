@@ -79,18 +79,6 @@ function initialBlocks(): PortfolioBlock[] {
         body: 'Building next-generation contactless digital identity platforms and connecting ambitious professionals across Ethiopia and beyond.',
       },
     },
-    {
-      type: 'projects',
-      data: {
-        items: [
-          {
-            title: 'Sewnet NFC Smart Cards',
-            description: 'Intelligent physical NFC cards paired with real-time portfolio analytics and instant contact exchange.',
-            link: 'https://sewnet.et',
-          },
-        ],
-      },
-    },
   ]
 }
 
@@ -113,6 +101,13 @@ function WorkspaceApp() {
   const [showWizard, setShowWizard] = useState(false)
   const [wizardBusy, setWizardBusy] = useState(false)
   const [wizardError, setWizardError] = useState('')
+
+  // Domain editing modal state
+  const [showDomainModal, setShowDomainModal] = useState(false)
+  const [newSubdomain, setNewSubdomain] = useState('')
+  const [subdomainStatus, setSubdomainStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid'>('idle')
+  const [subdomainError, setSubdomainError] = useState('')
+  const [subdomainSaving, setSubdomainSaving] = useState(false)
 
   // Restore session on mount
   useEffect(() => {
@@ -229,6 +224,76 @@ function WorkspaceApp() {
       setWizardError(reason instanceof Error ? reason.message : 'Unable to create portfolio')
     } finally {
       setWizardBusy(false)
+    }
+  }
+
+  // ── Domain editing modal handlers ──────────────────────────────────────────
+
+  function openDomainModal() {
+    if (!selected) return
+    setNewSubdomain(selected.subdomain)
+    setSubdomainStatus('idle')
+    setSubdomainError('')
+    setShowDomainModal(true)
+  }
+
+  useEffect(() => {
+    if (!showDomainModal || !selected) return
+    const sub = newSubdomain.trim().toLowerCase()
+    if (!sub || sub === selected.subdomain) {
+      setSubdomainStatus('idle')
+      setSubdomainError('')
+      return
+    }
+
+    if (sub.length < 3 || sub.length > 30 || !/^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/.test(sub)) {
+      setSubdomainStatus('invalid')
+      setSubdomainError('3–30 lowercase letters, numbers, hyphens. Cannot start or end with a hyphen.')
+      return
+    }
+
+    setSubdomainStatus('checking')
+    setSubdomainError('')
+
+    const timer = setTimeout(async () => {
+      try {
+        const available = await checkSubdomainForWizard(sub)
+        setSubdomainStatus(available ? 'available' : 'taken')
+        if (!available) {
+          setSubdomainError('This address is already taken. Try another.')
+        }
+      } catch {
+        setSubdomainStatus('idle')
+      }
+    }, 350)
+
+    return () => clearTimeout(timer)
+  }, [newSubdomain, showDomainModal, selected?.subdomain])
+
+  async function handleSaveDomain() {
+    if (!selected || subdomainSaving) return
+    const sub = newSubdomain.trim().toLowerCase()
+    if (sub === selected.subdomain) {
+      setShowDomainModal(false)
+      return
+    }
+    if (subdomainStatus !== 'available') return
+
+    setSubdomainSaving(true)
+    setSubdomainError('')
+    try {
+      const updated = await apiRequest<Portfolio>(`/portfolios/${selected.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ subdomain: sub }),
+      })
+      setSelected(updated)
+      setPortfolios((current) => current.map((item) => (item.id === updated.id ? updated : item)))
+      setMessage(`Address updated to ${updated.subdomain}!`)
+      setShowDomainModal(false)
+    } catch (reason) {
+      setSubdomainError(reason instanceof Error ? reason.message : 'Failed to update address')
+    } finally {
+      setSubdomainSaving(false)
     }
   }
 
@@ -489,7 +554,7 @@ function WorkspaceApp() {
           <div className="editor-heading">
             <div>
               <button className="back-button" onClick={() => { setSelected(null); setShowNfcStudio(false); setMessage(''); setError('') }}>← All portfolios</button>
-              <h1>
+              <h1 style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <a
                   href={getPortfolioSubdomainUrl(selected.subdomain, selected.status === 'draft')}
                   target="_blank"
@@ -500,6 +565,14 @@ function WorkspaceApp() {
                   <span>{selected.subdomain}</span>
                   <span style={{ fontSize: 13, color: 'var(--accent)' }}>↗</span>
                 </a>
+                <button
+                  type="button"
+                  className="edit-domain-pill"
+                  onClick={openDomainModal}
+                  title="Change profile address"
+                >
+                  ✎ Edit address
+                </button>
               </h1>
             </div>
             <div className="save-controls">
@@ -557,17 +630,27 @@ function WorkspaceApp() {
                 </a>
               </span>
             </div>
-            <button
-              type="button"
-              className="text-button"
-              style={{ fontSize: 12, padding: 0 }}
-              onClick={() => {
-                navigator.clipboard.writeText(getPortfolioSubdomainUrl(selected.subdomain, selected.status === 'draft'))
-                setMessage('Copied subdomain link to clipboard!')
-              }}
-            >
-              Copy link
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <button
+                type="button"
+                className="text-button"
+                style={{ fontSize: 12, padding: 0, fontWeight: 600, color: 'var(--accent)' }}
+                onClick={openDomainModal}
+              >
+                Change address
+              </button>
+              <button
+                type="button"
+                className="text-button"
+                style={{ fontSize: 12, padding: 0 }}
+                onClick={() => {
+                  navigator.clipboard.writeText(getPortfolioSubdomainUrl(selected.subdomain, selected.status === 'draft'))
+                  setMessage('Copied subdomain link to clipboard!')
+                }}
+              >
+                Copy link
+              </button>
+            </div>
           </div>
           <div className="editor-grid">
             <aside className="editor-sidebar">
@@ -615,6 +698,82 @@ function WorkspaceApp() {
             </div>
           </div>
         </section>
+      )}
+
+      {showDomainModal && selected && (
+        <div className="domain-modal-overlay" onClick={() => !subdomainSaving && setShowDomainModal(false)}>
+          <div className="domain-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="domain-modal-header">
+              <div>
+                <h3>Change Profile Address</h3>
+                <p>Choose a unique subdomain for your digital business card &amp; portfolio.</p>
+              </div>
+              <button
+                type="button"
+                className="domain-modal-close"
+                onClick={() => !subdomainSaving && setShowDomainModal(false)}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+            <div className="domain-modal-body">
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 8, color: 'var(--ink)' }}>
+                New Subdomain
+              </label>
+              <div className="wizard-domain-bar">
+                <span className="domain-protocol">https://</span>
+                <input
+                  type="text"
+                  className="wizard-domain-input"
+                  value={newSubdomain}
+                  onChange={(e) => setNewSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                  placeholder="your-name"
+                  autoFocus
+                />
+                <span className="domain-suffix">.sewnet.et</span>
+                <div className="domain-status-badge">
+                  {subdomainStatus === 'checking' && <span className="domain-badge checking">Checking…</span>}
+                  {subdomainStatus === 'available' && <span className="domain-badge available">✓ Available</span>}
+                  {subdomainStatus === 'taken' && <span className="domain-badge taken">✕ Taken</span>}
+                </div>
+              </div>
+              <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8, marginBottom: 0 }}>
+                Allowed: 3–30 lowercase letters, numbers, and hyphens. Cannot start or end with a hyphen.
+              </p>
+              {subdomainError && (
+                <p style={{ color: '#dc2626', fontSize: 12, marginTop: 8, marginBottom: 0 }}>
+                  {subdomainError}
+                </p>
+              )}
+
+              <div className="domain-modal-actions">
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => setShowDomainModal(false)}
+                  disabled={subdomainSaving}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="primary-button"
+                  onClick={handleSaveDomain}
+                  disabled={
+                    subdomainSaving ||
+                    subdomainStatus === 'checking' ||
+                    subdomainStatus === 'taken' ||
+                    subdomainStatus === 'invalid' ||
+                    newSubdomain === selected.subdomain
+                  }
+                >
+                  {subdomainSaving ? 'Saving…' : 'Update Address'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </main>
   )

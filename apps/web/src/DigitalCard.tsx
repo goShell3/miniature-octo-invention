@@ -23,6 +23,7 @@ export interface DigitalCardProps {
   profileUrl?: string
   displayUrl?: string
   previewOnly?: boolean
+  initialQrMode?: 'vcard' | 'url'
   onSaveVcard?: () => void
   vcardDownloadUrl?: string
   vcardFilename?: string
@@ -82,10 +83,58 @@ export function renderSocialIcon(platform: string): ReactNode {
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <circle cx="12" cy="12" r="10"/>
           <line x1="2" y1="12" x2="22" y2="12"/>
-          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"/>
         </svg>
       )
   }
+}
+
+function buildVCardText({
+  name,
+  title,
+  company,
+  phone,
+  email,
+  bio,
+  profileUrl,
+  socials,
+}: {
+  name: string
+  title?: string
+  company?: string
+  phone?: string
+  email?: string
+  bio?: string
+  profileUrl?: string
+  socials?: CardSocial[]
+}): string {
+  const parts = name.trim().split(' ')
+  const firstName = parts[0] || ''
+  const lastName = parts.slice(1).join(' ') || ''
+
+  const lines = [
+    'BEGIN:VCARD',
+    'VERSION:3.0',
+    `N:${lastName};${firstName};;;`,
+    `FN:${name.trim() || 'Contact'}`,
+  ]
+  if (company?.trim()) lines.push(`ORG:${company.trim()}`)
+  if (title?.trim()) lines.push(`TITLE:${title.trim()}`)
+  if (phone?.trim()) lines.push(`TEL;TYPE=CELL,VOICE,PREF:${phone.trim()}`)
+  if (email?.trim()) lines.push(`EMAIL;TYPE=INTERNET,PREF:${email.trim()}`)
+  if (profileUrl?.trim()) lines.push(`URL:${profileUrl.trim()}`)
+  if (bio?.trim()) lines.push(`NOTE:${bio.trim().slice(0, 140)}`)
+
+  if (socials && Array.isArray(socials)) {
+    for (const soc of socials) {
+      if (soc.url?.trim()) {
+        lines.push(`X-SOCIALPROFILE;type=${soc.platform}:${soc.url.trim()}`)
+      }
+    }
+  }
+
+  lines.push('END:VCARD')
+  return lines.join('\n')
 }
 
 export function DigitalCard({
@@ -101,11 +150,14 @@ export function DigitalCard({
   profileUrl = 'https://sewnet.et/yourname',
   displayUrl = 'koo.link/yourname',
   previewOnly = false,
+  initialQrMode = 'vcard',
   onSaveVcard,
   vcardDownloadUrl,
   vcardFilename,
 }: DigitalCardProps) {
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('')
+  // qrMode: 'vcard' directly syncs contact when scanned by phone camera!
+  const [qrMode, setQrMode] = useState<'vcard' | 'url'>(initialQrMode)
 
   // Derive initial letter (e.g. "K" or first character of name)
   const initial = (name.trim().charAt(0) || 'K').toUpperCase()
@@ -122,12 +174,28 @@ export function DigitalCard({
     titleCompany = 'Your title at your company'
   }
 
-  // Generate dynamic QR code
+  // Generate dynamic QR code: encodes either direct vCard for instant camera sync, or live web URL with ?sync=vcf
   useEffect(() => {
     let isCurrent = true
-    const targetUrl = profileUrl || 'https://sewnet.et'
 
-    QRCode.toDataURL(targetUrl, {
+    let qrTarget = ''
+    if (qrMode === 'vcard') {
+      qrTarget = buildVCardText({
+        name,
+        title,
+        company,
+        phone,
+        email,
+        bio,
+        profileUrl,
+        socials,
+      })
+    } else {
+      const url = profileUrl || 'https://sewnet.et'
+      qrTarget = `${url}${url.includes('?') ? '&' : '?'}sync=vcf`
+    }
+
+    QRCode.toDataURL(qrTarget, {
       width: 400,
       margin: 1,
       color: {
@@ -145,7 +213,7 @@ export function DigitalCard({
     return () => {
       isCurrent = false
     }
-  }, [profileUrl])
+  }, [qrMode, name, title, company, phone, email, bio, profileUrl, socials])
 
   return (
     <div className="digital-card-container" style={{ '--card-accent': accentColor } as CSSProperties}>
@@ -208,13 +276,41 @@ export function DigitalCard({
             </div>
           )}
 
+          {/* QR Scan Sync Mode Toggle */}
+          <div className="card-qr-mode-wrap">
+            <div className="card-qr-mode-toggle" role="group" aria-label="QR Code scan mode">
+              <button
+                type="button"
+                className={`qr-mode-pill ${qrMode === 'vcard' ? 'active' : ''}`}
+                onClick={() => setQrMode('vcard')}
+                title="When scanned by camera, directly adds contact to phonebook"
+              >
+                <span>📇 Camera Sync (vCard)</span>
+              </button>
+              <button
+                type="button"
+                className={`qr-mode-pill ${qrMode === 'url' ? 'active' : ''}`}
+                onClick={() => setQrMode('url')}
+                title="When scanned, opens full digital profile in browser"
+              >
+                <span>🌐 Web Profile</span>
+              </button>
+            </div>
+          </div>
+
           {/* Centerpiece QR Code */}
           <div className="card-qr-box">
             {qrCodeDataUrl ? (
-              <img src={qrCodeDataUrl} alt="QR Code profile link" className="card-qr-image" />
+              <img src={qrCodeDataUrl} alt="QR Code" className="card-qr-image" />
             ) : (
               <div className="card-qr-skeleton" />
             )}
+          </div>
+
+          <div className="card-qr-subhint">
+            {qrMode === 'vcard'
+              ? 'Point camera to sync contact directly to phone'
+              : 'Point camera to open web profile & download contact'}
           </div>
 
           {/* Profile URL Footer */}

@@ -97,7 +97,7 @@ export class PortfoliosService {
   async update(
     ownerId: string,
     id: string,
-    input: { theme?: PortfolioTheme; blocks?: PortfolioBlock[] },
+    input: { subdomain?: string; theme?: PortfolioTheme; blocks?: PortfolioBlock[] },
   ) {
     await this.dataSource.transaction(async (manager) => {
       const portfolios = manager.getRepository(PortfolioEntity);
@@ -107,6 +107,17 @@ export class PortfoliosService {
         relations: { contentVersions: true },
       });
       if (!portfolio) throw new NotFoundException('Portfolio not found');
+
+      if (input.subdomain !== undefined) {
+        const nextSubdomain = input.subdomain.trim().toLowerCase();
+        if (nextSubdomain !== portfolio.subdomain) {
+          const available = await this.isSubdomainAvailable(nextSubdomain);
+          if (!available) {
+            throw new ConflictException('That profile address is already taken');
+          }
+          portfolio.subdomain = nextSubdomain;
+        }
+      }
 
       if (input.theme !== undefined) portfolio.theme = input.theme;
       const savedPortfolio = await portfolios.save(portfolio);

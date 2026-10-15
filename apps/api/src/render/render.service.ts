@@ -182,9 +182,11 @@ export class RenderService {
     const blocks = (content.blocks ?? []) as PortfolioBlock[];
 
     const hero = blocks.find((b) => b.type === 'hero');
+    const about = blocks.find((b) => b.type === 'about');
     const contact = blocks.find((b) => b.type === 'contact');
 
     const heroData = (hero?.type === 'hero' ? hero.data : {}) as Record<string, string>;
+    const aboutData = (about?.type === 'about' ? about.data : {}) as { body?: string };
     const contactData = (contact?.type === 'contact' ? contact.data : {}) as {
       email?: string;
       phone?: string;
@@ -205,6 +207,9 @@ export class RenderService {
     const email = (contactData.email || heroData.email || '').trim();
     const website = (contactData.website || '').trim();
 
+    const rootDomain = process.env.VITE_ROOT_DOMAIN || 'sewnet.et';
+    const profileUrl = website || `https://${subdomain}.${rootDomain}`;
+
     const lines: string[] = [
       'BEGIN:VCARD',
       'VERSION:3.0',
@@ -214,9 +219,15 @@ export class RenderService {
 
     if (company) lines.push(`ORG:${escapeVcard(company)}`);
     if (tagline) lines.push(`TITLE:${escapeVcard(tagline)}`);
-    if (phone) lines.push(`TEL;TYPE=CELL,VOICE:${escapeVcard(phone)}`);
+    if (phone) lines.push(`TEL;TYPE=CELL,VOICE,PREF:${escapeVcard(phone)}`);
     if (email) lines.push(`EMAIL;TYPE=INTERNET,PREF:${escapeVcard(email)}`);
-    if (website) lines.push(`URL:${escapeVcard(website)}`);
+    if (profileUrl) lines.push(`URL:${escapeVcard(profileUrl)}`);
+
+    if (aboutData?.body?.trim()) {
+      lines.push(`NOTE:${escapeVcard(aboutData.body.trim())}`);
+    } else {
+      lines.push(`NOTE:Connected via Sewnet NFC Smart Card (${subdomain}.${rootDomain})`);
+    }
 
     if (Array.isArray(contactData.socials)) {
       for (const soc of contactData.socials) {
@@ -226,7 +237,6 @@ export class RenderService {
       }
     }
 
-    lines.push(`NOTE:Connected via Sewnet NFC Smart Card (${subdomain}.sewnet.et)`);
     lines.push('END:VCARD');
 
     return lines.join('\r\n');

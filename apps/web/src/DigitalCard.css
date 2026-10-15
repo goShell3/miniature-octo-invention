@@ -176,9 +176,47 @@
   transform: scale(1.08);
 }
 
+/* ── QR Mode Toggle ──────────────────────────────────────────────── */
+.card-qr-mode-wrap {
+  margin: 10px auto 4px;
+}
+
+.card-qr-mode-toggle {
+  display: inline-flex;
+  padding: 3px;
+  background: #ebe6df;
+  border-radius: 9999px;
+  gap: 3px;
+}
+
+.qr-mode-pill {
+  border: 0;
+  background: transparent;
+  color: #726b63;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.qr-mode-pill.active {
+  background: #ffffff;
+  color: #191513;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.card-qr-subhint {
+  font-size: 10.5px;
+  color: #8c847a;
+  margin: 4px 0 10px;
+  font-weight: 500;
+}
+
 /* ── Centerpiece QR Code ──────────────────────────────────────────── */
 .card-qr-box {
-  margin: 18px auto 8px;
+  margin: 8px auto 4px;
   width: 180px;
   height: 180px;
   display: grid;

@@ -457,3 +457,96 @@
   background: #c4b5a5;
   animation: pulse 1.2s infinite;
 }
+
+/* =====================================================================
+   Domain Editing Modal & Controls
+   ===================================================================== */
+.domain-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 16, 14, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.domain-modal-card {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  animation: modal-pop 0.2s ease-out;
+}
+
+@keyframes modal-pop {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.domain-modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.domain-modal-header h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 4px;
+}
+
+.domain-modal-header p {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.domain-modal-close {
+  border: 0;
+  background: transparent;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.domain-modal-body {
+  padding: 24px;
+}
+
+.domain-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.edit-domain-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #faece2;
+  color: #eb6307;
+  border: 1px solid #f5cfb5;
+  border-radius: 9999px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.edit-domain-pill:hover {
+  background: #eb6307;
+  color: #fff;
+}

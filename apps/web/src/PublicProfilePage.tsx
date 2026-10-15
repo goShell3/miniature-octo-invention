@@ -134,6 +134,26 @@ export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps)
   const displayUrl = getPortfolioDomainLabel(subdomain)
   const vcardUrl = `${apiUrl}/sites/${encodeURIComponent(subdomain)}/vcard?preview=true`
 
+  const [syncToast, setSyncToast] = useState(false)
+
+  // Auto-trigger contact sync when scanned from QR code or NFC tap with ?sync=vcf
+  useEffect(() => {
+    if (!profile) return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('sync') === 'vcf' || params.get('sync') === '1') {
+      setSyncToast(true)
+      const timer = setTimeout(() => {
+        const link = document.createElement('a')
+        link.href = vcardUrl
+        link.download = `${subdomain}-contact.vcf`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      }, 600)
+      return () => clearTimeout(timer)
+    }
+  }, [profile, vcardUrl, subdomain])
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -144,6 +164,27 @@ export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps)
       padding: '36px 16px 48px',
       boxSizing: 'border-box',
     }}>
+      {/* Contact sync feedback toast */}
+      {syncToast && (
+        <div style={{
+          position: 'fixed',
+          top: 16,
+          zIndex: 999,
+          background: '#eb6307',
+          color: '#fff',
+          padding: '10px 18px',
+          borderRadius: 9999,
+          fontSize: 12,
+          fontWeight: 700,
+          boxShadow: '0 8px 24px rgba(235, 99, 7, 0.4)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}>
+          <span>📇</span>
+          <span>Syncing contact to your phonebook…</span>
+        </div>
+      )}
       {/* Top Status & Brand Lockup */}
       <header style={{
         width: '100%',
