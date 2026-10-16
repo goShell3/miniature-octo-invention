@@ -1,5 +1,14 @@
 export type PortfolioStatus = 'draft' | 'published' | 'unpublished';
 
+export const NFC_CARD_TIER_PRICES_ETB = {
+  individual: 2999,
+  business: 2800,
+  enterprise: 2500,
+  corporate: 1999,
+} as const;
+
+export type NfcCardTier = keyof typeof NFC_CARD_TIER_PRICES_ETB;
+
 export interface PortfolioTheme {
   id: string;
   accentColor: `#${string}`;

@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
+import { NFC_CARD_TIER_PRICES_ETB, NfcCardTier } from '@amalink/types';
 import { CardTapEntity } from '../database/entities/card-tap.entity';
 import { NfcOrderEntity } from '../database/entities/nfc-order.entity';
 import { PortfolioEntity } from '../database/entities/portfolio.entity';
@@ -22,13 +23,16 @@ export class NfcOrdersService {
     ownerId: string,
     input: {
       portfolioId: string;
+      tier: NfcCardTier;
+      quantity: number;
       name: string;
+      phone: string;
       addressLine1: string;
       addressLine2?: string;
       city: string;
       region: string;
-      postalCode: string;
       countryCode: string;
+      postalCode?: string;
     },
   ) {
     const portfolio = await this.portfoliosRepository.findOne({
@@ -43,6 +47,7 @@ export class NfcOrdersService {
 
     const address = {
       name: input.name,
+      phone: input.phone,
       addressLine1: input.addressLine1,
       addressLine2: input.addressLine2,
       city: input.city,
@@ -56,6 +61,9 @@ export class NfcOrdersService {
         portfolio,
         shortLinkCode: randomBytes(6).toString('base64url'),
         status: 'pending',
+        tier: input.tier,
+        quantity: input.quantity,
+        unitPrice: NFC_CARD_TIER_PRICES_ETB[input.tier],
         shippingAddress: address,
       });
     } while (
@@ -68,6 +76,11 @@ export class NfcOrdersService {
     return {
       id: order.id,
       status: order.status,
+      tier: order.tier,
+      quantity: order.quantity,
+      unitPrice: order.unitPrice,
+      totalAmount: order.unitPrice * order.quantity,
+      currency: 'ETB',
       shortUrl: this.getShortUrl(order.shortLinkCode),
       createdAt: order.createdAt,
     };
@@ -83,6 +96,9 @@ export class NfcOrdersService {
           id: true,
           shortLinkCode: true,
           status: true,
+          tier: true,
+          quantity: true,
+          unitPrice: true,
           createdAt: true,
           portfolio: { id: true, subdomain: true },
         },
@@ -91,6 +107,11 @@ export class NfcOrdersService {
         orders.map((order) => ({
           id: order.id,
           status: order.status,
+          tier: order.tier,
+          quantity: order.quantity,
+          unitPrice: order.unitPrice,
+          totalAmount: order.unitPrice * order.quantity,
+          currency: 'ETB',
           shortUrl: this.getShortUrl(order.shortLinkCode),
           portfolio: order.portfolio,
           createdAt: order.createdAt,

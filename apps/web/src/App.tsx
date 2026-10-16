@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { PortfolioBlock, PortfolioTheme, SocialLink } from '@amalink/types'
+import type { NfcCardTier, PortfolioBlock, PortfolioTheme, SocialLink } from '@amalink/types'
 import { authClient } from './auth-client'
 import { HomePage } from './HomePage'
 import { SetupWizard, wizardDataToBlocks } from './SetupWizard'
@@ -25,6 +25,14 @@ interface Portfolio {
   theme: PortfolioTheme
   updatedAt: string
   content: { version: number; blocks: PortfolioBlock[] } | null
+}
+
+const cardTierStorageKey = 'koolink.selected-card-tier'
+const cardTiers: NfcCardTier[] = ['individual', 'business', 'enterprise', 'corporate']
+
+function getStoredCardTier(): NfcCardTier | null {
+  const stored = window.sessionStorage.getItem(cardTierStorageKey)
+  return cardTiers.includes(stored as NfcCardTier) ? stored as NfcCardTier : null
 }
 
 async function apiRequest<T>(path: string, options: RequestInit = {}) {
@@ -90,6 +98,7 @@ function WorkspaceApp() {
   const [portfolios, setPortfolios] = useState<Portfolio[]>([])
   const [selected, setSelected] = useState<Portfolio | null>(null)
   const [showNfcStudio, setShowNfcStudio] = useState(false)
+  const [selectedCardTier, setSelectedCardTier] = useState<NfcCardTier | null>(getStoredCardTier)
   const [blocks, setBlocks] = useState<PortfolioBlock[]>([])
   const [theme, setTheme] = useState<PortfolioTheme>({ id: 'minimal', accentColor: '#ff3535' })
   const [message, setMessage] = useState('')
@@ -437,6 +446,10 @@ function WorkspaceApp() {
         authProviders={authProviders}
         user={user}
         onOpenApp={() => setViewLanding(false)}
+        onSelectCardTier={(tier) => {
+          window.sessionStorage.setItem(cardTierStorageKey, tier)
+          setSelectedCardTier(tier)
+        }}
       />
     )
   }
@@ -547,7 +560,7 @@ function WorkspaceApp() {
         </section>
       ) : showNfcStudio ? (
         <div className="editor">
-          <NfcStudio portfolio={selected} onBack={() => setShowNfcStudio(false)} />
+          <NfcStudio portfolio={selected} initialTier={selectedCardTier ?? undefined} onBack={() => setShowNfcStudio(false)} />
         </div>
       ) : (
         <section className="editor">

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
-import type { PortfolioBlock, PortfolioTheme } from '@amalink/types'
+import { NFC_CARD_TIER_PRICES_ETB } from '@amalink/types'
+import type { NfcCardTier, PortfolioBlock, PortfolioTheme } from '@amalink/types'
 import { API_URL } from './config'
 import './NfcStudio.css'
 import './NfcStudioModes.css'
@@ -16,6 +17,7 @@ interface Portfolio {
 
 interface Address {
   name: string
+  phone: string
   addressLine1: string
   addressLine2: string
   city: string
@@ -27,9 +29,21 @@ interface Address {
 interface OrderResult {
   id: string
   status: string
+  tier: NfcCardTier
+  quantity: number
+  unitPrice: number
+  totalAmount: number
+  currency: string
   shortUrl: string
   createdAt: string
 }
+
+const cardTiers: Array<{ id: NfcCardTier; name: string }> = [
+  { id: 'individual', name: 'Individual' },
+  { id: 'business', name: 'S&M Business' },
+  { id: 'enterprise', name: 'Enterprise' },
+  { id: 'corporate', name: 'Corporate' },
+]
 
 const templates = [
   { id: 'paper', name: 'Paper / 01', note: 'Warm stock, quiet details' },
@@ -126,7 +140,7 @@ function createCardSvg(templateId: TemplateId, colorMode: ColorMode, portfolio: 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="85.6mm" height="54mm" viewBox="0 0 856 540" role="img" aria-label="${escapeXml(name)} Sewnet ${colorMode} NFC card"><style>text{font-family:Arial,sans-serif}.brand{font-size:25px;font-weight:700;fill:${palette.ink}}.brand-initial{font-family:Arial,sans-serif;font-size:26px;font-weight:800;fill:${palette.accentInk}}.eyebrow{font-size:12px;font-weight:700;letter-spacing:3px;fill:${palette.accent}}.name{font-family:Georgia,serif;font-size:51px;fill:${palette.ink}}.tagline{font-size:18px;fill:${palette.muted}}.domain{font-size:14px;font-weight:700;fill:${palette.ink}}.nfc{font-size:12px;font-weight:700;letter-spacing:1px;fill:${palette.accent}}</style>${artwork[templateId]}</svg>`
 }
 
-export function NfcStudio({ portfolio, onBack }: { portfolio: Portfolio; onBack: () => void }) {
+export function NfcStudio({ portfolio, onBack, initialTier }: { portfolio: Portfolio; onBack: () => void; initialTier?: NfcCardTier }) {
   const identity = getIdentity(portfolio)
   const accent = portfolio.theme.accentColor
   const cardStyle = { '--card-accent': accent } as CSSProperties
@@ -135,6 +149,7 @@ export function NfcStudio({ portfolio, onBack }: { portfolio: Portfolio; onBack:
   const [colorMode, setColorMode] = useState<ColorMode>('light')
   const [address, setAddress] = useState<Address>({
     name: identity.name || '',
+    phone: '',
     addressLine1: '',
     addressLine2: '',
     city: 'Addis Ababa',
@@ -146,6 +161,8 @@ export function NfcStudio({ portfolio, onBack }: { portfolio: Portfolio; onBack:
   const [error, setError] = useState('')
   const [order, setOrder] = useState<OrderResult | null>(null)
   const [copied, setCopied] = useState(false)
+  const [selectedTier, setSelectedTier] = useState<NfcCardTier>(initialTier ?? 'individual')
+  const [quantity, setQuantity] = useState(1)
 
   function downloadTemplate() {
     const svg = createCardSvg(templateId, colorMode, portfolio)
@@ -176,6 +193,8 @@ export function NfcStudio({ portfolio, onBack }: { portfolio: Portfolio; onBack:
         },
         body: JSON.stringify({
           portfolioId: portfolio.id,
+          tier: selectedTier,
+          quantity,
           ...address,
           addressLine2: address.addressLine2 || undefined,
         }),
@@ -195,8 +214,6 @@ export function NfcStudio({ portfolio, onBack }: { portfolio: Portfolio; onBack:
     await navigator.clipboard.writeText(order.shortUrl)
     setCopied(true)
   }
-
-  const [selectedTier, setSelectedTier] = useState<'individual' | 'business' | 'enterprise' | 'corporate'>('individual')
 
   return (
     <section className="nfc-studio">
@@ -258,12 +275,7 @@ export function NfcStudio({ portfolio, onBack }: { portfolio: Portfolio; onBack:
               <div style={{ display: 'grid', gap: 6, margin: '2px 0 10px' }}>
                 <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--ink)' }}>CARD TIER &amp; PRICING</span>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
-                  {[
-                    { id: 'individual', name: 'Individual', price: '2,999 ETB' },
-                    { id: 'business', name: 'S&M Biz', price: '2,800 ETB' },
-                    { id: 'enterprise', name: 'Enterprise', price: '2,500 ETB' },
-                    { id: 'corporate', name: 'Corporate', price: '1,999 ETB' },
-                  ].map((tier) => (
+                  {cardTiers.map((tier) => (
                     <button
                       key={tier.id}
                       type="button"
@@ -282,29 +294,23 @@ export function NfcStudio({ portfolio, onBack }: { portfolio: Portfolio; onBack:
                       }}
                     >
                       <strong style={{ fontSize: 9, color: 'var(--ink)' }}>{tier.name}</strong>
-                      <span style={{ fontSize: 8, fontWeight: 700, color: '#e06b24' }}>{tier.price}</span>
+                      <span style={{ fontSize: 8, fontWeight: 700, color: '#ff3535' }}>{NFC_CARD_TIER_PRICES_ETB[tier.id].toLocaleString()} ETB</span>
                     </button>
                   ))}
                 </div>
               </div>
+              <label>Quantity<input type="number" min={1} max={100} required value={quantity} onChange={(event) => setQuantity(Math.max(1, Math.min(100, Number(event.target.value) || 1)))} /></label>
               <label>Recipient name<input required maxLength={100} autoComplete="name" value={address.name} onChange={(event) => setAddress({ ...address, name: event.target.value })} placeholder="Full name of card owner" /></label>
+              <label>Delivery phone<input required type="tel" maxLength={32} autoComplete="tel" value={address.phone} onChange={(event) => setAddress({ ...address, phone: event.target.value })} placeholder="+251 9..." /></label>
               <label>Delivery address<input required maxLength={150} autoComplete="address-line1" value={address.addressLine1} onChange={(event) => setAddress({ ...address, addressLine1: event.target.value })} placeholder="Subcity, Woreda, Building or Street" /></label>
               <label>Office / Apartment / Floor <small>OPTIONAL</small><input maxLength={150} autoComplete="address-line2" value={address.addressLine2} onChange={(event) => setAddress({ ...address, addressLine2: event.target.value })} placeholder="Suite, floor, or room number" /></label>
               <div className="nfc-address-row"><label>City<input required maxLength={100} autoComplete="address-level2" value={address.city} onChange={(event) => setAddress({ ...address, city: event.target.value })} placeholder="Addis Ababa" /></label><label>Region / State<input required maxLength={100} autoComplete="address-level1" value={address.region} onChange={(event) => setAddress({ ...address, region: event.target.value })} placeholder="Addis Ababa" /></label></div>
-              <div className="nfc-address-row"><label>Phone or Postal code<input required maxLength={24} autoComplete="postal-code" value={address.postalCode} onChange={(event) => setAddress({ ...address, postalCode: event.target.value })} placeholder="+251 9..." /></label><label>Country code<input required minLength={2} maxLength={2} pattern="[A-Za-z]{2}" autoComplete="country" value={address.countryCode} onChange={(event) => setAddress({ ...address, countryCode: event.target.value.toUpperCase() })} placeholder="ET" /></label></div>
+              <div className="nfc-address-row"><label>Postal code <small>OPTIONAL</small><input maxLength={24} autoComplete="postal-code" value={address.postalCode} onChange={(event) => setAddress({ ...address, postalCode: event.target.value })} /></label><label>Country code<input required minLength={2} maxLength={2} pattern="[A-Za-z]{2}" autoComplete="country" value={address.countryCode} onChange={(event) => setAddress({ ...address, countryCode: event.target.value.toUpperCase() })} placeholder="ET" /></label></div>
               {error && <p className="notice error-notice" role="alert">{error}</p>}
               <button className="primary-button" disabled={busy}>
                 {busy
                   ? 'Requesting...'
-                  : `Order Card (${
-                      selectedTier === 'individual'
-                        ? '2,999'
-                        : selectedTier === 'business'
-                        ? '2,800'
-                        : selectedTier === 'enterprise'
-                        ? '2,500'
-                        : '1,999'
-                    } ETB)`}
+                  : `Order request (${(NFC_CARD_TIER_PRICES_ETB[selectedTier] * quantity).toLocaleString()} ETB)`}
               </button>
               <small className="nfc-order-disclaimer">Payment will be collected via Telebirr or CBE upon card fulfillment and delivery.</small>
             </form>

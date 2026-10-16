@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { NFC_CARD_TIER_PRICES_ETB } from '@amalink/types'
+import type { NfcCardTier } from '@amalink/types'
 import { AuthPage } from './AuthPage'
 import { BrandLogo } from './BrandLogo'
 import './HomePage.css'
@@ -14,6 +16,7 @@ interface HomePageProps {
   authProviders: { google: boolean; facebook: boolean }
   user?: User | null
   onOpenApp?: () => void
+  onSelectCardTier: (tier: NfcCardTier) => void
 }
 
 export function HomePage({
@@ -22,6 +25,7 @@ export function HomePage({
   authProviders,
   user,
   onOpenApp,
+  onSelectCardTier,
 }: HomePageProps) {
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup')
@@ -34,6 +38,11 @@ export function HomePage({
     }
     setAuthMode(mode)
     setAuthModalOpen(true)
+  }
+
+  function chooseCardTier(tier: NfcCardTier) {
+    onSelectCardTier(tier)
+    openAuth('signup')
   }
 
   function scrollToSection(id: string) {
@@ -227,7 +236,7 @@ export function HomePage({
                 <p className="pricing-tier-target">For one person</p>
 
                 <div className="pricing-figure">
-                  <span className="pricing-val">2,999</span>
+                  <span className="pricing-val">{NFC_CARD_TIER_PRICES_ETB.individual.toLocaleString()}</span>
                   <span className="pricing-curr">ETB</span>
                 </div>
                 <span className="pricing-unit">per card</span>
@@ -252,7 +261,7 @@ export function HomePage({
 
               <button
                 className="pricing-btn secondary"
-                onClick={() => openAuth('signup')}
+                onClick={() => chooseCardTier('individual')}
               >
                 Choose Individual
               </button>
@@ -265,7 +274,7 @@ export function HomePage({
                 <p className="pricing-tier-target">For small and medium teams</p>
 
                 <div className="pricing-figure">
-                  <span className="pricing-val">2,800</span>
+                  <span className="pricing-val">{NFC_CARD_TIER_PRICES_ETB.business.toLocaleString()}</span>
                   <span className="pricing-curr">ETB</span>
                 </div>
                 <span className="pricing-unit">per card</span>
@@ -290,7 +299,7 @@ export function HomePage({
 
               <button
                 className="pricing-btn secondary"
-                onClick={() => openAuth('signup')}
+                onClick={() => chooseCardTier('business')}
               >
                 Choose S&amp;M
               </button>
@@ -303,7 +312,7 @@ export function HomePage({
                 <p className="pricing-tier-target">For large teams and events</p>
 
                 <div className="pricing-figure">
-                  <span className="pricing-val">2,500</span>
+                  <span className="pricing-val">{NFC_CARD_TIER_PRICES_ETB.enterprise.toLocaleString()}</span>
                   <span className="pricing-curr">ETB</span>
                 </div>
                 <span className="pricing-unit">per card</span>
@@ -328,7 +337,7 @@ export function HomePage({
 
               <button
                 className="pricing-btn secondary"
-                onClick={() => openAuth('signup')}
+                onClick={() => chooseCardTier('enterprise')}
               >
                 Choose Enterprise
               </button>
@@ -342,7 +351,7 @@ export function HomePage({
                 <p className="pricing-tier-target">For company-wide rollout</p>
 
                 <div className="pricing-figure">
-                  <span className="pricing-val">1,999</span>
+                  <span className="pricing-val">{NFC_CARD_TIER_PRICES_ETB.corporate.toLocaleString()}</span>
                   <span className="pricing-curr">ETB</span>
                 </div>
                 <span className="pricing-unit">per card</span>
@@ -367,7 +376,7 @@ export function HomePage({
 
               <button
                 className="pricing-btn primary"
-                onClick={() => openAuth('signup')}
+                onClick={() => chooseCardTier('corporate')}
               >
                 Choose Corporate
               </button>
