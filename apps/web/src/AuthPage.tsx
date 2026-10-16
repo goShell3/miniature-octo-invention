@@ -61,8 +61,8 @@ export function AuthPage({
       setError('Please enter your email address.')
       return
     }
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters.')
+    if (mode === 'signup' && password.length < 12) {
+      setError('Password must be at least 12 characters.')
       return
     }
 
@@ -227,13 +227,14 @@ export function AuthPage({
             <div className="auth-label-row">
               <label htmlFor="auth-password">Password</label>
               {mode === 'signup' && (
-                <span className="auth-hint">Min. 8 characters</span>
+                <span className="auth-hint">Min. 12 characters</span>
               )}
             </div>
             <input
               id="auth-password"
               type="password"
               autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+              minLength={mode === 'signup' ? 12 : undefined}
               required
               placeholder={mode === 'signup' ? 'Create a secure password' : 'Enter your password'}
               value={password}

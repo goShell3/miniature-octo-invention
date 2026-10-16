@@ -421,7 +421,7 @@ export function SetupWizard({ onFinish, checkSubdomain, busy, error }: SetupWiza
                   disabled={!isFormValid || busy}
                   style={{ background: data.accentColor, borderColor: data.accentColor }}
                 >
-                  {busy ? 'Creating your card & syncing…' : 'Create My Card & Sync URL →'}
+                  {busy ? 'Saving your profile…' : 'Save profile and review →'}
                 </button>
               </div>
             </form>
