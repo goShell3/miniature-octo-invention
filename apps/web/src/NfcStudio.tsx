@@ -140,7 +140,7 @@ function createCardSvg(templateId: TemplateId, colorMode: ColorMode, portfolio: 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="85.6mm" height="54mm" viewBox="0 0 856 540" role="img" aria-label="${escapeXml(name)} Sewnet ${colorMode} NFC card"><style>text{font-family:Arial,sans-serif}.brand{font-size:25px;font-weight:700;fill:${palette.ink}}.brand-initial{font-family:Arial,sans-serif;font-size:26px;font-weight:800;fill:${palette.accentInk}}.eyebrow{font-size:12px;font-weight:700;letter-spacing:3px;fill:${palette.accent}}.name{font-family:Georgia,serif;font-size:51px;fill:${palette.ink}}.tagline{font-size:18px;fill:${palette.muted}}.domain{font-size:14px;font-weight:700;fill:${palette.ink}}.nfc{font-size:12px;font-weight:700;letter-spacing:1px;fill:${palette.accent}}</style>${artwork[templateId]}</svg>`
 }
 
-export function NfcStudio({ portfolio, onBack, initialTier }: { portfolio: Portfolio; onBack: () => void; initialTier?: NfcCardTier }) {
+export function NfcStudio({ portfolio, onBack, initialTier, onOrderCreated }: { portfolio: Portfolio; onBack: () => void; initialTier?: NfcCardTier; onOrderCreated: () => void }) {
   const identity = getIdentity(portfolio)
   const accent = portfolio.theme.accentColor
   const cardStyle = { '--card-accent': accent } as CSSProperties
@@ -202,6 +202,7 @@ export function NfcStudio({ portfolio, onBack, initialTier }: { portfolio: Portf
       const result = await response.json() as OrderResult & { message?: string | string[] }
       if (!response.ok) throw new Error(Array.isArray(result.message) ? result.message.join(', ') : result.message ?? 'Unable to request an NFC card')
       setOrder(result)
+      onOrderCreated()
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Unable to request an NFC card')
     } finally {
@@ -268,7 +269,7 @@ export function NfcStudio({ portfolio, onBack, initialTier }: { portfolio: Portf
           {portfolio.status !== 'published' ? (
             <div className="nfc-publish-note"><span>01</span><h2>Publish to activate your card.</h2><p>The NFC chip links to your live portfolio. Save and publish it before requesting a physical card.</p></div>
           ) : order ? (
-            <div className="nfc-order-success" role="status"><span className="nfc-order-check">✓</span><p className="eyebrow">LINK CREATED</p><h2>Your tap destination is ready.</h2><p>Order status: <strong>{order.status}</strong></p><div className="nfc-short-link">{order.shortUrl}</div><button className="secondary-button" onClick={copyShortUrl}>{copied ? 'Copied' : 'Copy tap link'}</button><button className="text-button" onClick={() => setOrder(null)}>New card request</button></div>
+            <div className="nfc-order-success" role="status"><span className="nfc-order-check">✓</span><p className="eyebrow">REQUEST RECEIVED</p><h2>Your card request is pending.</h2><p>{order.quantity} {order.quantity === 1 ? 'card' : 'cards'} · {order.unitPrice.toLocaleString()} ETB each</p><strong>{order.totalAmount.toLocaleString()} {order.currency} total</strong><p>Request status: <strong>{order.status}</strong></p><div className="nfc-short-link">{order.shortUrl}</div><button className="secondary-button" onClick={copyShortUrl}>{copied ? 'Copied' : 'Copy tap link'}</button><button className="text-button" onClick={() => setOrder(null)}>New card request</button></div>
           ) : (
             <form className="nfc-order-form" onSubmit={submitOrder}>
               <p className="nfc-order-copy">Choose your card tier and delivery address in Ethiopia:</p>
@@ -312,7 +313,7 @@ export function NfcStudio({ portfolio, onBack, initialTier }: { portfolio: Portf
                   ? 'Requesting...'
                   : `Order request (${(NFC_CARD_TIER_PRICES_ETB[selectedTier] * quantity).toLocaleString()} ETB)`}
               </button>
-              <small className="nfc-order-disclaimer">Payment will be collected via Telebirr or CBE upon card fulfillment and delivery.</small>
+              <small className="nfc-order-disclaimer">No payment is collected here. This submits a request; Koolink will confirm availability, payment, and delivery before fulfillment.</small>
             </form>
           )}
         </aside>

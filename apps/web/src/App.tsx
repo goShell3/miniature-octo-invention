@@ -27,6 +27,19 @@ interface Portfolio {
   content: { version: number; blocks: PortfolioBlock[] } | null
 }
 
+interface NfcOrderSummary {
+  id: string
+  status: 'pending' | 'printing' | 'shipped' | 'delivered'
+  tier: NfcCardTier
+  quantity: number
+  unitPrice: number
+  totalAmount: number
+  currency: string
+  shortUrl: string
+  portfolio: { id: string; subdomain: string }
+  createdAt: string
+}
+
 const cardTierStorageKey = 'koolink.selected-card-tier'
 const cardTiers: NfcCardTier[] = ['individual', 'business', 'enterprise', 'corporate']
 
@@ -96,6 +109,8 @@ function WorkspaceApp() {
   const [viewLanding, setViewLanding] = useState(false)
   const [isSessionPending, setIsSessionPending] = useState(true)
   const [portfolios, setPortfolios] = useState<Portfolio[]>([])
+  const [orders, setOrders] = useState<NfcOrderSummary[]>([])
+  const [dashboardView, setDashboardView] = useState<'profiles' | 'orders'>('profiles')
   const [selected, setSelected] = useState<Portfolio | null>(null)
   const [showNfcStudio, setShowNfcStudio] = useState(false)
   const [selectedCardTier, setSelectedCardTier] = useState<NfcCardTier | null>(getStoredCardTier)
@@ -201,6 +216,23 @@ function WorkspaceApp() {
     })
     return () => { isCurrent = false }
   }, [user?.id])
+
+  const orderOwnerId = user?.id
+  useEffect(() => {
+    if (!orderOwnerId) return
+    let isCurrent = true
+    apiRequest<NfcOrderSummary[]>('/nfc-orders/me').then((items) => {
+      if (isCurrent) setOrders(items)
+    }).catch((reason: Error) => {
+      if (isCurrent) setError(reason.message)
+    })
+    return () => { isCurrent = false }
+  }, [orderOwnerId])
+
+  async function refreshOrders() {
+    const items = await apiRequest<NfcOrderSummary[]>('/nfc-orders/me')
+    setOrders(items)
+  }
 
   // ── Wizard handlers ─────────────────────────────────────────────────────────
 
@@ -418,6 +450,7 @@ function WorkspaceApp() {
     await authClient.signOut({})
     setUser(null)
     setPortfolios([])
+    setOrders([])
     setSelected(null)
     setError('')
     setMessage('')
@@ -489,11 +522,30 @@ function WorkspaceApp() {
           <div className="dashboard-heading">
             <div>
               <p className="eyebrow">WORKSPACE</p>
-              <h1>Your portfolios</h1>
-              <p className="muted">Build a clear home for your work.</p>
+              <h1>{dashboardView === 'profiles' ? 'Your profiles' : 'Card orders'}</h1>
+              <p className="muted">{dashboardView === 'profiles' ? 'Build a clear home for your work.' : 'Review requests and tap links for your cards.'}</p>
             </div>
-            <span className="portfolio-count">{portfolios.length.toString().padStart(2, '0')} <small>PORTFOLIOS</small></span>
+            <span className="portfolio-count">{(dashboardView === 'profiles' ? portfolios.length : orders.length).toString().padStart(2, '0')} <small>{dashboardView === 'profiles' ? 'PROFILES' : 'ORDERS'}</small></span>
           </div>
+          <div role="tablist" aria-label="Workspace views" style={{ display: 'flex', gap: 8, margin: '20px 0' }}>
+            <button type="button" role="tab" aria-selected={dashboardView === 'profiles'} className={dashboardView === 'profiles' ? 'primary-button' : 'secondary-button'} onClick={() => setDashboardView('profiles')}>Profiles</button>
+            <button type="button" role="tab" aria-selected={dashboardView === 'orders'} className={dashboardView === 'orders' ? 'primary-button' : 'secondary-button'} onClick={() => setDashboardView('orders')}>Card orders</button>
+          </div>
+          {dashboardView === 'orders' ? (
+            <div className="portfolio-list">
+              {orders.length === 0 ? (
+                <div className="empty-state"><span className="empty-index">01</span><h2>No card requests yet.</h2><p>Published profiles can be used to request a card from the card studio.</p></div>
+              ) : orders.map((order, index) => (
+                <article key={order.id} className="portfolio-row" style={{ cursor: 'default' }}>
+                  <span className="row-number">{String(index + 1).padStart(2, '0')}</span>
+                  <span className="row-main"><strong>{order.tier} · {order.quantity} {order.quantity === 1 ? 'card' : 'cards'}</strong><small>{getPortfolioDomainLabel(order.portfolio.subdomain)} · {new Date(order.createdAt).toLocaleDateString()}</small></span>
+                  <span className={`status status-${order.status}`}>{order.status}</span>
+                  <span className="portfolio-count" style={{ fontSize: 18 }}>{order.totalAmount.toLocaleString()} <small>{order.currency}</small></span>
+                  <a href={order.shortUrl} target="_blank" rel="noreferrer" className="row-arrow" aria-label={`Open tap link for ${order.portfolio.subdomain}`}>↗</a>
+                </article>
+              ))}
+            </div>
+          ) : (
           <div className="portfolio-layout">
             <div className="portfolio-list">
               {portfolios.length === 0 && (
@@ -557,10 +609,11 @@ function WorkspaceApp() {
               {error && <p className="notice error-notice" role="alert">{error}</p>}
             </div>
           </div>
+          )}
         </section>
       ) : showNfcStudio ? (
         <div className="editor">
-          <NfcStudio portfolio={selected} initialTier={selectedCardTier ?? undefined} onBack={() => setShowNfcStudio(false)} />
+          <NfcStudio portfolio={selected} initialTier={selectedCardTier ?? undefined} onOrderCreated={() => { void refreshOrders().catch((reason: Error) => setError(reason.message)) }} onBack={() => setShowNfcStudio(false)} />
         </div>
       ) : (
         <section className="editor">

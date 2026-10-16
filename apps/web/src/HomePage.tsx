@@ -67,7 +67,7 @@ export function HomePage({
     },
     {
       q: 'How do payment and delivery work in Ethiopia?',
-      a: 'We accept local payments via Telebirr and Commercial Bank of Ethiopia (CBE). Orders in Addis Ababa are delivered by courier within 24 to 48 hours. Regional deliveries across Ethiopia are handled via EMS or regional courier hubs.',
+      a: 'Submitting a card request does not collect payment. Koolink will confirm availability, payment options, and delivery details with you before fulfillment.',
     },
   ]
 
