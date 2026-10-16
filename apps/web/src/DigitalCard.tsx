@@ -146,7 +146,7 @@ export function DigitalCard({
   phone = '',
   email = '',
   socials = [],
-  accentColor = '#eb6307',
+  accentColor = '#ff3535',
   profileUrl = 'https://sewnet.et/yourname',
   displayUrl = 'koo.link/yourname',
   previewOnly = false,

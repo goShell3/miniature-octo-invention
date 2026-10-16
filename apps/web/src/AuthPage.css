@@ -70,13 +70,13 @@
   width: 30px;
   height: 30px;
   border-radius: 7px;
-  background: #eb6307;
+  background: #ff3535;
   color: #fff;
   font-size: 16px;
   font-weight: 900;
   display: grid;
   place-items: center;
-  box-shadow: 0 4px 12px rgba(235, 99, 7, 0.28);
+  box-shadow: 0 4px 12px rgba(255, 53, 53, 0.22);
 }
 
 .auth-brand-name {
@@ -228,8 +228,8 @@
 }
 
 .auth-input-group input:focus {
-  border-color: #eb6307;
-  box-shadow: 0 0 0 3px rgba(235, 99, 7, 0.15);
+  border-color: #ff3535;
+  box-shadow: 0 0 0 3px rgba(255, 53, 53, 0.15);
 }
 
 /* ── Alert message ─────────────────────────────────────────────────── */
@@ -252,7 +252,7 @@
   height: 46px;
   border: 0;
   border-radius: 10px;
-  background: #eb6307;
+  background: #ff3535;
   color: #ffffff;
   font-size: 14px;
   font-weight: 700;
@@ -260,13 +260,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 14px rgba(235, 99, 7, 0.28);
+  box-shadow: 0 4px 14px rgba(255, 53, 53, 0.22);
   transition: background 0.15s, transform 0.15s, opacity 0.15s;
   margin-top: 4px;
 }
 
 .auth-primary-btn:hover:not(:disabled) {
-  background: #d85400;
+  background: #e52e2e;
   transform: translateY(-1px);
 }
 
@@ -305,7 +305,7 @@
 .auth-link-btn {
   border: 0;
   background: transparent;
-  color: #eb6307;
+  color: #e52e2e;
   font-weight: 700;
   font-size: 13px;
   cursor: pointer;

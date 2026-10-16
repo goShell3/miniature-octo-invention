@@ -4,6 +4,7 @@ import type { PortfolioBlock } from '@amalink/types'
 import { DigitalCard } from './DigitalCard'
 import type { CardSocial } from './DigitalCard'
 import { getPortfolioDomainLabel, getPortfolioSubdomainUrl } from './url-helpers'
+import { BrandLogo } from './BrandLogo'
 import './SetupWizard.css'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -54,7 +55,7 @@ export function SetupWizard({ onFinish, checkSubdomain, busy, error }: SetupWiza
     instagram: '',
     twitter: '',
     website: '',
-    accentColor: '#eb6307', // vibrant orange default matching the card design
+    accentColor: '#ff3535', // Koolink brand red
   })
 
   const uid = useId()
@@ -133,8 +134,7 @@ export function SetupWizard({ onFinish, checkSubdomain, busy, error }: SetupWiza
       {/* ── Top Header ────────────────────────────────────────────── */}
       <header className="wizard-header">
         <div className="wizard-brand">
-          <span className="brand-mark" style={{ background: data.accentColor }}>S</span>
-          <span>sewnet</span>
+          <BrandLogo variant="wizard" />
         </div>
         <div className="wizard-header-title">
           <span>Smart NFC Card Setup</span>
@@ -260,7 +260,7 @@ export function SetupWizard({ onFinish, checkSubdomain, busy, error }: SetupWiza
                       id={`${uid}-company`}
                       type="text"
                       value={data.company}
-                      placeholder="e.g. Sewnet Digital"
+                      placeholder="e.g. Your Company"
                       onChange={(e) => patch({ company: e.target.value })}
                     />
                   </div>
@@ -299,7 +299,7 @@ export function SetupWizard({ onFinish, checkSubdomain, busy, error }: SetupWiza
                       style={{
                         fontSize: 11,
                         fontWeight: 600,
-                        color: data.bio.length >= 135 ? '#eb6307' : '#8f857a',
+                        color: data.bio.length >= 135 ? '#ff3535' : '#8f857a',
                       }}
                     >
                       {data.bio.length}/140
@@ -392,7 +392,7 @@ export function SetupWizard({ onFinish, checkSubdomain, busy, error }: SetupWiza
                     onChange={(e) => patch({ accentColor: e.target.value as `#${string}` })}
                   />
                   <div className="wizard-color-swatches" role="group" aria-label="Color presets">
-                    {(['#eb6307', '#ea580c', '#191513', '#2563eb', '#0f766e', '#7c3aed'] as const).map((c) => (
+                    {(['#ff3535', '#e52e2e', '#191513', '#2563eb', '#0f766e', '#7c3aed'] as const).map((c) => (
                       <button
                         key={c}
                         type="button"

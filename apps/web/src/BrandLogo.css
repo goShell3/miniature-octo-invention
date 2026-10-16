@@ -1,0 +1,36 @@
+:root {
+  --green: #ff3535;
+  --coral: #ff6b6b;
+  --accent: #ff3535;
+}
+
+.koolink-logo {
+  display: block;
+  flex: none;
+  object-fit: contain;
+}
+
+.koolink-logo--nav { width: 108px; height: 56px; }
+.koolink-logo--auth { width: 128px; height: 68px; margin-inline: auto; }
+.koolink-logo--workspace { width: 104px; height: 54px; }
+.koolink-logo--wizard { width: 108px; height: 56px; }
+.koolink-logo--studio { width: 104px; height: 54px; }
+.koolink-logo--profile { width: 96px; height: 50px; }
+.koolink-logo--footer { width: 94px; height: 48px; }
+.koolink-logo--card { width: 98px; height: 52px; }
+
+.home-nav-brand .koolink-logo { width: 108px; height: 56px; }
+.footer-brand .koolink-logo { width: 94px; height: 48px; }
+.card-brand-mark .koolink-logo { width: 98px; height: 52px; }
+.nfc-studio-brand .koolink-logo { grid-column: 1 / -1; }
+.nfc-studio-brand small { grid-column: 1 / -1; }
+.nav-status-dot.online { background: #ff3535; box-shadow: 0 0 8px rgba(255, 53, 53, 0.55); }
+.edit-domain-pill { background: #fff0f0; color: #e52e2e; border-color: #ffc8c8; }
+.edit-domain-pill:hover { background: #ff3535; color: #fff; }
+.btn-add-social:hover { background: #fff0f0; }
+.preview-toolbar i { background: #ff3535; }
+
+@media (max-width: 480px) {
+  .koolink-logo--nav { width: 92px; height: 48px; }
+  .koolink-logo--auth { width: 118px; height: 62px; }
+}

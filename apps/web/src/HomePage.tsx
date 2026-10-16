@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { AuthPage } from './AuthPage'
+import { BrandLogo } from './BrandLogo'
 import './HomePage.css'
 
 interface User {
@@ -44,8 +45,8 @@ export function HomePage({
 
   const faqs = [
     {
-      q: 'How does the Sewnet NFC Smart Card work?',
-      a: 'The card contains an embedded contactless NTAG216 microchip. When tapped against any modern iPhone or Android smartphone, your custom Sewnet digital profile opens instantly in their browser. For older devices, a dynamic QR code on the back provides an immediate fallback scan.',
+      q: 'How does the Koolink NFC Smart Card work?',
+      a: 'The card contains an embedded contactless NTAG216 microchip. When tapped against any modern iPhone or Android smartphone, your custom Koolink digital profile opens instantly in their browser. For older devices, a dynamic QR code on the back provides an immediate fallback scan.',
     },
     {
       q: 'Does the other person need to install an app?',
@@ -53,7 +54,7 @@ export function HomePage({
     },
     {
       q: 'Can I edit my contact info and portfolio after receiving the card?',
-      a: 'Yes, anytime. The card links directly to your digital Sewnet identity. You can update your phone number, social links, short bio, or appearance whenever you want from your dashboard, and your card will automatically reflect the latest information instantly.',
+      a: 'Yes, anytime. The card links directly to your digital Koolink identity. You can update your phone number, social links, short bio, or appearance whenever you want from your dashboard, and your card will automatically reflect the latest information instantly.',
     },
     {
       q: 'How do payment and delivery work in Ethiopia?',
@@ -66,8 +67,7 @@ export function HomePage({
       {/* ── Navigation Bar ────────────────────────────────────────── */}
       <nav className="home-nav" aria-label="Main Navigation">
         <a href="#" className="home-nav-brand">
-          <span className="brand-badge">S</span>
-          <span>sewnet</span>
+          <BrandLogo variant="nav" />
         </a>
 
         <div className="home-nav-links">
@@ -140,12 +140,11 @@ export function HomePage({
           </div>
 
           <div className="hero-visual" id="cards">
-            <div className="hero-card-showcase" role="img" aria-label="Sewnet Contactless Smart Card">
+            <div className="hero-card-showcase" role="img" aria-label="Koolink Contactless Smart Card">
               <div className="card-gloss" />
               <div className="card-header-row">
                 <div className="card-brand-mark">
-                  <span className="card-mini-s">S</span>
-                  <span>sewnet</span>
+                  <BrandLogo variant="card" />
                 </div>
                 <div className="card-nfc-wave" title="Contactless NFC">
                   <span className="nfc-signal" />
@@ -171,7 +170,7 @@ export function HomePage({
       {/* ── Features Section ─────────────────────────────────────── */}
       <section id="features" className="home-features">
         <div className="section-header">
-          <span className="section-eyebrow">WHY SEWNET</span>
+          <span className="section-eyebrow">WHY KOOLINK</span>
           <h2 className="section-title">One card. Endless possibilities.</h2>
           <p className="section-desc">
             Replace outdated paper cards with an intelligent, reusable digital identity that keeps
@@ -193,7 +192,7 @@ export function HomePage({
             <div className="feature-icon">🌐</div>
             <h3>Dynamic Digital Profile</h3>
             <p>
-              Changed your phone number or bio? Update your profile anytime from your Sewnet
+              Changed your phone number or bio? Update your profile anytime from your Koolink
               dashboard—your physical card always links to your latest information.
             </p>
           </div>
@@ -384,7 +383,7 @@ export function HomePage({
             <span className="section-eyebrow">COMMON QUESTIONS</span>
             <h2 className="section-title">Frequently asked questions</h2>
             <p className="section-desc">
-              Everything you need to know about getting started with Sewnet smart cards.
+              Everything you need to know about getting started with Koolink smart cards.
             </p>
           </div>
 
@@ -417,8 +416,7 @@ export function HomePage({
       <footer className="home-footer">
         <div className="footer-container">
           <div className="footer-brand">
-            <span className="brand-badge" style={{ width: 28, height: 28, fontSize: 14 }}>S</span>
-            <span style={{ fontWeight: 800, fontSize: 16 }}>sewnet</span>
+            <BrandLogo variant="footer" />
           </div>
 
           <div className="footer-note">
@@ -426,7 +424,7 @@ export function HomePage({
           </div>
 
           <div className="footer-copy">
-            © {new Date().getFullYear()} Sewnet. All rights reserved.
+            © {new Date().getFullYear()} Koolink. All rights reserved.
           </div>
         </div>
       </footer>

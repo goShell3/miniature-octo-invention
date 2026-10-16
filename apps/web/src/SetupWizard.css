@@ -67,7 +67,7 @@
 .wizard-eyebrow {
   font: 700 10px var(--sans);
   letter-spacing: 1.5px;
-  color: #eb6307;
+  color: #e52e2e;
   margin: 0 0 10px;
   display: block;
 }
@@ -111,8 +111,8 @@
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  background: #faece2;
-  color: #eb6307;
+  background: #fff0f0;
+  color: #e52e2e;
   font: 800 12px var(--sans);
   display: grid;
   place-items: center;
@@ -178,8 +178,8 @@
 
 .wizard-field input:focus,
 .wizard-field textarea:focus {
-  border-color: #eb6307;
-  box-shadow: 0 0 0 3px rgba(235, 99, 7, 0.15);
+  border-color: #ff3535;
+  box-shadow: 0 0 0 3px rgba(255, 53, 53, 0.15);
 }
 
 .wizard-field textarea {
@@ -213,8 +213,8 @@
 }
 
 .wizard-domain-bar:focus-within {
-  border-color: #eb6307;
-  box-shadow: 0 0 0 3px rgba(235, 99, 7, 0.15);
+  border-color: #ff3535;
+  box-shadow: 0 0 0 3px rgba(255, 53, 53, 0.15);
 }
 
 .domain-protocol {

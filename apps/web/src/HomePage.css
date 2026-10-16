@@ -3,9 +3,9 @@
    ===================================================================== */
 
 :root {
-  --sewnet-orange: #eb6307;
-  --sewnet-orange-hover: #d85400;
-  --sewnet-orange-subtle: #faece2;
+  --sewnet-orange: #ff3535;
+  --sewnet-orange-hover: #e52e2e;
+  --sewnet-orange-subtle: #fff0f0;
   --sewnet-bg: #faf7f2;
   --sewnet-surface: #ffffff;
   --sewnet-ink: #191513;
@@ -65,6 +65,10 @@
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(235, 99, 7, 0.28);
 }
+
+.home-nav-brand .koolink-logo { width: 108px; height: 56px; }
+.footer-brand .koolink-logo { width: 94px; height: 48px; }
+.card-brand-mark .koolink-logo { width: 98px; height: 52px; }
 
 .home-nav-links {
   display: flex;

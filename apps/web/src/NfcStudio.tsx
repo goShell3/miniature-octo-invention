@@ -4,6 +4,7 @@ import type { PortfolioBlock, PortfolioTheme } from '@amalink/types'
 import { API_URL } from './config'
 import './NfcStudio.css'
 import './NfcStudioModes.css'
+import { BrandLogo } from './BrandLogo'
 
 interface Portfolio {
   id: string
@@ -81,7 +82,7 @@ function createCardSvg(templateId: TemplateId, colorMode: ColorMode, portfolio: 
   const { name, tagline } = getIdentity(portfolio)
   const portfolioAccent = /^#[0-9a-f]{6}$/i.test(portfolio.theme.accentColor)
     ? portfolio.theme.accentColor
-    : '#197a68'
+    : '#ff3535'
   const dark = colorMode === 'dark'
   const palettes: Record<TemplateId, { background: string; panel: string; ink: string; muted: string; accent: string; accentInk: string; rule: string; spotlight: string }> = {
     paper: {
@@ -148,6 +149,9 @@ export function NfcStudio({ portfolio, onBack }: { portfolio: Portfolio; onBack:
 
   function downloadTemplate() {
     const svg = createCardSvg(templateId, colorMode, portfolio)
+      .replace(/class="brand">sewnet<\/text>/g, 'class="brand">koolink</text>')
+      .replace(/aria-label="([^"]*) Sewnet /, '$1 Koolink ')
+      .replace(/class="brand-initial">S<\/text>/g, 'class="brand-initial">K</text>')
     const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }))
     const link = document.createElement('a')
     link.href = url
@@ -199,11 +203,11 @@ export function NfcStudio({ portfolio, onBack }: { portfolio: Portfolio; onBack:
       <header className="nfc-studio-heading">
         <div>
           <button className="back-button" onClick={onBack}>← Back to editor</button>
-          <p className="eyebrow">SEWNET / CARD STUDIO</p>
+          <p className="eyebrow">KOOLINK / CARD STUDIO</p>
           <h1>One identity.<br /><em>One tap.</em></h1>
           <p className="nfc-studio-intro">A tap-ready card, shaped around {identity.name}. Every connection measured.</p>
         </div>
-        <div className="nfc-studio-brand"><span className="brand-mark">S</span><span>sewnet</span><small>NFC CARD / 85.6 × 54 MM</small></div>
+        <div className="nfc-studio-brand"><BrandLogo variant="studio" /><small>NFC CARD / 85.6 × 54 MM</small></div>
       </header>
 
       <div className="nfc-studio-grid">
@@ -218,14 +222,14 @@ export function NfcStudio({ portfolio, onBack }: { portfolio: Portfolio; onBack:
               </button>
             ))}
           </div>
-          <div className="nfc-data-note"><span className="nfc-note-mark">S</span><p><strong>Built from your portfolio</strong><br />Name, role, address, and accent color come from your live Sewnet profile.</p></div>
+          <div className="nfc-data-note"><span className="nfc-note-mark">K</span><p><strong>Built from your portfolio</strong><br />Name, role, address, and accent color come from your live Koolink profile.</p></div>
         </aside>
 
         <section className="nfc-preview-column" aria-label="Card preview">
           <div className="nfc-preview-label"><span>FRONT / LIVE PREVIEW</span><div className="nfc-mode-switch" role="group" aria-label="Card color mode"><button type="button" aria-pressed={colorMode === 'light'} className={colorMode === 'light' ? 'active' : ''} onClick={() => setColorMode('light')}>Light</button><button type="button" aria-pressed={colorMode === 'dark'} className={colorMode === 'dark' ? 'active' : ''} onClick={() => setColorMode('dark')}>Dark</button></div><span>85.6 × 54 MM</span></div>
           <div className="nfc-card-wrap">
             <article className={`nfc-card nfc-card--${templateId} nfc-card--${colorMode}`} style={cardStyle}>
-              <div className="nfc-card-brand"><span className="nfc-card-mark">S</span><strong>sewnet</strong></div>
+              <div className="nfc-card-brand"><BrandLogo variant="card" /></div>
               <div className="nfc-card-content">
                 <span className="nfc-card-kicker">{templateId === 'signal' ? 'GOOD WORK TRAVELS' : templateId === 'atelier' ? 'MADE TO BE REMEMBERED' : templateId === 'frame' ? 'YOUR WORK, ONE TAP AWAY' : 'A PORTFOLIO, IN PERSON'}</span>
                 <h2>{identity.name}</h2>
@@ -236,7 +240,7 @@ export function NfcStudio({ portfolio, onBack }: { portfolio: Portfolio; onBack:
             </article>
           </div>
           <div className="nfc-preview-actions">
-            <span>Sewnet identity stays on every design.</span>
+            <span>Koolink identity stays on every design.</span>
             <button className="secondary-button" onClick={downloadTemplate} title="Download print-ready SVG">↓ Download SVG</button>
           </div>
           <p className="nfc-export-note">SVG artwork is sized to standard card dimensions (85.6 × 54 mm). Add bleed and chip placement with your print supplier.</p>

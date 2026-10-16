@@ -2,7 +2,7 @@
    DigitalCard — NFC Smart Digital Business Card Mockup
    Matches the design from uploaded media:
    - Outer card frame: 38px radius, clean warm off-white #f6f5f2
-   - Top banner: vibrant #eb6307
+  - Top banner: Koolink red
    - Overlapping circular avatar: 104px, 5px white ring, beige fill
    - Call (terracotta) & Email (warm cream) side-by-side pills
    - Centerpiece QR code with live target URL
@@ -10,7 +10,7 @@
    ===================================================================== */
 
 .digital-card-container {
-  --card-accent: #eb6307;
+  --card-accent: #ff3535;
   display: flex;
   flex-direction: column;
   align-items: center;

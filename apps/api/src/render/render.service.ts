@@ -233,7 +233,7 @@ export class RenderService {
     if (aboutData?.body?.trim()) {
       lines.push(`NOTE:${escapeVcard(aboutData.body.trim())}`);
     } else {
-      lines.push(`NOTE:Connected via Sewnet NFC Smart Card (${subdomain}.${rootDomain})`);
+      lines.push(`NOTE:Connected via Koolink NFC Smart Card (${subdomain}.${rootDomain})`);
     }
 
     if (Array.isArray(contactData.socials)) {
@@ -292,7 +292,7 @@ export class RenderService {
 
     const themeColor = /^#[0-9a-fA-F]{6}$/.test(portfolio.theme?.accentColor ?? '')
       ? portfolio.theme!.accentColor
-      : '#e06b24';
+      : '#ff3535';
 
     const title = name || portfolio.subdomain;
     const description = tagline || `${title}'s Digital Identity Card`;
@@ -456,7 +456,7 @@ export class RenderService {
             <p>Tap below to exchange your contact information or schedule a follow-up.</p>
           </div>
           <div class="exchange-actions">
-            ${email ? `<a href="mailto:${escapeHtml(email)}?subject=Connecting%20via%20Sewnet%20Card" class="btn-exchange">Send Email</a>` : ''}
+            ${email ? `<a href="mailto:${escapeHtml(email)}?subject=Connecting%20via%20Koolink%20Card" class="btn-exchange">Send Email</a>` : ''}
             ${phone ? `<a href="tel:${escapeHtml(phone)}" class="btn-exchange secondary">Call Directly</a>` : ''}
           </div>
         </div>
@@ -472,15 +472,15 @@ export class RenderService {
   <meta name="theme-color" content="${themeColor}">
   <meta name="description" content="${escapeHtml(description)}">
   <meta property="og:type" content="profile">
-  <meta property="og:title" content="${escapeHtml(name)} | Sewnet Digital Identity">
+  <meta property="og:title" content="${escapeHtml(name)} | Koolink Digital Identity">
   <meta property="og:description" content="${escapeHtml(description)}">
   ${avatarUrl ? `<meta property="og:image" content="${escapeHtml(avatarUrl)}">` : ''}
-  <title>${escapeHtml(title)} | Sewnet Digital Identity</title>
+  <title>${escapeHtml(title)} | Koolink Digital Identity</title>
   <style>
     :root {
       --theme-color: ${themeColor};
-      --theme-hover: #c45412;
-      --theme-subtle: #faece2;
+      --theme-hover: #e52e2e;
+      --theme-subtle: #fff0f0;
       --bg: #faf7f2;
       --surface: #ffffff;
       --ink: #191513;
@@ -541,17 +541,17 @@ export class RenderService {
       height: 8px;
       border-radius: 50%;
       background: var(--theme-color);
-      box-shadow: 0 0 0 0 rgba(224, 107, 36, 0.7);
+      box-shadow: 0 0 0 0 rgba(255, 53, 53, 0.7);
       animation: pulse 1.8s infinite;
     }
 
     @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(224, 107, 36, 0.7); }
-      70% { box-shadow: 0 0 0 8px rgba(224, 107, 36, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(224, 107, 36, 0); }
+      0% { box-shadow: 0 0 0 0 rgba(255, 53, 53, 0.7); }
+      70% { box-shadow: 0 0 0 8px rgba(255, 53, 53, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(255, 53, 53, 0); }
     }
 
-    .nfc-sewnet-tag {
+    .nfc-koolink-tag {
       font-size: 11px;
       font-weight: 700;
       color: rgba(255, 255, 255, 0.8);
@@ -560,7 +560,7 @@ export class RenderService {
       gap: 5px;
     }
 
-    .nfc-sewnet-badge {
+    .nfc-koolink-badge {
       background: var(--theme-color);
       color: #fff;
       width: 18px;
@@ -1021,9 +1021,9 @@ export class RenderService {
         <span class="nfc-pulse-dot"${portfolio.status !== 'published' ? ' style="background: #f48935; box-shadow: none;"' : ''}></span>
         <span>${portfolio.status === 'published' ? `LIVE ON SUBDOMAIN · ${escapeHtml(subdomain)}.localhost:5173` : `DRAFT PREVIEW · ${escapeHtml(subdomain)}.localhost:5173`}</span>
       </div>
-      <div class="nfc-sewnet-tag">
-        <span class="nfc-sewnet-badge">S</span>
-        <span>sewnet</span>
+      <div class="nfc-koolink-tag">
+        <span class="nfc-koolink-badge">K</span>
+        <span>Koolink</span>
       </div>
     </header>
 
@@ -1031,7 +1031,7 @@ export class RenderService {
     <section class="profile-hero">
       <div class="avatar-wrapper">
         ${avatarHtml}
-        <span class="verified-badge" title="Sewnet Verified Identity">✓</span>
+        <span class="verified-badge" title="Koolink Verified Identity">✓</span>
       </div>
 
       <h1 class="profile-name">${escapeHtml(name)}</h1>
@@ -1080,8 +1080,8 @@ export class RenderService {
     <!-- Footer -->
     <footer class="nfc-footer">
       <a href="/" class="nfc-footer-brand">
-        <span class="nfc-sewnet-badge">S</span>
-        <span>sewnet</span>
+        <span class="nfc-koolink-badge">K</span>
+        <span>Koolink</span>
       </a>
       <p class="footer-note">One identity. One tap. Every connection measured.</p>
       <a href="/" class="btn-get-card">Order your own NFC Smart Business Card →</a>

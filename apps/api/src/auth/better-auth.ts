@@ -94,7 +94,7 @@ const envOrigins = (process.env.WEB_ORIGIN ?? '')
 const trustedOrigins = [...new Set([...defaultOrigins, ...envOrigins])];
 
 export const auth = betterAuth({
-  appName: 'Sewnet',
+  appName: 'Koolink',
   baseURL: (process.env.BETTER_AUTH_URL ?? 'https://sewnet-api.onrender.com').replace(/\/+$/, ''),
   basePath: '/api/auth',
   secret,

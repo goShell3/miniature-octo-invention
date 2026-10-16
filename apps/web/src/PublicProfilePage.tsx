@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { PortfolioBlock, PortfolioTheme, SocialLink } from '@amalink/types'
 import { DigitalCard } from './DigitalCard'
 import { getPortfolioDomainLabel, getPortfolioSubdomainUrl } from './url-helpers'
+import { BrandLogo } from './BrandLogo'
 
 interface PublicProfileData {
   id: string
@@ -60,7 +61,7 @@ export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps)
     return (
       <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#131110', fontFamily: 'system-ui, sans-serif' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 44, height: 44, borderRadius: 10, background: '#eb6307', color: '#fff', fontSize: 24, fontWeight: 900, display: 'grid', placeItems: 'center', margin: '0 auto 16px', boxShadow: '0 8px 24px rgba(235, 99, 7, 0.4)' }}>S</div>
+          <img src="/icon.svg" alt="Koolink" style={{ width: 44, height: 44, margin: '0 auto 16px' }} />
           <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1.5, color: '#a89f91' }}>LOADING DIGITAL CARD…</div>
         </div>
       </div>
@@ -71,7 +72,7 @@ export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps)
     return (
       <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#131110', padding: 24, fontFamily: 'system-ui, sans-serif' }}>
         <div style={{ maxWidth: 420, width: '100%', background: '#1c1815', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 20, padding: 36, textAlign: 'center', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}>
-          <div style={{ width: 44, height: 44, borderRadius: 10, background: '#eb6307', color: '#fff', fontSize: 24, fontWeight: 800, display: 'grid', placeItems: 'center', margin: '0 auto 16px' }}>S</div>
+          <img src="/icon.svg" alt="Koolink" style={{ width: 44, height: 44, margin: '0 auto 16px' }} />
           <h2 style={{ fontSize: 22, fontWeight: 800, margin: '0 0 10px', color: '#f6f5f2' }}>Profile Not Found</h2>
           <p style={{ fontSize: 13, color: '#a89f91', lineHeight: 1.55, margin: '0 0 24px' }}>
             The profile <strong>"{subdomain}"</strong> was not found or is currently saved as an unpublished draft.
@@ -79,7 +80,7 @@ export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps)
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <a
               href="/"
-              style={{ display: 'inline-block', padding: '12px 18px', background: '#eb6307', color: '#fff', borderRadius: 8, fontWeight: 700, fontSize: 13, textDecoration: 'none' }}
+              style={{ display: 'inline-block', padding: '12px 18px', background: '#ff3535', color: '#fff', borderRadius: 8, fontWeight: 700, fontSize: 13, textDecoration: 'none' }}
             >
               Go to Workspace / Sign In →
             </a>
@@ -87,7 +88,7 @@ export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps)
               href="/"
               style={{ fontSize: 12, color: '#7a7269', textDecoration: 'none' }}
             >
-              Return to Sewnet Home
+              Return to Koolink Home
             </a>
           </div>
         </div>
@@ -96,8 +97,8 @@ export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps)
   }
 
   const blocks = profile.blocks ?? []
-  const theme = profile.theme ?? { accentColor: '#eb6307' }
-  const accentColor = theme.accentColor || '#eb6307'
+  const theme = profile.theme ?? { accentColor: '#ff3535' }
+  const accentColor = theme.accentColor || '#ff3535'
 
   const hero = blocks.find((b) => b.type === 'hero')
   const about = blocks.find((b) => b.type === 'about')
@@ -173,13 +174,13 @@ export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps)
           position: 'fixed',
           top: 16,
           zIndex: 999,
-          background: '#eb6307',
+          background: '#ff3535',
           color: '#fff',
           padding: '10px 18px',
           borderRadius: 9999,
           fontSize: 12,
           fontWeight: 700,
-          boxShadow: '0 8px 24px rgba(235, 99, 7, 0.4)',
+          boxShadow: '0 8px 24px rgba(255, 53, 53, 0.3)',
           display: 'flex',
           alignItems: 'center',
           gap: 8,
@@ -203,8 +204,8 @@ export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps)
           gap: 6,
           padding: '5px 12px',
           borderRadius: 9999,
-          background: isPublished ? 'rgba(235, 99, 7, 0.15)' : 'rgba(255, 255, 255, 0.08)',
-          border: isPublished ? '1px solid rgba(235, 99, 7, 0.3)' : '1px solid rgba(255, 255, 255, 0.12)',
+          background: isPublished ? 'rgba(255, 53, 53, 0.15)' : 'rgba(255, 255, 255, 0.08)',
+          border: isPublished ? '1px solid rgba(255, 53, 53, 0.3)' : '1px solid rgba(255, 255, 255, 0.12)',
           fontSize: 10,
           fontWeight: 800,
           letterSpacing: 0.8,
@@ -214,8 +215,8 @@ export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps)
             width: 6,
             height: 6,
             borderRadius: '50%',
-            background: isPublished ? '#eb6307' : '#a89f91',
-            boxShadow: isPublished ? '0 0 8px #eb6307' : 'none',
+            background: isPublished ? '#ff3535' : '#a89f91',
+            boxShadow: isPublished ? '0 0 8px #ff3535' : 'none',
           }} />
           <span>{isPublished ? `LIVE · ${subdomain}` : `DRAFT PREVIEW · ${subdomain}`}</span>
         </div>
@@ -229,18 +230,7 @@ export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps)
           fontSize: 12,
           fontWeight: 800,
         }}>
-          <span style={{
-            width: 18,
-            height: 18,
-            borderRadius: 4,
-            background: accentColor,
-            color: '#fff',
-            display: 'grid',
-            placeItems: 'center',
-            fontSize: 11,
-            fontWeight: 900,
-          }}>S</span>
-          <span>sewnet</span>
+          <BrandLogo variant="profile" />
         </a>
       </header>
 

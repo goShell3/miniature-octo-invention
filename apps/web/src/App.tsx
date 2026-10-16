@@ -11,6 +11,7 @@ import './Builder.css'
 import { getSubdomain, getPortfolioDomainLabel, getPortfolioSubdomainUrl } from './url-helpers'
 export { getSubdomain, getPortfolioSubdomainUrl, getPortfolioDomainLabel }
 import { DigitalCard } from './DigitalCard'
+import { BrandLogo } from './BrandLogo'
 
 interface User {
   id: string
@@ -90,7 +91,7 @@ function WorkspaceApp() {
   const [selected, setSelected] = useState<Portfolio | null>(null)
   const [showNfcStudio, setShowNfcStudio] = useState(false)
   const [blocks, setBlocks] = useState<PortfolioBlock[]>([])
-  const [theme, setTheme] = useState<PortfolioTheme>({ id: 'minimal', accentColor: '#e06b24' })
+  const [theme, setTheme] = useState<PortfolioTheme>({ id: 'minimal', accentColor: '#ff3535' })
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -465,8 +466,7 @@ function WorkspaceApp() {
     <main className="workspace">
       <header className="topbar">
         <button className="brand-lockup" onClick={() => { setSelected(null); setMessage(''); setError('') }}>
-          <span className="brand-mark">S</span>
-          <span>sewnet</span>
+          <BrandLogo variant="workspace" />
         </button>
         <div className="topbar-right">
           <button className="text-button" onClick={() => setViewLanding(true)}>NFC Cards &amp; Pricing</button>
@@ -623,7 +623,7 @@ function WorkspaceApp() {
                 width: 8,
                 height: 8,
                 borderRadius: '50%',
-                background: selected.status === 'published' ? '#16a34a' : '#e06b24',
+                background: selected.status === 'published' ? '#16a34a' : '#ff3535',
                 display: 'inline-block',
               }} />
               <span style={{ color: 'var(--ink)' }}>
@@ -814,7 +814,7 @@ function BlockForm({ block, onChange }: { block: PortfolioBlock; onChange: (bloc
             <input
               value={heroData.company ?? ''}
               onChange={(e) => onChange({ type: 'hero', data: { ...heroData, company: e.target.value } })}
-              placeholder="e.g. Sewnet Digital"
+              placeholder="e.g. Your Company"
             />
           </label>
           <label>
@@ -1011,7 +1011,7 @@ function BlockForm({ block, onChange }: { block: PortfolioBlock; onChange: (bloc
           <input
             value={items[0]?.title ?? ''}
             onChange={(e) => onChange({ ...block, data: { items: [{ ...items[0], title: e.target.value }] } })}
-            placeholder="e.g. Sewnet NFC Platform"
+              placeholder="e.g. Koolink Digital Card"
           />
         </label>
         <label>
@@ -1107,7 +1107,7 @@ function PortfolioPreview({ blocks, theme, subdomain }: { blocks: PortfolioBlock
         if (soc.url) lines.push(`X-SOCIALPROFILE;type=${soc.platform}:${soc.url}`)
       }
     }
-    lines.push('NOTE:Sewnet NFC Digital Identity Card')
+            lines.push('NOTE:Koolink NFC Digital Identity Card')
     lines.push('END:VCARD')
 
     const blob = new Blob([lines.join('\r\n')], { type: 'text/vcard;charset=utf-8' })
@@ -1153,7 +1153,7 @@ function PortfolioPreview({ blocks, theme, subdomain }: { blocks: PortfolioBlock
           letterSpacing: 0.8,
           color: '#a89f91',
         }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: theme.accentColor || '#eb6307' }} />
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: theme.accentColor || '#ff3535' }} />
           <span>NFC PREVIEW</span>
         </span>
         <span style={{ fontSize: 11, fontWeight: 700, color: '#f6f5f2' }}>
@@ -1171,7 +1171,7 @@ function PortfolioPreview({ blocks, theme, subdomain }: { blocks: PortfolioBlock
           phone={phone}
           email={email}
           socials={socials}
-          accentColor={theme.accentColor || '#eb6307'}
+          accentColor={theme.accentColor || '#ff3535'}
           profileUrl={profileUrl}
           displayUrl={displayUrl}
           onSaveVcard={handleTestVcardDownload}
@@ -1193,7 +1193,7 @@ function PortfolioPreview({ blocks, theme, subdomain }: { blocks: PortfolioBlock
             <div key={pIdx} style={{ background: '#1c1815', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 10, padding: 12, marginBottom: 8, color: '#f6f5f2' }}>
               <div style={{ fontWeight: 700, fontSize: 13 }}>{proj.title}</div>
               {proj.description && <div style={{ fontSize: 12, color: '#a89f91', marginTop: 4 }}>{proj.description}</div>}
-              {proj.link && <a href={proj.link} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#eb6307', textDecoration: 'none', display: 'inline-block', marginTop: 6, fontWeight: 700 }}>View Project ↗</a>}
+              {proj.link && <a href={proj.link} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#ff3535', textDecoration: 'none', display: 'inline-block', marginTop: 6, fontWeight: 700 }}>View Project ↗</a>}
             </div>
           ))}
         </div>

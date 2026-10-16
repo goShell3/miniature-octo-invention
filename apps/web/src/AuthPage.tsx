@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { authClient } from './auth-client'
+import { BrandLogo } from './BrandLogo'
 import './AuthPage.css'
 
 interface User {
@@ -139,8 +140,7 @@ export function AuthPage({
         {/* Brand header */}
         <div className="auth-header">
           <div className="auth-brand-lockup">
-            <span className="auth-brand-logo">S</span>
-            <span className="auth-brand-name">sewnet</span>
+            <BrandLogo variant="auth" />
           </div>
           <h1 className="auth-title">
             {mode === 'login' ? 'Welcome back' : 'Create your account'}
@@ -289,7 +289,7 @@ export function AuthPage({
             </span>
           ) : (
             <span>
-              New to Sewnet?{' '}
+              New to Koolink?{' '}
               <button
                 type="button"
                 className="auth-link-btn"
