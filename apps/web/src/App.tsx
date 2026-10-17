@@ -16,6 +16,7 @@ import { BrandLogo } from './BrandLogo'
 interface User {
   id: string
   email: string
+  customerType?: NfcCardTier
 }
 
 interface Portfolio {
@@ -140,7 +141,11 @@ function WorkspaceApp() {
     authClient.getSession({}).then(({ data, error: sessionError }) => {
       if (!isCurrent) return
       if (sessionError) console.warn('Session restore error:', sessionError.message)
-      setUser(data?.user ? { id: data.user.id, email: data.user.email } : null)
+      const sessionUser = data?.user as { id: string; email: string; customerType?: string } | undefined
+      const customerType = sessionUser && cardTiers.includes(sessionUser.customerType as NfcCardTier)
+        ? sessionUser.customerType as NfcCardTier
+        : undefined
+      setUser(sessionUser ? { id: sessionUser.id, email: sessionUser.email, customerType } : null)
       setIsSessionPending(false)
     }).catch((reason: unknown) => {
       if (!isCurrent) return
@@ -472,6 +477,10 @@ function WorkspaceApp() {
     return (
       <HomePage
         onAuthenticated={(authenticatedUser) => {
+          if (authenticatedUser.customerType) {
+            window.sessionStorage.setItem(cardTierStorageKey, authenticatedUser.customerType)
+            setSelectedCardTier(authenticatedUser.customerType)
+          }
           setUser(authenticatedUser)
           setViewLanding(false)
         }}
@@ -508,6 +517,9 @@ function WorkspaceApp() {
         </button>
         <div className="topbar-right">
           <button className="text-button" onClick={() => setViewLanding(true)}>NFC Cards &amp; Pricing</button>
+          {user?.customerType && (
+            <span className="user-email">{user.customerType === 'business' ? 'S&M Business' : user.customerType === 'individual' ? 'Individual' : user.customerType === 'enterprise' ? 'Enterprise' : 'Corporate'}</span>
+          )}
           <div className="nav-status-pill" title={`API is ${apiStatus}`}>
             <span className={`nav-status-dot ${apiStatus}`} />
             <span>{apiStatus === 'online' ? 'Connected' : apiStatus === 'checking' ? 'Connecting…' : 'Offline'}</span>
@@ -613,7 +625,12 @@ function WorkspaceApp() {
         </section>
       ) : showNfcStudio ? (
         <div className="editor">
-          <NfcStudio portfolio={selected} initialTier={selectedCardTier ?? undefined} onOrderCreated={() => { void refreshOrders().catch((reason: Error) => setError(reason.message)) }} onBack={() => setShowNfcStudio(false)} />
+          <NfcStudio
+            portfolio={selected}
+            initialTier={user.customerType ?? selectedCardTier ?? undefined}
+            onOrderCreated={() => { void refreshOrders().catch((reason: Error) => setError(reason.message)) }}
+            onBack={() => setShowNfcStudio(false)}
+          />
         </div>
       ) : (
         <section className="editor">

@@ -5,6 +5,7 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { NfcCardTier } from '@amalink/types';
 import { PortfolioEntity } from './portfolio.entity';
 
 @Entity({ name: 'users' })
@@ -23,6 +24,9 @@ export class UserEntity {
 
   @Column({ type: 'text', nullable: true })
   image!: string | null;
+
+  @Column({ name: 'customer_type', type: 'varchar', length: 32, default: 'individual' })
+  customerType!: NfcCardTier;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;

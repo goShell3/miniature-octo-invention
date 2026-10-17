@@ -4,9 +4,12 @@ import { authClient } from './auth-client'
 import { BrandLogo } from './BrandLogo'
 import './AuthPage.css'
 
+type CustomerType = 'individual' | 'business' | 'enterprise' | 'corporate'
+
 interface User {
   id: string
   email: string
+  customerType?: CustomerType
 }
 
 interface AuthPageProps {
@@ -43,6 +46,7 @@ export function AuthPage({
   const [mode, setMode] = useState<AuthMode>(initialMode)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [selectedCustomerType, setSelectedCustomerType] = useState<CustomerType>('individual')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -69,14 +73,20 @@ export function AuthPage({
     setBusy(true)
     try {
       if (mode === 'signup') {
-        const { data, error: authError } = await authClient.signUp.email({
+        const signupPayload = {
           name: trimmedEmail.split('@')[0],
           email: trimmedEmail,
           password,
-        })
+          customerType: selectedCustomerType,
+        }
+        const { data, error: authError } = await authClient.signUp.email(signupPayload as any)
         if (authError) throw new Error(authError.message ?? 'Sign up failed')
         if (data?.user) {
-          onAuthenticated({ id: data.user.id, email: data.user.email })
+          onAuthenticated({
+            id: data.user.id,
+            email: data.user.email,
+            customerType: (data.user as { customerType?: CustomerType }).customerType ?? selectedCustomerType,
+          })
           return
         }
       } else {
@@ -86,7 +96,11 @@ export function AuthPage({
         })
         if (authError) throw new Error(authError.message ?? 'Sign in failed')
         if (data?.user) {
-          onAuthenticated({ id: data.user.id, email: data.user.email })
+          onAuthenticated({
+            id: data.user.id,
+            email: data.user.email,
+            customerType: (data.user as { customerType?: CustomerType }).customerType,
+          })
           return
         }
       }
@@ -95,7 +109,11 @@ export function AuthPage({
       const { data: session, error: sessionError } = await authClient.getSession({})
       if (sessionError) throw new Error(sessionError.message ?? 'Session check failed')
       if (session?.user) {
-        onAuthenticated({ id: session.user.id, email: session.user.email })
+        onAuthenticated({
+          id: session.user.id,
+          email: session.user.email,
+          customerType: (session.user as { customerType?: CustomerType }).customerType,
+        })
       } else {
         throw new Error('Authentication succeeded but session could not be established.')
       }
@@ -222,6 +240,28 @@ export function AuthPage({
               disabled={busy}
             />
           </div>
+
+          {mode === 'signup' && (
+            <div className="auth-input-group">
+              <div className="auth-label-row">
+                <label>Account type</label>
+                <span className="auth-hint">Pricing follows your plan</span>
+              </div>
+              <div className="auth-tier-grid" role="group" aria-label="Account type">
+                {(['individual', 'business', 'enterprise', 'corporate'] as CustomerType[]).map((tier) => (
+                  <button
+                    key={tier}
+                    type="button"
+                    className={`auth-tier-btn ${selectedCustomerType === tier ? 'active' : ''}`}
+                    onClick={() => setSelectedCustomerType(tier)}
+                    disabled={busy}
+                  >
+                    {tier === 'business' ? 'S&M Business' : tier === 'individual' ? 'Individual' : tier === 'enterprise' ? 'Enterprise' : 'Corporate'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="auth-input-group">
             <div className="auth-label-row">

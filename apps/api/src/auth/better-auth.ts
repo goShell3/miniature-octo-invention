@@ -106,6 +106,15 @@ export const auth = betterAuth({
       createdAt: 'created_at',
       updatedAt: 'updated_at',
     },
+    additionalFields: {
+      customerType: {
+        type: 'string',
+        required: false,
+        defaultValue: 'individual',
+        input: true,
+        returned: true,
+      },
+    },
   },
   advanced: {
     defaultCookieAttributes: {

@@ -232,6 +232,31 @@
   box-shadow: 0 0 0 3px rgba(255, 53, 53, 0.15);
 }
 
+.auth-tier-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.auth-tier-btn {
+  border: 1px solid var(--line, #e6e0d6);
+  background: #fff;
+  color: var(--ink, #191513);
+  border-radius: 9px;
+  padding: 10px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.auth-tier-btn.active {
+  border-color: #ff3535;
+  background: #fff2f2;
+  color: #a92f2f;
+  box-shadow: 0 0 0 2px rgba(255, 53, 53, 0.12);
+}
+
 /* ── Alert message ─────────────────────────────────────────────────── */
 .auth-alert {
   display: flex;

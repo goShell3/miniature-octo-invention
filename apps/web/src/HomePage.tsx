@@ -5,9 +5,12 @@ import { AuthPage } from './AuthPage'
 import { BrandLogo } from './BrandLogo'
 import './HomePage.css'
 
+type CustomerType = 'individual' | 'business' | 'enterprise' | 'corporate'
+
 interface User {
   id: string
   email: string
+  customerType?: CustomerType
 }
 
 interface HomePageProps {

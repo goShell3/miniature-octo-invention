@@ -6,6 +6,7 @@ import { NFC_CARD_TIER_PRICES_ETB, NfcCardTier } from '@amalink/types';
 import { CardTapEntity } from '../database/entities/card-tap.entity';
 import { NfcOrderEntity } from '../database/entities/nfc-order.entity';
 import { PortfolioEntity } from '../database/entities/portfolio.entity';
+import { UserEntity } from '../database/entities/user.entity';
 
 @Injectable()
 export class NfcOrdersService {
@@ -16,6 +17,8 @@ export class NfcOrdersService {
     private readonly ordersRepository: Repository<NfcOrderEntity>,
     @InjectRepository(CardTapEntity)
     private readonly tapsRepository: Repository<CardTapEntity>,
+    @InjectRepository(UserEntity)
+    private readonly usersRepository: Repository<UserEntity>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -45,6 +48,12 @@ export class NfcOrdersService {
     if (!portfolio)
       throw new NotFoundException('Published portfolio not found');
 
+    const owner = await this.usersRepository.findOne({
+      where: { id: ownerId },
+      select: { id: true, customerType: true },
+    });
+    const resolvedTier: NfcCardTier = owner?.customerType ?? input.tier;
+
     const address = {
       name: input.name,
       phone: input.phone,
@@ -61,9 +70,9 @@ export class NfcOrdersService {
         portfolio,
         shortLinkCode: randomBytes(6).toString('base64url'),
         status: 'pending',
-        tier: input.tier,
+        tier: resolvedTier,
         quantity: input.quantity,
-        unitPrice: NFC_CARD_TIER_PRICES_ETB[input.tier],
+        unitPrice: NFC_CARD_TIER_PRICES_ETB[resolvedTier],
         shippingAddress: address,
       });
     } while (
