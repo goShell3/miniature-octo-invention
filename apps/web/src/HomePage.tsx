@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NFC_CARD_TIER_PRICES_ETB } from '@amalink/types'
 import type { NfcCardTier } from '@amalink/types'
 import { AuthPage } from './AuthPage'
@@ -19,6 +19,14 @@ interface HomePageProps {
   onSelectCardTier: (tier: NfcCardTier) => void
 }
 
+const sampleProfiles = [
+  { name: 'Amara Bekele', role: 'Creative Director', company: 'Studio Nara', bio: 'Building thoughtful brands and digital experiences.', initials: 'AB', color: '#1fb8c7', background: '#f4fbfb' },
+  { name: 'Dawit Mamo', role: 'Architect', company: 'Dara Design', bio: 'Designing places for people to connect.', initials: 'DM', color: '#ed8065', background: '#fff8f5' },
+  { name: 'Liya Getachew', role: 'Art Director', company: 'Independent', bio: 'Ideas made visible through image and type.', initials: 'LG', color: '#3974d4', background: '#f7f9ff' },
+  { name: 'Henok Tadesse', role: 'Product Designer', company: 'Mosaic', bio: 'Making useful things feel effortless.', initials: 'HT', color: '#c6a64d', background: '#fffdf5' },
+  { name: 'Selam Tesfaye', role: 'Founder', company: 'Selam Studio', bio: 'Connecting ambitious people to good work.', initials: 'ST', color: '#397a66', background: '#f5fbf7' },
+]
+
 export function HomePage({
   onAuthenticated,
   apiStatus,
@@ -30,6 +38,28 @@ export function HomePage({
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup')
   const [openFaq, setOpenFaq] = useState<number | null>(null)
+  const [activeProfile, setActiveProfile] = useState(0)
+  const [isShowcasePaused, setIsShowcasePaused] = useState(false)
+  const [isShowcaseHovered, setIsShowcaseHovered] = useState(false)
+  const [isShowcaseFocused, setIsShowcaseFocused] = useState(false)
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(
+    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  )
+
+  useEffect(() => {
+    const preference = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const updatePreference = () => setPrefersReducedMotion(preference.matches)
+    preference.addEventListener('change', updatePreference)
+    return () => preference.removeEventListener('change', updatePreference)
+  }, [])
+
+  useEffect(() => {
+    if (isShowcasePaused || isShowcaseHovered || isShowcaseFocused || prefersReducedMotion) return
+    const timer = window.setInterval(() => {
+      setActiveProfile((current) => (current + 1) % sampleProfiles.length)
+    }, 4500)
+    return () => window.clearInterval(timer)
+  }, [isShowcasePaused, isShowcaseHovered, isShowcaseFocused, prefersReducedMotion])
 
   function openAuth(mode: 'login' | 'signup') {
     if (user && onOpenApp) {
@@ -43,6 +73,10 @@ export function HomePage({
   function chooseCardTier(tier: NfcCardTier) {
     onSelectCardTier(tier)
     openAuth('signup')
+  }
+
+  function moveShowcase(step: number) {
+    setActiveProfile((current) => (current + step + sampleProfiles.length) % sampleProfiles.length)
   }
 
   function scrollToSection(id: string) {
@@ -148,29 +182,84 @@ export function HomePage({
             </div>
           </div>
 
-          <div className="hero-visual" id="cards">
-            <div className="hero-card-showcase" role="img" aria-label="Koolink Contactless Smart Card">
-              <div className="card-gloss" />
-              <div className="card-header-row">
-                <div className="card-brand-mark">
-                  <BrandLogo variant="card" />
-                </div>
-                <div className="card-nfc-wave" title="Contactless NFC">
-                  <span className="nfc-signal" />
-                  <span>NFC</span>
-                </div>
+          <div
+            className="hero-visual"
+            id="cards"
+            onMouseEnter={() => setIsShowcaseHovered(true)}
+            onMouseLeave={() => setIsShowcaseHovered(false)}
+            onFocusCapture={() => setIsShowcaseFocused(true)}
+            onBlurCapture={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                setIsShowcaseFocused(false)
+              }
+            }}
+          >
+            <div className="profile-showcase-heading">
+              <span>MADE TO BE YOURS</span>
+              <span>LIVE PROFILE PREVIEW</span>
+            </div>
+            <div className="profile-carousel" role="region" aria-roledescription="carousel" aria-label="Koolink digital profile examples">
+              <div className="profile-carousel-track">
+                {[-2, -1, 0, 1, 2].map((offset) => {
+                  const profileIndex = (activeProfile + offset + sampleProfiles.length) % sampleProfiles.length
+                  const profile = sampleProfiles[profileIndex]
+                  const isActive = offset === 0
+                  return (
+                    <article
+                      key={profile.name}
+                      className={`profile-phone profile-phone--${['far-left', 'left', 'center', 'right', 'far-right'][offset + 2]}${isActive ? ' is-active' : ''}`}
+                      style={{ '--profile-accent': profile.color, '--profile-screen': profile.background } as React.CSSProperties}
+                      aria-label={`${profile.name}, ${profile.role}`}
+                      aria-hidden={!isActive}
+                    >
+                      <div className="profile-phone-screen">
+                        <div className="profile-phone-notch"><span /><i /></div>
+                        <div className="profile-screen-cover">
+                          <span className="profile-cover-orbit" />
+                          <span className="profile-cover-brand">koolink</span>
+                        </div>
+                        <div className="profile-phone-content">
+                          <div className="profile-avatar">{profile.initials}</div>
+                          <h2>{profile.name}</h2>
+                          <p className="profile-role">{profile.role}</p>
+                          <p className="profile-company">{profile.company}</p>
+                          <p className="profile-bio">{profile.bio}</p>
+                          <div className="profile-actions" aria-hidden="true">
+                            <span>Email</span><span>Phone</span><span>Website</span>
+                          </div>
+                        </div>
+                        <div className="profile-phone-home" />
+                      </div>
+                    </article>
+                  )
+                })}
               </div>
-
-              <div className="card-center-body">
-                <div className="card-holder-name">Roben Bayisa</div>
-                <div className="card-holder-role">Founder &amp; Technology Strategist</div>
-                <div className="card-holder-bio">Building next-generation contactless digital identity platforms.</div>
+            </div>
+            <div className="profile-carousel-controls">
+              <button type="button" className="profile-carousel-arrow" onClick={() => moveShowcase(-1)} aria-label="Previous profile">←</button>
+              <div className="profile-carousel-dots" role="group" aria-label="Choose a profile preview">
+                {sampleProfiles.map((profile, index) => (
+                  <button
+                    key={profile.name}
+                    type="button"
+                    className={`profile-carousel-dot${index === activeProfile ? ' is-active' : ''}`}
+                    onClick={() => setActiveProfile(index)}
+                    aria-label={`Show ${profile.name}`}
+                    aria-pressed={index === activeProfile}
+                  />
+                ))}
               </div>
-
-              <div className="card-footer-row">
-                <span className="card-url">roben.sewnet.et</span>
-                <span className="card-chip-tag">NTAG216</span>
-              </div>
+              <button type="button" className="profile-carousel-arrow" onClick={() => moveShowcase(1)} aria-label="Next profile">→</button>
+              {!prefersReducedMotion && (
+                <button
+                  type="button"
+                  className="profile-carousel-pause"
+                  onClick={() => setIsShowcasePaused((paused) => !paused)}
+                  aria-label={isShowcasePaused ? 'Resume profile previews' : 'Pause profile previews'}
+                >
+                  {isShowcasePaused ? 'Play' : 'Pause'}
+                </button>
+              )}
             </div>
           </div>
         </div>

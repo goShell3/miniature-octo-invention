@@ -18,7 +18,7 @@ export function getApiUrl(): string {
     const isLocal =
       hostname === 'localhost' ||
       hostname === '127.0.0.1' ||
-      hostname.endsWith('.localhost')
+      hostname.endsWith('.localhost') 
 
     if (isLocal) {
       return 'http://localhost:3000'
