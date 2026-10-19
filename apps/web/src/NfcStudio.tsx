@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
+import QRCode from 'qrcode'
 import { NFC_CARD_TIER_PRICES_ETB } from '@amalink/types'
 import type { NfcCardTier, PortfolioBlock, PortfolioTheme } from '@amalink/types'
 import { API_URL } from './config'
+import { getPortfolioSubdomainUrl } from './url-helpers'
 import './NfcStudio.css'
-import './NfcStudioModes.css'
 import { BrandLogo } from './BrandLogo'
 
 interface Portfolio {
@@ -45,16 +46,6 @@ const cardTiers: Array<{ id: NfcCardTier; name: string }> = [
   { id: 'corporate', name: 'Corporate' },
 ]
 
-const templates = [
-  { id: 'paper', name: 'Paper / 01', note: 'Warm stock, quiet details' },
-  { id: 'signal', name: 'Signal / 02', note: 'Bright color, clear presence' },
-  { id: 'atelier', name: 'Atelier / 03', note: 'Deep green, gallery finish' },
-  { id: 'frame', name: 'Frame / 04', note: 'A crisp, modern signature' },
-] as const
-
-type TemplateId = (typeof templates)[number]['id']
-type ColorMode = 'light' | 'dark'
-
 function getIdentity(portfolio: Portfolio) {
   const hero = portfolio.content?.blocks.find((block) => block.type === 'hero')
   const contact = portfolio.content?.blocks.find((block) => block.type === 'contact')
@@ -92,61 +83,50 @@ function toLines(value: string, limit: number) {
   return lines.slice(0, 2)
 }
 
-function createCardSvg(templateId: TemplateId, colorMode: ColorMode, portfolio: Portfolio) {
+async function createCardSvg(backgroundColor: string, textColor: string, portfolioUrl: string, portfolio: Portfolio) {
   const { name, tagline } = getIdentity(portfolio)
-  const portfolioAccent = /^#[0-9a-f]{6}$/i.test(portfolio.theme.accentColor)
-    ? portfolio.theme.accentColor
-    : '#ff3535'
-  const dark = colorMode === 'dark'
-  const palettes: Record<TemplateId, { background: string; panel: string; ink: string; muted: string; accent: string; accentInk: string; rule: string; spotlight: string }> = {
-    paper: {
-      background: dark ? '#202b27' : '#f0eadc', panel: dark ? '#354840' : '#e0d5bf',
-      ink: dark ? '#f0eadc' : '#18332d', muted: dark ? '#c0c9c0' : '#68766c',
-      accent: portfolioAccent, accentInk: '#ffffff', rule: dark ? '#67766d' : '#c8c0b0', spotlight: dark ? '#354840' : '#e0d5bf',
-    },
-    signal: {
-      background: dark ? '#172d35' : '#ef6148', panel: dark ? '#ef6148' : '#e2ec7b',
-      ink: dark ? '#f0eadc' : '#172d35', muted: dark ? '#d3ddd1' : '#172d35',
-      accent: dark ? '#e2ec7b' : '#172d35', accentInk: dark ? '#172d35' : '#f0eadc', rule: dark ? '#e2ec7b' : '#172d35', spotlight: dark ? '#ef6148' : '#e2ec7b',
-    },
-    atelier: {
-      background: dark ? '#183a34' : '#f0eadc', panel: dark ? '#234d43' : '#dce7d5',
-      ink: dark ? '#f0eadc' : '#183a34', muted: dark ? '#c5d5ca' : '#68766c',
-      accent: dark ? '#b5d581' : '#197a68', accentInk: dark ? '#183a34' : '#ffffff', rule: dark ? '#729185' : '#bdcaba', spotlight: '#b5d581',
-    },
-    frame: {
-      background: dark ? '#172d35' : '#e7eeea', panel: dark ? '#203f46' : '#ffffff',
-      ink: dark ? '#f1f4e7' : '#172d35', muted: dark ? '#b9c9c1' : '#65756e',
-      accent: portfolioAccent, accentInk: '#ffffff', rule: dark ? '#64837a' : '#b7c8c0', spotlight: dark ? '#e4eb88' : '#d6eee1',
-    },
-  }
-  const palette = palettes[templateId]
-  const safeName = toLines(name, 19).map(escapeXml)
-  const safeTagline = toLines(tagline, 27).map(escapeXml)
-  const nameSvg = safeName.map((line, index) => `<text x="56" y="${286 + index * 58}" class="name">${line}</text>`).join('')
-  const taglineSvg = safeTagline.map((line, index) => `<text x="58" y="${390 + index * 28}" class="tagline">${line}</text>`).join('')
-  const domain = escapeXml(
-    typeof window !== 'undefined'
-      ? (window.location.hostname.endsWith('localhost') ? `${portfolio.subdomain}.localhost:5173` : `${portfolio.subdomain}.${window.location.host}`)
-      : `${portfolio.subdomain}.sewnet.et`
-  )
+  const safeName = toLines(name, 21).map(escapeXml)
+  const nameSvg = safeName.map((line, index) => `<text x="58" y="${348 + index * 48}" class="name">${line}</text>`).join('')
+  const taglineSvg = toLines(tagline, 34).map(escapeXml).map((line, index) => `<text x="60" y="${438 + index * 24}" class="tagline">${line}</text>`).join('')
+  const qrSvg = await QRCode.toString(portfolioUrl, {
+    type: 'svg',
+    errorCorrectionLevel: 'H',
+    margin: 4,
+    color: { dark: '#101010', light: '#ffffff' },
+  })
+  const qrViewBox = qrSvg.match(/viewBox="([^"]+)"/)?.[1] ?? '0 0 100 100'
+  const qrContents = qrSvg.replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '')
+  const embeddedQr = `<svg x="632" y="228" width="168" height="168" viewBox="${qrViewBox}" shape-rendering="crispEdges">${qrContents}</svg>`
+  const safeUrl = escapeXml(portfolioUrl)
 
-  const artwork: Record<TemplateId, string> = {
-    paper: `<rect width="856" height="540" rx="28" fill="${palette.background}"/><rect x="0" y="0" width="18" height="540" fill="${palette.accent}"/><circle cx="760" cy="110" r="132" fill="${palette.spotlight}"/><circle cx="760" cy="110" r="92" fill="none" stroke="${palette.accent}" stroke-width="2"/><path d="M650 110h220M760 0v220" stroke="${palette.accent}" stroke-opacity=".28"/><rect x="56" y="54" width="44" height="44" rx="4" fill="${palette.accent}"/><text x="78" y="85" text-anchor="middle" class="brand-initial">S</text><text x="116" y="82" class="brand">sewnet</text><text x="58" y="226" class="eyebrow">DIGITAL IDENTITY &amp; NETWORKING</text>${nameSvg}${taglineSvg}<path d="M58 456h740" stroke="${palette.rule}"/><text x="58" y="493" class="domain">${domain}</text><text x="798" y="493" text-anchor="end" class="nfc">TAP TO OPEN  /  NFC</text>`,
-    signal: `<rect width="856" height="540" rx="28" fill="${palette.background}"/><path d="M0 0h856v20H0z" fill="${palette.accent}"/><path d="M636 0h220v220H636z" fill="${palette.panel}"/><path d="M636 0l220 220" stroke="${palette.accent}" stroke-width="2"/><rect x="56" y="52" width="46" height="46" rx="23" fill="${palette.accent}"/><text x="79" y="83" text-anchor="middle" class="brand-initial">S</text><text x="118" y="82" class="brand">sewnet</text><text x="58" y="218" class="eyebrow">ONE IDENTITY. ONE TAP.</text>${nameSvg}${taglineSvg}<rect x="58" y="448" width="740" height="2" fill="${palette.rule}"/><text x="58" y="492" class="domain">${domain}</text><text x="798" y="492" text-anchor="end" class="nfc">TAP TO OPEN  /  NFC</text>`,
-    atelier: `<rect width="856" height="540" rx="28" fill="${palette.background}"/><path d="M558 0h298v540H558z" fill="${palette.panel}"/><circle cx="706" cy="270" r="178" fill="none" stroke="${palette.spotlight}" stroke-width="2"/><circle cx="706" cy="270" r="142" fill="none" stroke="${palette.spotlight}" stroke-opacity=".5"/><circle cx="706" cy="270" r="105" fill="${palette.spotlight}"/><path d="M706 165v210M601 270h210" stroke="${palette.background}" stroke-opacity=".35"/><rect x="56" y="52" width="46" height="46" rx="4" fill="${palette.accent}"/><text x="79" y="84" text-anchor="middle" class="brand-initial">S</text><text x="118" y="82" class="brand">sewnet</text><text x="58" y="218" class="eyebrow">EVERY CONNECTION MEASURED</text>${nameSvg}${taglineSvg}<path d="M58 448h740" stroke="${palette.rule}"/><text x="58" y="492" class="domain">${domain}</text><text x="798" y="492" text-anchor="end" class="nfc">TAP TO OPEN  /  NFC</text>`,
-    frame: `<rect width="856" height="540" rx="28" fill="${palette.background}"/><rect x="24" y="24" width="808" height="492" rx="18" fill="none" stroke="${palette.rule}" stroke-width="2"/><path d="M58 54h48v48M798 438v48h-48" fill="none" stroke="${palette.accent}" stroke-width="5"/><rect x="56" y="54" width="44" height="44" rx="22" fill="${palette.accent}"/><text x="78" y="85" text-anchor="middle" class="brand-initial">S</text><text x="116" y="82" class="brand">sewnet</text><text x="58" y="218" class="eyebrow">YOUR WORK, ONE TAP AWAY</text>${nameSvg}${taglineSvg}<path d="M58 456h740" stroke="${palette.rule}"/><text x="58" y="493" class="domain">${domain}</text><text x="798" y="493" text-anchor="end" class="nfc">TAP TO OPEN  /  NFC</text>`,
-  }
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="85.6mm" height="54mm" viewBox="0 0 856 540" role="img" aria-label="${escapeXml(name)} Sewnet ${colorMode} NFC card"><style>text{font-family:Arial,sans-serif}.brand{font-size:25px;font-weight:700;fill:${palette.ink}}.brand-initial{font-family:Arial,sans-serif;font-size:26px;font-weight:800;fill:${palette.accentInk}}.eyebrow{font-size:12px;font-weight:700;letter-spacing:3px;fill:${palette.accent}}.name{font-family:Georgia,serif;font-size:51px;fill:${palette.ink}}.tagline{font-size:18px;fill:${palette.muted}}.domain{font-size:14px;font-weight:700;fill:${palette.ink}}.nfc{font-size:12px;font-weight:700;letter-spacing:1px;fill:${palette.accent}}</style>${artwork[templateId]}</svg>`
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="85.6mm" height="54mm" viewBox="0 0 856 540" role="img" aria-label="Koolink NFC card for ${escapeXml(name)}">
+    <style>text{font-family:Arial,sans-serif;fill:${textColor}}.brand{font-size:24px;font-weight:700}.mark{font-size:24px;font-weight:800;fill:${backgroundColor}}.eyebrow{font-size:11px;font-weight:700;letter-spacing:2px;opacity:.68}.name{font-family:Georgia,serif;font-size:46px}.tagline{font-size:17px;opacity:.78}.domain{font-size:14px;font-weight:700}.qr-label{font-size:10px;font-weight:700;letter-spacing:1px}</style>
+    <rect width="856" height="540" rx="24" fill="${backgroundColor}"/>
+    <rect x="24" y="24" width="808" height="492" rx="18" fill="none" stroke="${textColor}" stroke-opacity=".18"/>
+    <rect x="58" y="52" width="42" height="42" rx="4" fill="${textColor}"/>
+    <text x="79" y="82" text-anchor="middle" class="mark">K</text>
+    <text x="116" y="82" class="brand">koolink</text>
+    <text x="60" y="292" class="eyebrow">YOUR DIGITAL IDENTITY</text>
+    ${nameSvg}
+    ${taglineSvg}
+    <text x="60" y="493" class="domain">${escapeXml(portfolio.subdomain)}</text>
+    <rect x="626" y="222" width="180" height="180" rx="5" fill="#ffffff"/>
+    ${embeddedQr}
+    <text x="716" y="426" text-anchor="middle" class="qr-label">SCAN PORTFOLIO</text>
+    <title>${safeUrl}</title>
+  </svg>`
 }
 
 export function NfcStudio({ portfolio, onBack, initialTier, onOrderCreated }: { portfolio: Portfolio; onBack: () => void; initialTier?: NfcCardTier; onOrderCreated: () => void }) {
   const identity = getIdentity(portfolio)
-  const accent = portfolio.theme.accentColor
-  const cardStyle = { '--card-accent': accent } as CSSProperties
-
-  const [templateId, setTemplateId] = useState<TemplateId>('paper')
-  const [colorMode, setColorMode] = useState<ColorMode>('light')
+  const portfolioUrl = getPortfolioSubdomainUrl(portfolio.subdomain, portfolio.status !== 'published')
+  const [backgroundColor, setBackgroundColor] = useState('#101010')
+  const [textColor, setTextColor] = useState('#ffffff')
+  const [qrDataUrl, setQrDataUrl] = useState('')
+  const cardStyle = {
+    '--card-background': backgroundColor,
+    '--card-text': textColor,
+  } as CSSProperties
   const [address, setAddress] = useState<Address>({
     name: identity.name || '',
     phone: '',
@@ -164,15 +144,27 @@ export function NfcStudio({ portfolio, onBack, initialTier, onOrderCreated }: { 
   const [selectedTier, setSelectedTier] = useState<NfcCardTier>(initialTier ?? 'individual')
   const [quantity, setQuantity] = useState(1)
 
-  function downloadTemplate() {
-    const svg = createCardSvg(templateId, colorMode, portfolio)
-      .replace(/class="brand">sewnet<\/text>/g, 'class="brand">koolink</text>')
-      .replace(/aria-label="([^"]*) Sewnet /, '$1 Koolink ')
-      .replace(/class="brand-initial">S<\/text>/g, 'class="brand-initial">K</text>')
+  useEffect(() => {
+    let isCurrent = true
+    QRCode.toDataURL(portfolioUrl, {
+      width: 256,
+      errorCorrectionLevel: 'H',
+      margin: 4,
+      color: { dark: '#101010', light: '#ffffff' },
+    }).then((dataUrl) => {
+      if (isCurrent) setQrDataUrl(dataUrl)
+    }).catch((reason: unknown) => {
+      console.error('Unable to generate portfolio QR code:', reason)
+    })
+    return () => { isCurrent = false }
+  }, [portfolioUrl])
+
+  async function downloadTemplate() {
+    const svg = await createCardSvg(backgroundColor, textColor, portfolioUrl, portfolio)
     const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }))
     const link = document.createElement('a')
     link.href = url
-    link.download = `${portfolio.subdomain}-${templateId}-${colorMode}-nfc-card.svg`
+    link.download = `${portfolio.subdomain}-nfc-card.svg`
     document.body.appendChild(link)
     link.click()
     link.remove()
@@ -230,31 +222,37 @@ export function NfcStudio({ portfolio, onBack, initialTier, onOrderCreated }: { 
 
       <div className="nfc-studio-grid">
         <aside className="nfc-design-picker">
-          <div className="panel-label">CHOOSE A TEMPLATE</div>
-          <div className="nfc-template-list" role="tablist" aria-label="Card templates">
-            {templates.map((template, index) => (
-              <button key={template.id} role="tab" aria-selected={templateId === template.id} className={`nfc-template-option ${templateId === template.id ? 'active' : ''}`} onClick={() => { setTemplateId(template.id); setOrder(null) }}>
-                <span className={`nfc-mini-card nfc-mini-card--${template.id} ${colorMode === 'dark' ? 'nfc-mini-card--dark' : ''}`}><span className="mini-brand">S</span><span className="mini-lines" /></span>
-                <span className="nfc-template-name"><strong>{template.name}</strong><small>{template.note}</small></span>
-                <span className="nfc-template-index">0{index + 1}</span>
-              </button>
-            ))}
+          <div className="panel-label">CARD COLORS</div>
+          <div className="nfc-color-controls">
+            <label className="nfc-color-control">
+              <span>Background</span>
+              <input aria-label="Card background color" type="color" value={backgroundColor} onChange={(event) => setBackgroundColor(event.target.value)} />
+              <code>{backgroundColor.toUpperCase()}</code>
+            </label>
+            <label className="nfc-color-control">
+              <span>Text</span>
+              <input aria-label="Card text color" type="color" value={textColor} onChange={(event) => setTextColor(event.target.value)} />
+              <code>{textColor.toUpperCase()}</code>
+            </label>
           </div>
-          <div className="nfc-data-note"><span className="nfc-note-mark">K</span><p><strong>Built from your portfolio</strong><br />Name, role, address, and accent color come from your live Koolink profile.</p></div>
+          <div className="nfc-data-note"><span className="nfc-note-mark">K</span><p><strong>Personalized for {portfolio.subdomain}</strong><br />The QR code opens this portfolio directly.</p></div>
         </aside>
 
         <section className="nfc-preview-column" aria-label="Card preview">
-          <div className="nfc-preview-label"><span>FRONT / LIVE PREVIEW</span><div className="nfc-mode-switch" role="group" aria-label="Card color mode"><button type="button" aria-pressed={colorMode === 'light'} className={colorMode === 'light' ? 'active' : ''} onClick={() => setColorMode('light')}>Light</button><button type="button" aria-pressed={colorMode === 'dark'} className={colorMode === 'dark' ? 'active' : ''} onClick={() => setColorMode('dark')}>Dark</button></div><span>85.6 × 54 MM</span></div>
+          <div className="nfc-preview-label"><span>FRONT / LIVE PREVIEW</span><span>85.6 × 54 MM</span></div>
           <div className="nfc-card-wrap">
-            <article className={`nfc-card nfc-card--${templateId} nfc-card--${colorMode}`} style={cardStyle}>
-              <div className="nfc-card-brand"><BrandLogo variant="card" /></div>
+            <article className="nfc-card" style={cardStyle}>
+              <div className="nfc-card-brand"><span className="nfc-card-mark">K</span><strong>Koolink</strong></div>
               <div className="nfc-card-content">
-                <span className="nfc-card-kicker">{templateId === 'signal' ? 'GOOD WORK TRAVELS' : templateId === 'atelier' ? 'MADE TO BE REMEMBERED' : templateId === 'frame' ? 'YOUR WORK, ONE TAP AWAY' : 'A PORTFOLIO, IN PERSON'}</span>
+                <span className="nfc-card-kicker">YOUR DIGITAL IDENTITY</span>
                 <h2>{identity.name}</h2>
                 <p>{identity.tagline}</p>
               </div>
+              <div className="nfc-card-qr">
+                {qrDataUrl && <img src={qrDataUrl} alt={`QR code linking to ${portfolio.subdomain}`} />}
+                <span>SCAN PORTFOLIO</span>
+              </div>
               <div className="nfc-card-foot"><span>{portfolio.subdomain}</span><b><i className="nfc-wave" /> TAP TO OPEN</b></div>
-              <span className="nfc-card-graphic" aria-hidden="true" />
             </article>
           </div>
           <div className="nfc-preview-actions">
