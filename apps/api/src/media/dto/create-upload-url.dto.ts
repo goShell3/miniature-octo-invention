@@ -1,4 +1,4 @@
-import { IsIn, IsString, IsUUID } from 'class-validator';
+import { IsIn, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class CreateUploadUrlDto {
   @IsUUID()
@@ -13,4 +13,9 @@ export class CreateUploadUrlDto {
     'application/pdf',
   ])
   contentType!: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['portfolio', 'header'])
+  imageType?: 'portfolio' | 'header';
 }

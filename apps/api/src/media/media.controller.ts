@@ -19,6 +19,7 @@ export class MediaController {
       request.user.userId,
       input.portfolioId,
       input.contentType,
+      input.imageType,
     );
   }
 

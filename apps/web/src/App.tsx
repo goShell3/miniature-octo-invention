@@ -886,7 +886,11 @@ function BlockForm({ block, portfolioId, onChange }: { block: PortfolioBlock; po
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ portfolioId, contentType: file.type }),
+          body: JSON.stringify({
+            portfolioId,
+            contentType: file.type,
+            imageType: field === 'headerImageUrl' ? 'header' : 'portfolio',
+          }),
         })
         const upload = await uploadResponse.json() as {
           uploadUrl?: string

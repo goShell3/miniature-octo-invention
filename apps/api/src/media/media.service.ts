@@ -55,6 +55,7 @@ export class MediaService {
     ownerId: string,
     portfolioId: string,
     contentType: string,
+    imageType: 'portfolio' | 'header' = 'portfolio',
   ) {
     const portfolio = await this.portfoliosRepository.findOne({
       where: { id: portfolioId, owner: { id: ownerId } },
@@ -64,7 +65,8 @@ export class MediaService {
       throw new ServiceUnavailableException('Object storage is not configured');
     }
 
-    const key = `portfolios/${portfolio.id}/${randomUUID()}.${extensions[contentType]}`;
+    const folder = imageType === 'header' ? 'header_img' : 'portfolio_img';
+    const key = `${folder}/${portfolio.id}/${randomUUID()}.${extensions[contentType]}`;
     const command = new PutObjectCommand({
       Bucket: this.bucket,
       Key: key,
