@@ -109,6 +109,7 @@ export const auth = betterAuth({
     additionalFields: {
       customerType: {
         type: 'string',
+        fieldName: 'customer_type',
         required: false,
         defaultValue: 'individual',
         input: true,
