@@ -23,6 +23,15 @@ export class MediaController {
     );
   }
 
+  @Post('assets/:assetId/confirm')
+  @UseGuards(BetterAuthGuard)
+  confirmUpload(
+    @Req() request: AuthenticatedRequest,
+    @Param('assetId') assetId: string,
+  ) {
+    return this.mediaService.confirmUpload(request.user.userId, assetId);
+  }
+
   @Get('assets/:assetId')
   async getImage(@Param('assetId') assetId: string, @Res() response: Response) {
     const image = await this.mediaService.getPublicImage(assetId);

@@ -893,12 +893,13 @@ function BlockForm({ block, portfolioId, onChange }: { block: PortfolioBlock; po
           }),
         })
         const upload = await uploadResponse.json() as {
+          assetId?: string
           uploadUrl?: string
           publicUrl?: string
           headers?: Record<string, string>
           message?: string | string[]
         }
-        if (!uploadResponse.ok || !upload.uploadUrl || !upload.publicUrl) {
+        if (!uploadResponse.ok || !upload.assetId || !upload.uploadUrl || !upload.publicUrl) {
           throw new Error(Array.isArray(upload.message) ? upload.message.join(', ') : upload.message ?? 'Unable to prepare image upload.')
         }
 
@@ -908,6 +909,25 @@ function BlockForm({ block, portfolioId, onChange }: { block: PortfolioBlock; po
           body: file,
         })
         if (!putResponse.ok) throw new Error('Image upload failed. Please try again.')
+
+        const confirmResponse = await fetch(
+          `${API_URL}/media/assets/${upload.assetId}/confirm`,
+          {
+            method: 'POST',
+            credentials: 'include',
+          },
+        )
+        const confirmation = await confirmResponse.json() as {
+          publicUrl?: string
+          message?: string | string[]
+        }
+        if (!confirmResponse.ok || !confirmation.publicUrl) {
+          throw new Error(
+            Array.isArray(confirmation.message)
+              ? confirmation.message.join(', ')
+              : confirmation.message ?? 'Uploaded file could not be verified.',
+          )
+        }
 
         onChange({ type: 'hero', data: { ...heroData, [field]: upload.publicUrl } })
       } catch (reason) {

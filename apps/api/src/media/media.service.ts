@@ -6,7 +6,12 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  GetObjectCommand,
+  HeadObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Readable } from 'node:stream';
 import { Repository } from 'typeorm';
@@ -81,6 +86,7 @@ export class MediaService {
         objectKey: key,
         contentType,
         type: contentType === 'application/pdf' ? 'resume' : 'image',
+        isUploaded: false,
       }),
     );
     const publicUrl = `/media/assets/${asset.id}`;
@@ -95,18 +101,60 @@ export class MediaService {
     };
   }
 
+  async confirmUpload(ownerId: string, assetId: string) {
+    const asset = await this.mediaRepository.findOne({
+      where: { id: assetId, portfolio: { owner: { id: ownerId } } },
+      relations: { portfolio: true },
+    });
+    if (!asset) throw new NotFoundException('Media asset not found');
+    if (!this.s3Client) {
+      throw new ServiceUnavailableException('Object storage is not configured');
+    }
+
+    try {
+      await this.s3Client.send(
+        new HeadObjectCommand({
+          Bucket: this.bucket,
+          Key: asset.objectKey,
+        }),
+      );
+    } catch (error) {
+      if (!(error instanceof Error && error.name === 'NoSuchKey')) {
+        throw error;
+      }
+      console.error('[Media] Upload confirmation failed', {
+        assetId,
+        objectKey: asset.objectKey,
+        error,
+      });
+      throw new NotFoundException('Uploaded file was not found in object storage');
+    }
+
+    asset.isUploaded = true;
+    await this.mediaRepository.save(asset);
+    return { assetId: asset.id, publicUrl: `/media/assets/${asset.id}` };
+  }
+
   async getPublicImage(assetId: string) {
     const asset = await this.mediaRepository.findOne({
-      where: { id: assetId, type: 'image' },
+      where: { id: assetId, type: 'image', isUploaded: true },
     });
     if (!asset) throw new NotFoundException('Image not found');
     if (!this.s3Client) {
       throw new ServiceUnavailableException('Object storage is not configured');
     }
 
-    const result = await this.s3Client.send(
-      new GetObjectCommand({ Bucket: this.bucket, Key: asset.objectKey }),
-    );
+    let result;
+    try {
+      result = await this.s3Client.send(
+        new GetObjectCommand({ Bucket: this.bucket, Key: asset.objectKey }),
+      );
+    } catch (error) {
+      if (error instanceof Error && error.name === 'NoSuchKey') {
+        throw new NotFoundException('Image not found in object storage');
+      }
+      throw error;
+    }
     if (!result.Body) throw new NotFoundException('Image not found');
 
     return {

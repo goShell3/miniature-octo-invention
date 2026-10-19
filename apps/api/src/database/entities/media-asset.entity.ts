@@ -24,6 +24,9 @@ export class MediaAssetEntity {
   @Column({ type: 'varchar', default: 'image' })
   type!: 'image' | 'resume' | 'other';
 
+  @Column({ name: 'is_uploaded', type: 'boolean', default: false })
+  isUploaded!: boolean;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;
 }
