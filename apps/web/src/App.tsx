@@ -6,7 +6,7 @@ import { SetupWizard, wizardDataToBlocks } from './SetupWizard'
 import type { WizardData } from './SetupWizard'
 import { NfcStudio } from './NfcStudio'
 import { PublicProfilePage } from './PublicProfilePage'
-import { API_URL } from './config'
+import { API_URL, resolveMediaUrl } from './config'
 import './Builder.css'
 import { getSubdomain, getPortfolioDomainLabel, getPortfolioSubdomainUrl } from './url-helpers'
 export { getSubdomain, getPortfolioSubdomainUrl, getPortfolioDomainLabel }
@@ -769,7 +769,7 @@ function WorkspaceApp() {
             <div className="settings-panel">
               <div className="panel-label">SECTION SETTINGS</div>
               {blocks[activeBlock]
-                ? <BlockForm block={blocks[activeBlock]} onChange={(next) => updateBlock(activeBlock, () => next)} />
+                ? <BlockForm block={blocks[activeBlock]} portfolioId={selected.id} onChange={(next) => updateBlock(activeBlock, () => next)} />
                 : <p className="muted">Choose or add a page section.</p>}
             </div>
             <div className="preview-stage">
@@ -862,9 +862,93 @@ function WorkspaceApp() {
   )
 }
 
-function BlockForm({ block, onChange }: { block: PortfolioBlock; onChange: (block: PortfolioBlock) => void }) {
+function BlockForm({ block, portfolioId, onChange }: { block: PortfolioBlock; portfolioId: string; onChange: (block: PortfolioBlock) => void }) {
+  const [uploadingImage, setUploadingImage] = useState<'avatarUrl' | 'headerImageUrl' | null>(null)
+  const [imageError, setImageError] = useState('')
+
   if (block.type === 'hero') {
     const heroData = block.data
+
+    async function uploadImage(field: 'avatarUrl' | 'headerImageUrl', file: File) {
+      setImageError('')
+      if (!['image/jpeg', 'image/png', 'image/webp', 'image/avif'].includes(file.type)) {
+        setImageError('Choose a JPG, PNG, WebP, or AVIF image.')
+        return
+      }
+      if (file.size > 8 * 1024 * 1024) {
+        setImageError('Image must be 8 MB or smaller.')
+        return
+      }
+
+      setUploadingImage(field)
+      try {
+        const uploadResponse = await fetch(`${API_URL}/media/upload-url`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ portfolioId, contentType: file.type }),
+        })
+        const upload = await uploadResponse.json() as {
+          uploadUrl?: string
+          publicUrl?: string
+          headers?: Record<string, string>
+          message?: string | string[]
+        }
+        if (!uploadResponse.ok || !upload.uploadUrl || !upload.publicUrl) {
+          throw new Error(Array.isArray(upload.message) ? upload.message.join(', ') : upload.message ?? 'Unable to prepare image upload.')
+        }
+
+        const putResponse = await fetch(upload.uploadUrl, {
+          method: 'PUT',
+          headers: upload.headers,
+          body: file,
+        })
+        if (!putResponse.ok) throw new Error('Image upload failed. Please try again.')
+
+        onChange({ type: 'hero', data: { ...heroData, [field]: upload.publicUrl } })
+      } catch (reason) {
+        setImageError(reason instanceof Error ? reason.message : 'Image upload failed.')
+      } finally {
+        setUploadingImage(null)
+      }
+    }
+
+    function imageField(field: 'avatarUrl' | 'headerImageUrl', label: string) {
+      const value = heroData[field]
+      const isUploading = uploadingImage === field
+      return (
+        <div className="portfolio-image-field">
+          <span className="portfolio-image-label">{label} <span className="optional">OPTIONAL</span></span>
+          {value && <img className={`portfolio-image-preview ${field === 'headerImageUrl' ? 'header' : ''}`} src={resolveMediaUrl(value)} alt={`${label} preview`} />}
+          <div className="portfolio-image-actions">
+            <label className="secondary-button portfolio-image-upload">
+              {isUploading ? 'Uploading…' : value ? 'Replace image' : 'Upload image'}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/avif"
+                disabled={uploadingImage !== null}
+                onChange={(event) => {
+                  const file = event.target.files?.[0]
+                  if (file) void uploadImage(field, file)
+                  event.target.value = ''
+                }}
+              />
+            </label>
+            {value && (
+              <button
+                type="button"
+                className="text-button"
+                disabled={uploadingImage !== null}
+                onClick={() => onChange({ type: 'hero', data: { ...heroData, [field]: undefined } })}
+              >
+                Remove
+              </button>
+            )}
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div className="field-stack">
         <label>
@@ -921,15 +1005,9 @@ function BlockForm({ block, onChange }: { block: PortfolioBlock; onChange: (bloc
             />
           </label>
         </div>
-        <label>
-          Portrait / Avatar URL <span className="optional">OPTIONAL</span>
-          <input
-            type="url"
-            value={heroData.avatarUrl ?? ''}
-            onChange={(e) => onChange({ type: 'hero', data: { ...heroData, avatarUrl: e.target.value || undefined } })}
-            placeholder="https://..."
-          />
-        </label>
+        {imageField('avatarUrl', 'Profile image')}
+        {imageField('headerImageUrl', 'Header / background image')}
+        {imageError && <p className="notice error-notice" role="alert">{imageError}</p>}
       </div>
     )
   }
@@ -1137,6 +1215,7 @@ function PortfolioPreview({ blocks, theme, subdomain }: { blocks: PortfolioBlock
     name?: string
     tagline?: string
     avatarUrl?: string
+    headerImageUrl?: string
     company?: string
     location?: string
     phone?: string
@@ -1243,6 +1322,7 @@ function PortfolioPreview({ blocks, theme, subdomain }: { blocks: PortfolioBlock
           company={company}
           bio={bio}
           avatarUrl={heroData.avatarUrl}
+          headerImageUrl={heroData.headerImageUrl}
           phone={phone}
           email={email}
           socials={socials}

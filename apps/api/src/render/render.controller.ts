@@ -12,7 +12,7 @@ export class RenderController {
   @Header('Referrer-Policy', 'strict-origin-when-cross-origin')
   @Header(
     'Content-Security-Policy',
-    "default-src 'none'; img-src https: data:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+    "default-src 'none'; img-src https: http: data:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
   )
   render(
     @Param('subdomain') subdomain: string,

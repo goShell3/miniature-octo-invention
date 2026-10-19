@@ -108,6 +108,7 @@ export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps)
     name?: string
     tagline?: string
     avatarUrl?: string
+    headerImageUrl?: string
     company?: string
     location?: string
     phone?: string
@@ -242,6 +243,7 @@ export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps)
           company={company}
           bio={bio}
           avatarUrl={heroData.avatarUrl}
+          headerImageUrl={heroData.headerImageUrl}
           phone={phone}
           email={email}
           socials={socials}

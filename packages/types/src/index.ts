@@ -23,6 +23,7 @@ export interface HeroBlock {
     name: string;
     tagline: string;
     avatarUrl?: string;
+    headerImageUrl?: string;
     company?: string;
     location?: string;
     phone?: string;

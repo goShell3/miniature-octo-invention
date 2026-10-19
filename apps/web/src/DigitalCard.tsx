@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import QRCode from 'qrcode'
+import { resolveMediaUrl } from './config'
 import './DigitalCard.css'
 
 export interface CardSocial {
@@ -16,6 +17,7 @@ export interface DigitalCardProps {
   company?: string
   bio?: string
   avatarUrl?: string
+  headerImageUrl?: string
   phone?: string
   email?: string
   socials?: CardSocial[]
@@ -143,6 +145,7 @@ export function DigitalCard({
   company = '',
   bio = 'Your short bio appears here.',
   avatarUrl,
+  headerImageUrl,
   phone = '',
   email = '',
   socials = [],
@@ -219,12 +222,17 @@ export function DigitalCard({
     <div className="digital-card-container" style={{ '--card-accent': accentColor } as CSSProperties}>
       <div className="digital-card">
         {/* Top Orange Header Banner */}
-        <div className="card-top-banner" />
+        <div
+          className="card-top-banner"
+          style={headerImageUrl ? {
+            backgroundImage: `linear-gradient(180deg, rgba(20, 18, 16, 0.12), rgba(20, 18, 16, 0.38)), url("${resolveMediaUrl(headerImageUrl)}")`,
+          } : undefined}
+        />
 
         {/* Centered Circular Avatar overlapping banner and card body */}
         <div className="card-avatar-wrapper">
           {avatarUrl ? (
-            <img src={avatarUrl} alt={name} className="card-avatar-img" />
+            <img src={resolveMediaUrl(avatarUrl)} alt={name} className="card-avatar-img" />
           ) : (
             <div className="card-avatar-fallback">{initial}</div>
           )}

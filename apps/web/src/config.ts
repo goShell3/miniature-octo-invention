@@ -33,3 +33,8 @@ export function getApiUrl(): string {
 }
 
 export const API_URL = getApiUrl()
+
+export function resolveMediaUrl(url?: string): string | undefined {
+  if (!url) return undefined
+  return url.startsWith('/media/assets/') ? `${API_URL}${url}` : url
+}

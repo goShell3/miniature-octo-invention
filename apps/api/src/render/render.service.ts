@@ -34,6 +34,11 @@ function safeWebUrl(value: unknown): string | null {
   }
 }
 
+function safeMediaUrl(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  return /^\/media\/assets\/[0-9a-f-]{36}$/i.test(value) ? value : null;
+}
+
 function normalizeSocialUrl(platform: string, rawInput: string): string {
   const trimmed = rawInput.trim();
   if (!trimmed) return '';
@@ -263,6 +268,7 @@ export class RenderService {
       name?: string;
       tagline?: string;
       avatarUrl?: string;
+      headerImageUrl?: string;
       company?: string;
       location?: string;
       phone?: string;
@@ -283,7 +289,11 @@ export class RenderService {
     const tagline = heroData.tagline?.trim() || '';
     const company = heroData.company?.trim() || '';
     const location = heroData.location?.trim() || '';
-    const avatarUrl = safeWebUrl(heroData.avatarUrl);
+    const avatarUrl = safeMediaUrl(heroData.avatarUrl) ?? safeWebUrl(heroData.avatarUrl);
+    const headerImageUrl = safeMediaUrl(heroData.headerImageUrl);
+    const headerImageStyle = headerImageUrl
+      ? ` style="background-image: linear-gradient(rgba(255,255,255,.78), rgba(250,248,245,.9)), url('${escapeHtml(headerImageUrl)}'); background-position: center; background-size: cover;"`
+      : '';
 
     const phone = (contactData.phone || heroData.phone || '').trim();
     const email = (contactData.email || heroData.email || '').trim();
@@ -1028,7 +1038,7 @@ export class RenderService {
     </header>
 
     <!-- Profile Hero -->
-    <section class="profile-hero">
+    <section class="profile-hero"${headerImageStyle}>
       <div class="avatar-wrapper">
         ${avatarHtml}
         <span class="verified-badge" title="Koolink Verified Identity">✓</span>

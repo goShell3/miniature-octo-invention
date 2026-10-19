@@ -6,8 +6,9 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { Readable } from 'node:stream';
 import { Repository } from 'typeorm';
 import { MediaAssetEntity } from '../database/entities/media-asset.entity';
 import { PortfolioEntity } from '../database/entities/portfolio.entity';
@@ -37,7 +38,6 @@ export class MediaService {
     const secretAccessKey = config.get<string>('S3_SECRET_ACCESS_KEY');
     const endpoint = config.get<string>('S3_ENDPOINT');
     this.bucket = bucket ?? '';
-    this.publicBaseUrl = config.get<string>('S3_PUBLIC_BASE_URL') ?? '';
 
     this.s3Client =
       region && accessKeyId && secretAccessKey && bucket
@@ -51,8 +51,6 @@ export class MediaService {
   }
 
   private readonly bucket: string;
-  private readonly publicBaseUrl: string;
-
   async createUploadUrl(
     ownerId: string,
     portfolioId: string,
@@ -83,9 +81,7 @@ export class MediaService {
         type: contentType === 'application/pdf' ? 'resume' : 'image',
       }),
     );
-    const publicUrl = this.publicBaseUrl
-      ? `${this.publicBaseUrl.replace(/\/$/, '')}/${key}`
-      : null;
+    const publicUrl = `/media/assets/${asset.id}`;
 
     return {
       assetId: asset.id,
@@ -94,6 +90,26 @@ export class MediaService {
       headers: { 'Content-Type': contentType },
       publicUrl,
       expiresIn: 300,
+    };
+  }
+
+  async getPublicImage(assetId: string) {
+    const asset = await this.mediaRepository.findOne({
+      where: { id: assetId, type: 'image' },
+    });
+    if (!asset) throw new NotFoundException('Image not found');
+    if (!this.s3Client) {
+      throw new ServiceUnavailableException('Object storage is not configured');
+    }
+
+    const result = await this.s3Client.send(
+      new GetObjectCommand({ Bucket: this.bucket, Key: asset.objectKey }),
+    );
+    if (!result.Body) throw new NotFoundException('Image not found');
+
+    return {
+      body: result.Body as Readable,
+      contentType: asset.contentType,
     };
   }
 }
