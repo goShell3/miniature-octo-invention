@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
 import QRCode from 'qrcode'
-import { NFC_CARD_TIER_PRICES_ETB } from '@amalink/types'
+import { NFC_CARD_TIER_PRICES_ETB, NFC_CARD_TIER_META, getTierFromQuantity, calculateTierPrice } from '@amalink/types'
 import type { NfcCardTier, PortfolioBlock, PortfolioTheme } from '@amalink/types'
 import { API_URL } from './config'
 import { getPortfolioSubdomainUrl } from './url-helpers'
@@ -39,11 +39,11 @@ interface OrderResult {
   createdAt: string
 }
 
-const cardTiers: Array<{ id: NfcCardTier; name: string }> = [
-  { id: 'individual', name: 'Individual' },
-  { id: 'business', name: 'S&M Business' },
-  { id: 'enterprise', name: 'Enterprise' },
-  { id: 'corporate', name: 'Corporate' },
+const cardTiers: Array<{ id: NfcCardTier; name: string; range: string }> = [
+  { id: 'individual', name: 'Individual', range: '1–4 cards' },
+  { id: 'business', name: 'S&M Business', range: '5–19 cards' },
+  { id: 'enterprise', name: 'Enterprise', range: '20–49 cards' },
+  { id: 'corporate', name: 'Corporate', range: '50+ cards' },
 ]
 
 function getIdentity(portfolio: Portfolio) {
@@ -133,6 +133,23 @@ export function NfcStudio({ portfolio, onBack, initialTier, onOrderCreated }: { 
   const [copied, setCopied] = useState(false)
   const [selectedTier, setSelectedTier] = useState<NfcCardTier>(initialTier ?? 'individual')
   const [quantity, setQuantity] = useState(1)
+
+  function handleQuantityChange(val: number) {
+    const q = Math.max(1, Math.floor(val || 1))
+    setQuantity(q)
+    const autoTier = getTierFromQuantity(q)
+    setSelectedTier(autoTier)
+  }
+
+  function handleSelectTier(tierId: NfcCardTier) {
+    setSelectedTier(tierId)
+    const meta = NFC_CARD_TIER_META[tierId]
+    if (quantity < meta.min || (meta.max !== null && quantity > meta.max)) {
+      setQuantity(meta.min)
+    }
+  }
+
+  const currentCalc = calculateTierPrice(quantity)
   const [cardSide, setCardSide] = useState<'front' | 'back'>('front')
   const [tilt, setTilt] = useState({ x: 0, y: 0 })
 
@@ -445,34 +462,60 @@ export function NfcStudio({ portfolio, onBack, initialTier, onOrderCreated }: { 
           ) : (
             <form className="nfc-order-form" onSubmit={submitOrder}>
               <p className="nfc-order-copy">Choose your card tier and delivery address in Ethiopia:</p>
-              <div style={{ display: 'grid', gap: 6, margin: '2px 0 10px' }}>
-                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--ink)' }}>CARD TIER &amp; PRICING</span>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
-                  {cardTiers.map((tier) => (
-                    <button
-                      key={tier.id}
-                      type="button"
-                      onClick={() => setSelectedTier(tier.id as typeof selectedTier)}
-                      style={{
-                        padding: '7px 4px',
-                        border: selectedTier === tier.id ? '2px solid #e06b24' : '1px solid var(--line)',
-                        background: selectedTier === tier.id ? '#faece2' : '#fff',
-                        borderRadius: 3,
-                        cursor: 'pointer',
-                        textAlign: 'center',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: 2,
-                      }}
-                    >
-                      <strong style={{ fontSize: 9, color: 'var(--ink)' }}>{tier.name}</strong>
-                      <span style={{ fontSize: 8, fontWeight: 700, color: '#ff3535' }}>{NFC_CARD_TIER_PRICES_ETB[tier.id].toLocaleString()} ETB</span>
-                    </button>
-                  ))}
+              <div style={{ display: 'grid', gap: 6, margin: '2px 0 12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--ink)' }}>CARD TIER &amp; PRICING PACKAGES</span>
+                  <span style={{ fontSize: 9, color: 'var(--muted)', fontWeight: 600 }}>Tier updates automatically</span>
+                </div>
+                <div className="nfc-tier-selector-grid">
+                  {cardTiers.map((tier) => {
+                    const isSelected = selectedTier === tier.id
+                    return (
+                      <button
+                        key={tier.id}
+                        type="button"
+                        onClick={() => handleSelectTier(tier.id)}
+                        className={`nfc-tier-choice-btn ${isSelected ? 'active' : ''}`}
+                      >
+                        <strong className="nfc-tier-choice-name">{tier.name}</strong>
+                        <span className="nfc-tier-choice-range">{tier.range}</span>
+                        <span className="nfc-tier-choice-price">{NFC_CARD_TIER_PRICES_ETB[tier.id].toLocaleString()} ETB <small>/card</small></span>
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
-              <label>Quantity<input type="number" min={1} max={100} required value={quantity} onChange={(event) => setQuantity(Math.max(1, Math.min(100, Number(event.target.value) || 1)))} /></label>
+              <label>
+                Quantity (Number of cards)
+                <input
+                  type="number"
+                  min={1}
+                  required
+                  value={quantity}
+                  onChange={(event) => handleQuantityChange(Number(event.target.value))}
+                  placeholder="Enter number of cards"
+                />
+              </label>
+
+              {/* Dynamic Price Calculation Summary */}
+              <div className="nfc-price-summary-box">
+                <div className="nfc-price-summary-row">
+                  <span>Cards to order:</span>
+                  <strong>{quantity} {quantity === 1 ? 'card' : 'cards'}</strong>
+                </div>
+                <div className="nfc-price-summary-row">
+                  <span>Selected Package:</span>
+                  <span className="nfc-tier-pill">{currentCalc.meta.name} ({currentCalc.meta.rangeLabel})</span>
+                </div>
+                <div className="nfc-price-summary-row">
+                  <span>Unit Price:</span>
+                  <strong>{currentCalc.unitPrice.toLocaleString()} ETB / card</strong>
+                </div>
+                <div className="nfc-price-summary-total">
+                  <span>Total Calculated Price:</span>
+                  <span className="nfc-total-amount">{currentCalc.totalAmount.toLocaleString()} ETB</span>
+                </div>
+              </div>
               <label>Recipient name<input required maxLength={100} autoComplete="name" value={address.name} onChange={(event) => setAddress({ ...address, name: event.target.value })} placeholder="Full name of card owner" /></label>
               <label>Delivery phone<input required type="tel" maxLength={32} autoComplete="tel" value={address.phone} onChange={(event) => setAddress({ ...address, phone: event.target.value })} placeholder="+251 9..." /></label>
               <label>Delivery address<input required maxLength={150} autoComplete="address-line1" value={address.addressLine1} onChange={(event) => setAddress({ ...address, addressLine1: event.target.value })} placeholder="Subcity, Woreda, Building or Street" /></label>
@@ -483,7 +526,7 @@ export function NfcStudio({ portfolio, onBack, initialTier, onOrderCreated }: { 
               <button className="primary-button" disabled={busy}>
                 {busy
                   ? 'Requesting...'
-                  : `Order request (${(NFC_CARD_TIER_PRICES_ETB[selectedTier] * quantity).toLocaleString()} ETB)`}
+                  : `Submit Order Request — ${currentCalc.totalAmount.toLocaleString()} ETB`}
               </button>
               <small className="nfc-order-disclaimer">No payment is collected here. This submits a request; Koolink will confirm availability, payment, and delivery before fulfillment.</small>
             </form>

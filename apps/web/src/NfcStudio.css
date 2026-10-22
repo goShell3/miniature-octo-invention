@@ -439,3 +439,155 @@
 .nfc-whatsapp-confirm:hover {
   background: #16a34a;
 }
+
+
+/* ── Dynamic Tier Selector & Pricing Breakdown ── */
+.nfc-tier-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+@media (max-width: 680px) {
+  .nfc-tier-selector-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 360px) {
+  .nfc-tier-selector-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.nfc-tier-choice-btn {
+  padding: 10px 8px;
+  border: 1px solid var(--line, #e2dcd3);
+  background: #ffffff;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.18s ease;
+  min-height: 70px;
+  justify-content: center;
+}
+
+.nfc-tier-choice-btn:hover {
+  border-color: #f48935;
+  background: #fdfaf6;
+}
+
+.nfc-tier-choice-btn.active {
+  border: 2px solid #ff3535;
+  background: #fff5f5;
+  box-shadow: 0 2px 8px rgba(255, 53, 53, 0.12);
+}
+
+.nfc-tier-choice-name {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--ink, #191513);
+  line-height: 1.2;
+}
+
+.nfc-tier-choice-range {
+  font-size: 9px;
+  color: var(--muted, #7a7269);
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.04);
+  padding: 1px 6px;
+  border-radius: 9999px;
+}
+
+.nfc-tier-choice-btn.active .nfc-tier-choice-range {
+  background: rgba(255, 53, 53, 0.1);
+  color: #c42b2b;
+}
+
+.nfc-tier-choice-price {
+  font-size: 11px;
+  font-weight: 800;
+  color: #ff3535;
+  margin-top: 2px;
+}
+
+.nfc-tier-choice-price small {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--muted, #7a7269);
+}
+
+.nfc-price-summary-box {
+  background: #fdfaf6;
+  border: 1px solid #e8e2d8;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 6px 0 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+.nfc-price-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted, #7a7269);
+}
+
+.nfc-price-summary-row strong {
+  color: var(--ink, #191513);
+  font-size: 13px;
+}
+
+.nfc-tier-pill {
+  font-size: 11px;
+  font-weight: 700;
+  color: #ff3535;
+  background: #fee2e2;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+.nfc-price-summary-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px dashed #dcd4c8;
+  padding-top: 10px;
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink, #191513);
+}
+
+.nfc-total-amount {
+  font-size: 19px;
+  font-weight: 900;
+  color: #ff3535;
+  letter-spacing: -0.5px;
+}
+
+@media (max-width: 600px) {
+  .nfc-order-form {
+    display: flex;
+    flex-direction: column;
+  }
+  .nfc-address-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .nfc-order-form input,
+  .nfc-order-form select {
+    font-size: 16px; /* Prevents auto-zoom on iOS */
+    min-height: 44px;
+  }
+}

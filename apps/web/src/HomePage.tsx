@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { NFC_CARD_TIER_PRICES_ETB } from '@amalink/types'
+import { NFC_CARD_TIER_PRICES_ETB, calculateTierPrice } from '@amalink/types'
 import type { NfcCardTier } from '@amalink/types'
 import { AuthPage } from './AuthPage'
 import { BrandLogo } from './BrandLogo'
@@ -40,6 +40,8 @@ export function HomePage({
 }: HomePageProps) {
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup')
+  const [calcQuantity, setCalcQuantity] = useState(1)
+  const calcResult = calculateTierPrice(calcQuantity)
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [activeProfile, setActiveProfile] = useState(0)
   const [isShowcasePaused, setIsShowcasePaused] = useState(false)
@@ -316,8 +318,76 @@ export function HomePage({
             <span className="section-eyebrow">TRANSPARENT PRICING</span>
             <h2 className="section-title">Choose the right card for your team</h2>
             <p className="section-desc">
-              High-durability contactless NFC smart business cards delivered directly to you in Ethiopia.
+              High-durability contactless NFC smart business cards delivered directly to you in Ethiopia. Total price automatically calculates based on volume.
             </p>
+          </div>
+
+          {/* Interactive Volume & Price Calculator */}
+          <div className="pricing-calc-container">
+            <div className="pricing-calc-card">
+              <div className="pricing-calc-info">
+                <span className="pricing-calc-tag">INSTANT PRICE CALCULATOR</span>
+                <h3 className="pricing-calc-title">How many cards does your team need?</h3>
+                <p className="pricing-calc-desc">
+                  Prices adjust automatically based on volume. Enter or adjust your card count to calculate your exact total:
+                </p>
+                <div className="pricing-calc-counter-row">
+                  <div className="calc-qty-control">
+                    <button
+                      type="button"
+                      className="calc-qty-btn"
+                      onClick={() => setCalcQuantity((q) => Math.max(1, q - 1))}
+                      aria-label="Decrease quantity"
+                    >
+                      −
+                    </button>
+                    <input
+                      type="number"
+                      className="calc-qty-input"
+                      min={1}
+                      value={calcQuantity}
+                      onChange={(e) => setCalcQuantity(Math.max(1, Math.floor(Number(e.target.value) || 1)))}
+                      aria-label="Number of cards"
+                    />
+                    <button
+                      type="button"
+                      className="calc-qty-btn"
+                      onClick={() => setCalcQuantity((q) => q + 1)}
+                      aria-label="Increase quantity"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <span className="calc-qty-unit">{calcQuantity === 1 ? 'card' : 'cards'}</span>
+                </div>
+              </div>
+
+              <div className="pricing-calc-result-box">
+                <div className="pricing-calc-row">
+                  <span>Package:</span>
+                  <span className="calc-package-badge">{calcResult.meta.name} ({calcResult.meta.rangeLabel})</span>
+                </div>
+                <div className="pricing-calc-row">
+                  <span>Unit Price:</span>
+                  <strong>{calcResult.unitPrice.toLocaleString()} ETB / card</strong>
+                </div>
+                <div className="pricing-calc-divider" />
+                <div className="pricing-calc-total-row">
+                  <span>Total Amount:</span>
+                  <div className="calc-total-figure">
+                    <span className="calc-total-val">{calcResult.totalAmount.toLocaleString()}</span>
+                    <span className="calc-total-curr">ETB</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="pricing-btn primary calc-order-btn"
+                  onClick={() => chooseCardTier(calcResult.tier)}
+                >
+                  Order {calcQuantity} {calcQuantity === 1 ? 'Card' : 'Cards'} Now →
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className="pricing-grid">
@@ -325,7 +395,7 @@ export function HomePage({
             <div className="pricing-card">
               <div className="pricing-content">
                 <h3 className="pricing-tier-name">Individual</h3>
-                <p className="pricing-tier-target">For one person</p>
+                <p className="pricing-tier-target">1–4 cards (Min. 1, Max. 4)</p>
 
                 <div className="pricing-figure">
                   <span className="pricing-val">{NFC_CARD_TIER_PRICES_ETB.individual.toLocaleString()}</span>
@@ -363,7 +433,7 @@ export function HomePage({
             <div className="pricing-card">
               <div className="pricing-content">
                 <h3 className="pricing-tier-name">S&amp;M Business</h3>
-                <p className="pricing-tier-target">For small and medium teams</p>
+                <p className="pricing-tier-target">5–19 cards (Min. 5, Max. 19)</p>
 
                 <div className="pricing-figure">
                   <span className="pricing-val">{NFC_CARD_TIER_PRICES_ETB.business.toLocaleString()}</span>
@@ -401,7 +471,7 @@ export function HomePage({
             <div className="pricing-card">
               <div className="pricing-content">
                 <h3 className="pricing-tier-name">Enterprise</h3>
-                <p className="pricing-tier-target">For large teams and events</p>
+                <p className="pricing-tier-target">20–49 cards (Min. 20, Max. 49)</p>
 
                 <div className="pricing-figure">
                   <span className="pricing-val">{NFC_CARD_TIER_PRICES_ETB.enterprise.toLocaleString()}</span>
@@ -440,7 +510,7 @@ export function HomePage({
               <span className="pricing-badge">Lowest per card</span>
               <div className="pricing-content">
                 <h3 className="pricing-tier-name">Corporate</h3>
-                <p className="pricing-tier-target">For company-wide rollout</p>
+                <p className="pricing-tier-target">50+ cards (Min. 50, No maximum)</p>
 
                 <div className="pricing-figure">
                   <span className="pricing-val">{NFC_CARD_TIER_PRICES_ETB.corporate.toLocaleString()}</span>

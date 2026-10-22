@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
-import { NFC_CARD_TIER_PRICES_ETB, NfcCardTier } from '@amalink/types';
+import { NFC_CARD_TIER_PRICES_ETB, NfcCardTier, getTierFromQuantity } from '@amalink/types';
 import { CardTapEntity } from '../database/entities/card-tap.entity';
 import { NfcOrderEntity } from '../database/entities/nfc-order.entity';
 import { PortfolioEntity } from '../database/entities/portfolio.entity';
@@ -52,7 +52,7 @@ export class NfcOrdersService {
       where: { id: ownerId },
       select: { id: true, customerType: true },
     });
-    const resolvedTier: NfcCardTier = owner?.customerType ?? input.tier;
+    const resolvedTier: NfcCardTier = getTierFromQuantity(input.quantity);
 
     const address = {
       name: input.name,

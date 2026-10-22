@@ -408,3 +408,19 @@
     padding: 36px 5vw 36px;
   }
 }
+
+
+@media (max-width: 600px) {
+  .wizard-form-col input,
+  .wizard-form-col select,
+  .wizard-form-col textarea {
+    font-size: 16px !important; /* Prevents auto-zoom on iOS */
+    min-height: 44px;
+  }
+  .wizard-form-col {
+    padding: 24px 16px;
+  }
+  .wizard-header {
+    padding: 16px;
+  }
+}

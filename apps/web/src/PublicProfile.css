@@ -339,3 +339,11 @@
   opacity: 1;
   background: rgba(255, 255, 255, 0.08);
 }
+
+
+/* ── Mobile viewport refinement ── */
+@media (max-width: 480px) {
+  .public-profile-viewport {
+    padding: 16px 10px 36px;
+  }
+}

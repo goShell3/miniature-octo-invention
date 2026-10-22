@@ -20,7 +20,7 @@ export class CreateNfcOrderDto {
 
   @IsInt()
   @Min(1)
-  @Max(100)
+  @Max(10000)
   quantity!: number;
 
   @IsString()

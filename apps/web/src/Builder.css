@@ -1236,3 +1236,104 @@
   align-items: center;
   gap: 8px;
 }
+
+
+/* =====================================================================
+   Comprehensive Mobile-Friendly Overhaul
+   ===================================================================== */
+@media (max-width: 640px) {
+  .profile-clean-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    padding: 16px;
+  }
+  .profile-card-actions {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+  }
+  .profile-card-actions .secondary-button,
+  .profile-card-actions .primary-button {
+    flex: 1;
+    text-align: center;
+    justify-content: center;
+    min-height: 42px;
+  }
+
+  .editor-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .editor-toolbar-left {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    gap: 8px;
+  }
+  .editor-toolbar-right {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .editor-toolbar-right .btn-toolbar-primary {
+    grid-column: 1 / -1;
+  }
+  .toolbar-action-btn {
+    width: 100%;
+    min-height: 42px;
+  }
+
+  .editor-profile-identity {
+    padding: 4px 10px;
+    gap: 6px;
+  }
+  .editor-profile-name {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 520px) {
+  .form-row {
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+  }
+  .section-header-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .section-header-actions {
+    width: 100%;
+    display: flex;
+    gap: 6px;
+  }
+  .btn-section-action {
+    flex: 1;
+    min-height: 36px;
+    text-align: center;
+    justify-content: center;
+  }
+  .project-input-header,
+  .social-input-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .workspace-toast {
+    top: 14px;
+    right: 14px;
+    left: 14px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 600px) {
+  .field-stack input,
+  .field-stack select,
+  .field-stack textarea {
+    font-size: 16px !important; /* Prevents auto-zoom on iOS */
+    min-height: 42px;
+  }
+}

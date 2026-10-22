@@ -625,3 +625,41 @@
   from { opacity: 0; transform: translate(-50%, 12px); }
   to   { opacity: 1; transform: translate(-50%, 0); }
 }
+
+
+/* ── Mobile Responsive Rules for Digital Card ── */
+@media (max-width: 380px) {
+  .intro-card-wrapper {
+    padding: 16px 12px 24px;
+  }
+  .intro-identity-card {
+    grid-template-columns: 88px 1fr;
+    gap: 12px;
+    padding: 14px 14px;
+    border-radius: 18px;
+  }
+  .intro-avatar-box {
+    width: 88px;
+    height: 108px;
+    border-radius: 14px;
+  }
+  .intro-name {
+    font-size: 18px;
+  }
+  .intro-action-pills {
+    gap: 8px;
+  }
+  .intro-pill-btn {
+    height: 44px;
+    font-size: 11.5px;
+    gap: 6px;
+  }
+  .intro-social-circle-btn {
+    width: 40px;
+    height: 40px;
+  }
+  .intro-contact-item {
+    padding: 14px 14px;
+    font-size: 13.5px;
+  }
+}
