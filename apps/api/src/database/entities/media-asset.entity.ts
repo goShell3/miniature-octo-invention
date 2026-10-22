@@ -15,10 +15,10 @@ export class MediaAssetEntity {
   @ManyToOne(() => PortfolioEntity, { nullable: false, onDelete: 'CASCADE' })
   portfolio!: PortfolioEntity;
 
-  @Column({ type: 'text' })
+  @Column({ name: 'object_key', type: 'text' })
   objectKey!: string;
 
-  @Column({ type: 'text' })
+  @Column({ name: 'content_type', type: 'text' })
   contentType!: string;
 
   @Column({ type: 'varchar', default: 'image' })

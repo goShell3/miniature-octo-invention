@@ -290,7 +290,7 @@ export class RenderService {
     const company = heroData.company?.trim() || '';
     const location = heroData.location?.trim() || '';
     const avatarUrl = safeMediaUrl(heroData.avatarUrl) ?? safeWebUrl(heroData.avatarUrl);
-    const headerImageUrl = safeMediaUrl(heroData.headerImageUrl);
+    const headerImageUrl = safeMediaUrl(heroData.headerImageUrl) ?? safeWebUrl(heroData.headerImageUrl);
     const headerImageStyle = headerImageUrl
       ? ` style="background-image: linear-gradient(rgba(255,255,255,.78), rgba(250,248,245,.9)), url('${escapeHtml(headerImageUrl)}'); background-position: center; background-size: cover;"`
       : '';
@@ -440,13 +440,20 @@ export class RenderService {
             const linkTag = pLink
               ? `<a href="${escapeHtml(pLink)}" target="_blank" rel="noopener noreferrer" class="project-card-link">View Project ↗</a>`
               : '';
+            const pImg = safeMediaUrl(p.imageUrl) ?? safeWebUrl(p.imageUrl);
+            const imgTag = pImg
+              ? `<div class="project-card-img-wrap"><img src="${escapeHtml(pImg)}" alt="${escapeHtml(p.title)}" class="project-card-img" /></div>`
+              : '';
             return `
               <div class="project-card">
-                <span class="project-num">${String(idx + 1).padStart(2, '0')}</span>
-                <div class="project-info">
-                  <h3 class="project-title">${escapeHtml(p.title)}</h3>
-                  ${p.description ? `<p class="project-desc">${escapeHtml(p.description)}</p>` : ''}
-                  ${linkTag}
+                ${imgTag}
+                <div class="project-card-content">
+                  <span class="project-num">${String(idx + 1).padStart(2, '0')}</span>
+                  <div class="project-info">
+                    <h3 class="project-title">${escapeHtml(p.title)}</h3>
+                    ${p.description ? `<p class="project-desc">${escapeHtml(p.description)}</p>` : ''}
+                    ${linkTag}
+                  </div>
                 </div>
               </div>
             `;
@@ -895,11 +902,31 @@ export class RenderService {
 
     .project-card {
       display: flex;
-      align-items: flex-start;
-      gap: 14px;
+      flex-direction: column;
       background: #faf8f5;
       border: 1px solid var(--line);
-      border-radius: 8px;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .project-card-img-wrap {
+      width: 100%;
+      height: 160px;
+      overflow: hidden;
+      background: #ede8e3;
+    }
+
+    .project-card-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .project-card-content {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
       padding: 16px;
     }
 
