@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import type { NfcCardTier, PortfolioBlock, PortfolioTheme, SocialLink } from '@amalink/types'
 import { authClient } from './auth-client'
 import { HomePage } from './HomePage'
@@ -8,6 +8,7 @@ import { NfcStudio } from './NfcStudio'
 import { PublicProfilePage } from './PublicProfilePage'
 import { API_URL, resolveMediaUrl } from './config'
 import './Builder.css'
+import './PublicProfile.css'
 import { getSubdomain, getPortfolioDomainLabel, getPortfolioSubdomainUrl } from './url-helpers'
 export { getSubdomain, getPortfolioSubdomainUrl, getPortfolioDomainLabel }
 import { DigitalCard } from './DigitalCard'
@@ -105,6 +106,14 @@ function initialBlocks(): PortfolioBlock[] {
   ]
 }
 
+const sectionLabels: Record<PortfolioBlock['type'], string> = {
+  hero: 'Identity & Hero',
+  about: 'About & Bio',
+  projects: 'Featured Work',
+  contact: 'Contact & Socials',
+  links: 'Custom Links',
+}
+
 function WorkspaceApp() {
   const [user, setUser] = useState<User | null>(null)
   const [viewLanding, setViewLanding] = useState(false)
@@ -117,8 +126,27 @@ function WorkspaceApp() {
   const [selectedCardTier, setSelectedCardTier] = useState<NfcCardTier | null>(getStoredCardTier)
   const [blocks, setBlocks] = useState<PortfolioBlock[]>([])
   const [theme, setTheme] = useState<PortfolioTheme>({ id: 'minimal', accentColor: '#ff3535' })
-  const [message, setMessage] = useState('')
-  const [error, setError] = useState('')
+  const [toast, setToast] = useState<{ id: number; message: string; type: 'success' | 'error' | 'info' } | null>(null)
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [copiedSubdomain, setCopiedSubdomain] = useState(false)
+  const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null)
+
+  const showToast = useCallback((msg: string, type: 'success' | 'error' | 'info' = 'success', duration = 3500) => {
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current)
+    const id = Date.now()
+    setToast({ id, message: msg, type })
+    toastTimeoutRef.current = setTimeout(() => {
+      setToast((cur) => (cur?.id === id ? null : cur))
+    }, duration)
+  }, [])
+
+  const setMessage = useCallback((msg: string) => {
+    if (msg) showToast(msg, 'success')
+  }, [showToast])
+
+  const setError = useCallback((err: string) => {
+    if (err) showToast(err, 'error')
+  }, [showToast])
   const [busy, setBusy] = useState(false)
   const [activeBlock, setActiveBlock] = useState(0)
   const [apiStatus, setApiStatus] = useState<'checking' | 'online' | 'offline'>('checking')
@@ -127,6 +155,21 @@ function WorkspaceApp() {
   const [showWizard, setShowWizard] = useState(false)
   const [wizardBusy, setWizardBusy] = useState(false)
   const [wizardError, setWizardError] = useState('')
+
+  // Unsaved changes tracking
+  const [savedSnapshot, setSavedSnapshot] = useState<string>('')
+  const hasUnsavedChanges = Boolean(selected && savedSnapshot && JSON.stringify({ theme, blocks }) !== savedSnapshot)
+
+  // Safeguard against accidental tab closing with unsaved edits
+  useEffect(() => {
+    if (!hasUnsavedChanges) return
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [hasUnsavedChanges])
 
   // Domain editing modal state
   const [showDomainModal, setShowDomainModal] = useState(false)
@@ -347,10 +390,13 @@ function WorkspaceApp() {
   // ── Portfolio selection ──────────────────────────────────────────────────────
 
   function selectPortfolio(portfolio: Portfolio) {
+    const initialB = portfolio.content?.blocks ?? initialBlocks()
+    const initialT = portfolio.theme ?? { id: 'minimal', accentColor: '#ff3535' }
     setSelected(portfolio)
     setShowNfcStudio(false)
-    setBlocks(portfolio.content?.blocks ?? initialBlocks())
-    setTheme(portfolio.theme)
+    setBlocks(initialB)
+    setTheme(initialT)
+    setSavedSnapshot(JSON.stringify({ theme: initialT, blocks: initialB }))
     setActiveBlock(0)
     setMessage('')
     setError('')
@@ -367,6 +413,7 @@ function WorkspaceApp() {
       })
       setSelected(updated)
       setPortfolios((current) => current.map((item) => item.id === updated.id ? updated : item))
+      setSavedSnapshot(JSON.stringify({ theme, blocks }))
       setMessage(`Draft saved! Preview at ${getPortfolioSubdomainUrl(updated.subdomain, true)}`)
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Unable to save draft')
@@ -383,6 +430,7 @@ function WorkspaceApp() {
       const updated = await apiRequest<Portfolio>(`/portfolios/${selected.id}/publish`, { method: 'POST' })
       setSelected(updated)
       setPortfolios((current) => current.map((item) => item.id === updated.id ? updated : item))
+      setSavedSnapshot(JSON.stringify({ theme, blocks }))
       setMessage(`Published! Live at ${getPortfolioSubdomainUrl(updated.subdomain, false)}`)
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Unable to publish portfolio')
@@ -399,6 +447,7 @@ function WorkspaceApp() {
       const updated = await apiRequest<Portfolio>(`/portfolios/${selected.id}/unpublish`, { method: 'POST' })
       setSelected(updated)
       setPortfolios((current) => current.map((item) => item.id === updated.id ? updated : item))
+      setSavedSnapshot(JSON.stringify({ theme, blocks }))
       setMessage('Portfolio unpublished (reverted to draft)')
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Unable to unpublish portfolio')
@@ -409,6 +458,57 @@ function WorkspaceApp() {
 
   function updateBlock(index: number, update: (block: PortfolioBlock) => PortfolioBlock) {
     setBlocks((current) => current.map((block, blockIndex) => blockIndex === index ? update(block) : block))
+  }
+
+  async function handleAutoSaveBlock(updatedBlock: PortfolioBlock) {
+    if (!selected) return
+    const nextBlocks = blocks.map((b, i) => (i === activeBlock ? updatedBlock : b))
+    setBlocks(nextBlocks)
+    try {
+      const updated = await apiRequest<Portfolio>(`/portfolios/${selected.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ theme, blocks: nextBlocks }),
+      })
+      setSelected(updated)
+      setPortfolios((current) => current.map((item) => (item.id === updated.id ? updated : item)))
+      setSavedSnapshot(JSON.stringify({ theme, blocks: nextBlocks }))
+      setMessage('Image saved to profile!')
+    } catch (err) {
+      console.warn('Auto-save error:', err)
+    }
+  }
+
+  function moveBlock(index: number, direction: 'up' | 'down') {
+    if (direction === 'up' && index > 0) {
+      const next = [...blocks]
+      const temp = next[index - 1]
+      next[index - 1] = next[index]
+      next[index] = temp
+      setBlocks(next)
+      setActiveBlock(index - 1)
+    } else if (direction === 'down' && index < blocks.length - 1) {
+      const next = [...blocks]
+      const temp = next[index + 1]
+      next[index + 1] = next[index]
+      next[index] = temp
+      setBlocks(next)
+      setActiveBlock(index + 1)
+    }
+  }
+
+  function removeBlock(index: number) {
+    if (blocks.length <= 1) {
+      alert('Your portfolio must keep at least one section.')
+      return
+    }
+    const blockToRemove = blocks[index]
+    const label = blockToRemove?.type ? blockToRemove.type.toUpperCase() : 'this'
+    if (!window.confirm(`Are you sure you want to remove the ${label} section from your portfolio?`)) {
+      return
+    }
+    const next = blocks.filter((_, idx) => idx !== index)
+    setBlocks(next)
+    setActiveBlock((prev) => Math.min(prev, Math.max(0, next.length - 1)))
   }
 
   function addBlock(type: PortfolioBlock['type']) {
@@ -508,119 +608,197 @@ function WorkspaceApp() {
     )
   }
 
+  function handleBackToDashboard() {
+    if (hasUnsavedChanges) {
+      if (!window.confirm('You have unsaved changes. Discard changes and return to portfolios?')) return
+    }
+    setSelected(null)
+    setShowNfcStudio(false)
+    setMessage('')
+    setError('')
+  }
+
   // Authenticated: show the main workspace
   return (
     <main className="workspace">
       <header className="topbar">
-        <button className="brand-lockup" onClick={() => { setSelected(null); setMessage(''); setError('') }}>
+        <button
+          className="brand-lockup"
+          onClick={() => {
+            if (selected && hasUnsavedChanges) {
+              if (!window.confirm('You have unsaved changes. Discard changes and return to dashboard?')) return
+            }
+            setSelected(null)
+            setMessage('')
+            setError('')
+          }}
+        >
           <BrandLogo variant="workspace" />
         </button>
         <div className="topbar-right">
-          <button className="text-button" onClick={() => setViewLanding(true)}>NFC Cards &amp; Pricing</button>
-          {user?.customerType && (
-            <span className="user-email">{user.customerType === 'business' ? 'S&M Business' : user.customerType === 'individual' ? 'Individual' : user.customerType === 'enterprise' ? 'Enterprise' : 'Corporate'}</span>
-          )}
-          <div className="nav-status-pill" title={`API is ${apiStatus}`}>
-            <span className={`nav-status-dot ${apiStatus}`} />
-            <span>{apiStatus === 'online' ? 'Connected' : apiStatus === 'checking' ? 'Connecting…' : 'Offline'}</span>
-          </div>
+          <button
+            className="text-button"
+            onClick={() => {
+              if (selected && hasUnsavedChanges) {
+                if (!window.confirm('You have unsaved changes. Discard changes and leave?')) return
+              }
+              setViewLanding(true)
+            }}
+          >
+            NFC Cards &amp; Pricing
+          </button>
           <span className="user-email">{user.email}</span>
-          <button className="text-button" onClick={signOut}>Sign out</button>
+          <button
+            className="text-button"
+            onClick={() => {
+              if (selected && hasUnsavedChanges) {
+                if (!window.confirm('You have unsaved changes. Discard changes and sign out?')) return
+              }
+              void signOut()
+            }}
+          >
+            Sign out
+          </button>
         </div>
       </header>
 
       {!selected ? (
         <section className="dashboard">
-          <div className="dashboard-heading">
+          <div className="dashboard-clean-header">
             <div>
-              <p className="eyebrow">WORKSPACE</p>
-              <h1>{dashboardView === 'profiles' ? 'Your profiles' : 'Card orders'}</h1>
-              <p className="muted">{dashboardView === 'profiles' ? 'Build a clear home for your work.' : 'Review requests and tap links for your cards.'}</p>
+              <p className="eyebrow">KOOLINK WORKSPACE</p>
+              <h1 style={{ fontSize: 32, margin: 0, fontWeight: 700, color: 'var(--ink)' }}>
+                {dashboardView === 'profiles' ? 'Your Profiles' : 'Card Orders'}
+              </h1>
             </div>
-            <span className="portfolio-count">{(dashboardView === 'profiles' ? portfolios.length : orders.length).toString().padStart(2, '0')} <small>{dashboardView === 'profiles' ? 'PROFILES' : 'ORDERS'}</small></span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div className="dashboard-nav-tabs">
+                <button
+                  type="button"
+                  className={`dashboard-nav-tab ${dashboardView === 'profiles' ? 'active' : ''}`}
+                  onClick={() => setDashboardView('profiles')}
+                >
+                  Profiles ({portfolios.length})
+                </button>
+                <button
+                  type="button"
+                  className={`dashboard-nav-tab ${dashboardView === 'orders' ? 'active' : ''}`}
+                  onClick={() => setDashboardView('orders')}
+                >
+                  Card Orders ({orders.length})
+                </button>
+              </div>
+              {dashboardView === 'profiles' && (
+                <button
+                  type="button"
+                  className="primary-button"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 38 }}
+                  onClick={() => { setWizardError(''); setShowWizard(true) }}
+                >
+                  <span>+</span> New Profile
+                </button>
+              )}
+            </div>
           </div>
-          <div role="tablist" aria-label="Workspace views" style={{ display: 'flex', gap: 8, margin: '20px 0' }}>
-            <button type="button" role="tab" aria-selected={dashboardView === 'profiles'} className={dashboardView === 'profiles' ? 'primary-button' : 'secondary-button'} onClick={() => setDashboardView('profiles')}>Profiles</button>
-            <button type="button" role="tab" aria-selected={dashboardView === 'orders'} className={dashboardView === 'orders' ? 'primary-button' : 'secondary-button'} onClick={() => setDashboardView('orders')}>Card orders</button>
-          </div>
+
           {dashboardView === 'orders' ? (
             <div className="portfolio-list">
               {orders.length === 0 ? (
-                <div className="empty-state"><span className="empty-index">01</span><h2>No card requests yet.</h2><p>Published profiles can be used to request a card from the card studio.</p></div>
+                <div className="empty-state">
+                  <h2>No card requests yet.</h2>
+                  <p>Order a physical contactless NFC card from the Card Studio for any published profile.</p>
+                </div>
               ) : orders.map((order, index) => (
                 <article key={order.id} className="portfolio-row" style={{ cursor: 'default' }}>
                   <span className="row-number">{String(index + 1).padStart(2, '0')}</span>
-                  <span className="row-main"><strong>{order.tier} · {order.quantity} {order.quantity === 1 ? 'card' : 'cards'}</strong><small>{getPortfolioDomainLabel(order.portfolio.subdomain)} · {new Date(order.createdAt).toLocaleDateString()}</small></span>
+                  <span className="row-main">
+                    <strong>{order.tier} · {order.quantity} {order.quantity === 1 ? 'card' : 'cards'}</strong>
+                    <small>{getPortfolioDomainLabel(order.portfolio.subdomain)} · {new Date(order.createdAt).toLocaleDateString()}</small>
+                  </span>
                   <span className={`status status-${order.status}`}>{order.status}</span>
                   <span className="portfolio-count" style={{ fontSize: 18 }}>{order.totalAmount.toLocaleString()} <small>{order.currency}</small></span>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    style={{ height: 38, padding: '0 12px', fontSize: 11, cursor: 'pointer' }}
+                    onClick={() => {
+                      navigator.clipboard.writeText(order.shortUrl)
+                      setCopiedOrderId(order.id)
+                      setTimeout(() => setCopiedOrderId(null), 2000)
+                      showToast(`Shortlink copied for ${order.portfolio.subdomain}!`, 'success')
+                    }}
+                    title="Copy card shortlink"
+                  >
+                    {copiedOrderId === order.id ? <span className="copy-badge-pill">✓ Copied!</span> : 'Copy shortlink'}
+                  </button>
                   <a href={order.shortUrl} target="_blank" rel="noreferrer" className="row-arrow" aria-label={`Open tap link for ${order.portfolio.subdomain}`}>↗</a>
                 </article>
               ))}
             </div>
           ) : (
-          <div className="portfolio-layout">
-            <div className="portfolio-list">
-              {portfolios.length === 0 && (
-                <div className="empty-state">
-                  <span className="empty-index">01</span>
-                  <h2>A page for your next chapter.</h2>
-                  <p>Create your first portfolio and start shaping it.</p>
+            <div className="profiles-clean-list">
+              {portfolios.length === 0 ? (
+                <div className="empty-state" style={{ textAlign: 'center', padding: '60px 20px' }}>
+                  <h2 style={{ fontSize: 24, margin: '0 0 10px' }}>No profiles yet.</h2>
+                  <p style={{ color: 'var(--muted)', margin: '0 0 20px' }}>Create your first contactless digital business card in seconds.</p>
+                  <button
+                    type="button"
+                    className="primary-button"
+                    onClick={() => { setWizardError(''); setShowWizard(true) }}
+                  >
+                    + Create Your First Profile
+                  </button>
                 </div>
-              )}
-              {portfolios.map((portfolio, index) => {
-                const subUrl = getPortfolioSubdomainUrl(portfolio.subdomain, portfolio.status === 'draft')
-                return (
-                  <div key={portfolio.id} className="portfolio-row-container" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <button className="portfolio-row" onClick={() => selectPortfolio(portfolio)} style={{ flex: 1 }}>
-                      <span className="row-number">{String(index + 1).padStart(2, '0')}</span>
-                      <span className="row-main">
-                        <strong>{portfolio.subdomain}</strong>
-                        <small>{getPortfolioDomainLabel(portfolio.subdomain)}</small>
-                      </span>
-                      <span className={`status status-${portfolio.status}`}>{portfolio.status}</span>
-                      <span className="row-arrow" aria-hidden="true">✎</span>
-                    </button>
-                    <a
-                      href={subUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="secondary-button"
-                      title={`Open ${getPortfolioDomainLabel(portfolio.subdomain)} in new tab`}
-                      style={{
-                        height: 48,
-                        padding: '0 16px',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        fontSize: 12,
-                        textDecoration: 'none',
-                        whiteSpace: 'nowrap',
-                      }}
+              ) : (
+                portfolios.map((portfolio) => {
+                  const subUrl = getPortfolioSubdomainUrl(portfolio.subdomain, portfolio.status === 'draft')
+                  return (
+                    <div
+                      key={portfolio.id}
+                      className="profile-clean-card"
+                      onClick={() => selectPortfolio(portfolio)}
                     >
-                      <span>{portfolio.status === 'published' ? 'Live' : 'Preview'}</span>
-                      <span>↗</span>
-                    </a>
-                  </div>
-                )
-              })}
+                      <div className="profile-card-left">
+                        <span className={`status-badge status-${portfolio.status}`}>
+                          <span className="status-dot" />
+                          {portfolio.status === 'published' ? 'Live' : 'Draft'}
+                        </span>
+                        <div>
+                          <div className="profile-card-name">
+                            {portfolio.subdomain}
+                            <span style={{ color: 'var(--muted)', fontWeight: 400 }}>.sewnet.et</span>
+                          </div>
+                          <div className="profile-card-domain">
+                            Updated {new Date(portfolio.updatedAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="profile-card-actions" onClick={(e) => e.stopPropagation()}>
+                        <a
+                          href={subUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="secondary-button"
+                          style={{ height: 36, padding: '0 12px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4, textDecoration: 'none' }}
+                          title={`Open ${getPortfolioDomainLabel(portfolio.subdomain)}`}
+                        >
+                          <span>{portfolio.status === 'published' ? 'View Live' : 'Preview'}</span>
+                          <span>↗</span>
+                        </a>
+                        <button
+                          type="button"
+                          className="primary-button"
+                          style={{ height: 36, padding: '0 14px', fontSize: 12 }}
+                          onClick={() => selectPortfolio(portfolio)}
+                        >
+                          Edit Profile →
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })
+              )}
             </div>
-            <div className="create-form">
-              <p className="eyebrow">START SOMETHING NEW</p>
-              <h2>Ready to build another?</h2>
-              <p style={{ fontSize: 13, color: 'var(--muted)', margin: '0 0 24px', lineHeight: 1.55 }}>
-                The guided setup will walk you through choosing an address, adding your details, and picking a look — all in a few steps.
-              </p>
-              <button
-                type="button"
-                className="primary-button"
-                style={{ width: '100%' }}
-                onClick={() => { setWizardError(''); setShowWizard(true) }}
-              >
-                Set up a new portfolio →
-              </button>
-              {error && <p className="notice error-notice" role="alert">{error}</p>}
-            </div>
-          </div>
           )}
         </section>
       ) : showNfcStudio ? (
@@ -634,105 +812,120 @@ function WorkspaceApp() {
         </div>
       ) : (
         <section className="editor">
-          <div className="editor-heading">
-            <div>
-              <button className="back-button" onClick={() => { setSelected(null); setShowNfcStudio(false); setMessage(''); setError('') }}>← All portfolios</button>
-              <h1 style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <a
-                  href={getPortfolioSubdomainUrl(selected.subdomain, selected.status === 'draft')}
-                  target="_blank"
-                  rel="noreferrer"
-                  title={`Open ${getPortfolioDomainLabel(selected.subdomain)}`}
-                  style={{ color: 'inherit', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                >
-                  <span>{selected.subdomain}</span>
-                  <span style={{ fontSize: 13, color: 'var(--accent)' }}>↗</span>
-                </a>
+          <div className="editor-toolbar">
+            <div className="editor-toolbar-left">
+              <button
+                type="button"
+                className="back-button"
+                onClick={handleBackToDashboard}
+                title="Return to profiles dashboard"
+              >
+                ← Profiles
+              </button>
+              <div className="editor-profile-identity">
+                <span className="editor-profile-name">
+                  <strong>{selected.subdomain}</strong>
+                  <small>.sewnet.et</small>
+                </span>
+                <span className={`status-badge status-${selected.status}`}>
+                  <span className="status-dot" />
+                  {selected.status === 'published' ? 'Live' : 'Draft'}
+                </span>
                 <button
                   type="button"
-                  className="edit-domain-pill"
+                  className="toolbar-text-btn"
                   onClick={openDomainModal}
                   title="Change profile address"
                 >
-                  ✎ Edit address
+                  ✎ Edit
                 </button>
-              </h1>
+                <button
+                  type="button"
+                  className="toolbar-text-btn"
+                  onClick={() => {
+                    navigator.clipboard.writeText(getPortfolioSubdomainUrl(selected.subdomain, selected.status === 'draft'))
+                    setCopiedSubdomain(true)
+                    setTimeout(() => setCopiedSubdomain(false), 2000)
+                    showToast('Address copied to clipboard!', 'success')
+                  }}
+                  title="Copy link to clipboard"
+                >
+                  {copiedSubdomain ? <span className="copy-badge-pill">✓ Copied</span> : 'Copy link'}
+                </button>
+              </div>
             </div>
-            <div className="save-controls">
-              {message && <span className="save-message" role="status">{message}</span>}
-              {error && <span className="save-message error-text" role="alert">{error}</span>}
+
+            <div className="editor-toolbar-right">
+              <div className="save-status-group">
+                {hasUnsavedChanges ? (
+                  <span className="unsaved-badge" title="You have unsaved changes">
+                    <span className="unsaved-dot" />
+                    Unsaved
+                  </span>
+                ) : (
+                  <span className="all-saved-badge" title="All edits are saved">
+                    <span className="saved-check">✓</span>
+                    Saved
+                  </span>
+                )}
+              </div>
               <a
                 href={getPortfolioSubdomainUrl(selected.subdomain, selected.status === 'draft')}
                 target="_blank"
                 rel="noreferrer"
-                className="secondary-button"
-                style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                title="Open on subdomain"
+                className="secondary-button toolbar-action-btn"
+                title="Open in new tab"
               >
-                <span>{selected.status === 'published' ? 'View Live Subdomain' : 'Preview Subdomain'}</span>
-                <span>↗</span>
+                Preview ↗
               </a>
-              <button className="secondary-button" onClick={() => setShowNfcStudio(true)}>Design NFC card</button>
-              {selected.status === 'published' && (
-                <button className="secondary-button" onClick={unpublishPortfolio} disabled={busy}>Unpublish</button>
-              )}
-              <button className="secondary-button" onClick={saveDraft} disabled={busy}>{busy ? 'Saving...' : 'Save draft'}</button>
-              {selected.status !== 'published' && (
-                <button className="primary-button" onClick={publishPortfolio} disabled={busy}>{busy ? 'Working...' : 'Publish'}</button>
-              )}
-            </div>
-          </div>
-
-          {/* Subdomain status banner */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '10px 24px',
-            background: selected.status === 'published' ? '#f0fdf4' : '#faf7f2',
-            borderBottom: '1px solid var(--line)',
-            fontSize: 12,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                background: selected.status === 'published' ? '#16a34a' : '#ff3535',
-                display: 'inline-block',
-              }} />
-              <span style={{ color: 'var(--ink)' }}>
-                <strong>{selected.status === 'published' ? 'Live on Subdomain:' : 'Draft Preview:'}</strong>{' '}
-                <a
-                  href={getPortfolioSubdomainUrl(selected.subdomain, selected.status === 'draft')}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ color: 'var(--accent)', fontWeight: 700, textDecoration: 'underline' }}
-                >
-                  {getPortfolioSubdomainUrl(selected.subdomain, selected.status === 'draft')}
-                </a>
-              </span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <button
                 type="button"
-                className="text-button"
-                style={{ fontSize: 12, padding: 0, fontWeight: 600, color: 'var(--accent)' }}
-                onClick={openDomainModal}
+                className="secondary-button toolbar-action-btn"
+                onClick={() => setShowNfcStudio(true)}
               >
-                Change address
+                Order NFC Card
               </button>
-              <button
-                type="button"
-                className="text-button"
-                style={{ fontSize: 12, padding: 0 }}
-                onClick={() => {
-                  navigator.clipboard.writeText(getPortfolioSubdomainUrl(selected.subdomain, selected.status === 'draft'))
-                  setMessage('Copied subdomain link to clipboard!')
-                }}
-              >
-                Copy link
-              </button>
+              {selected.status === 'published' ? (
+                <>
+                  <button
+                    type="button"
+                    className="text-button"
+                    style={{ fontSize: 11, color: 'var(--muted)' }}
+                    onClick={unpublishPortfolio}
+                    disabled={busy}
+                    title="Revert profile to draft"
+                  >
+                    Unpublish
+                  </button>
+                  <button
+                    type="button"
+                    className={`primary-button ${hasUnsavedChanges ? 'save-btn-highlight' : ''}`}
+                    onClick={saveDraft}
+                    disabled={busy || !hasUnsavedChanges}
+                  >
+                    {busy ? 'Saving…' : 'Save'}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="secondary-button toolbar-action-btn"
+                    onClick={saveDraft}
+                    disabled={busy}
+                  >
+                    {busy ? 'Saving…' : 'Save draft'}
+                  </button>
+                  <button
+                    type="button"
+                    className="primary-button toolbar-action-btn"
+                    onClick={publishPortfolio}
+                    disabled={busy}
+                  >
+                    {busy ? 'Publishing…' : 'Publish'}
+                  </button>
+                </>
+              )}
             </div>
           </div>
           <div className="editor-grid">
@@ -740,20 +933,75 @@ function WorkspaceApp() {
               <div className="panel-label">PAGE CONTENT</div>
               <div className="block-list">
                 {blocks.map((block, index) => (
-                  <button key={`${block.type}-${index}`} className={`block-tab ${activeBlock === index ? 'active' : ''}`} onClick={() => setActiveBlock(index)}>
-                    <span>{String(index + 1).padStart(2, '0')}</span>
-                    {block.type}
-                    <b>›</b>
-                  </button>
+                  <div
+                    key={`${block.type}-${index}`}
+                    className={`block-row-container ${activeBlock === index ? 'active' : ''}`}
+                  >
+                    <button
+                      type="button"
+                      className={`block-tab-main ${activeBlock === index ? 'active' : ''}`}
+                      onClick={() => setActiveBlock(index)}
+                    >
+                      <span className="block-tab-num">{String(index + 1).padStart(2, '0')}</span>
+                      <span className="block-tab-label">{sectionLabels[block.type] || block.type}</span>
+                    </button>
+                    <div className="block-tab-tools">
+                      <button
+                        type="button"
+                        className="btn-tab-tool"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          moveBlock(index, 'up')
+                        }}
+                        disabled={index === 0}
+                        title="Move section up"
+                        aria-label="Move section up"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-tab-tool"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          moveBlock(index, 'down')
+                        }}
+                        disabled={index === blocks.length - 1}
+                        title="Move section down"
+                        aria-label="Move section down"
+                      >
+                        ↓
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-tab-tool btn-tab-delete"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          removeBlock(index)
+                        }}
+                        title="Remove section"
+                        aria-label="Remove section"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
-              <label className="add-section-label" htmlFor="add-section">Add section</label>
-              <select id="add-section" value="" onChange={(e) => { if (e.target.value) addBlock(e.target.value as PortfolioBlock['type']) }}>
-                <option value="" disabled>Choose a section</option>
-                <option value="hero">Hero</option>
-                <option value="about">About</option>
-                <option value="projects">Projects</option>
-                <option value="contact">Contact</option>
+              <label className="add-section-label" htmlFor="add-section">+ Add section</label>
+              <select
+                id="add-section"
+                value=""
+                onChange={(e) => {
+                  if (e.target.value) addBlock(e.target.value as PortfolioBlock['type'])
+                }}
+              >
+                <option value="" disabled>Choose a section to add</option>
+                <option value="hero">Hero / Header</option>
+                <option value="about">About / Bio</option>
+                <option value="projects">Projects &amp; Work</option>
+                <option value="contact">Contact &amp; Socials</option>
+                <option value="links">Custom Links</option>
               </select>
               <div className="theme-control">
                 <div className="panel-label">APPEARANCE</div>
@@ -769,7 +1017,19 @@ function WorkspaceApp() {
             <div className="settings-panel">
               <div className="panel-label">SECTION SETTINGS</div>
               {blocks[activeBlock]
-                ? <BlockForm block={blocks[activeBlock]} portfolioId={selected.id} onChange={(next) => updateBlock(activeBlock, () => next)} />
+                ? <BlockForm
+                    block={blocks[activeBlock]}
+                    portfolioId={selected.id}
+                    onChange={(next) => updateBlock(activeBlock, () => next)}
+                    onAutoSave={handleAutoSaveBlock}
+                    onRemove={() => removeBlock(activeBlock)}
+                    onMoveUp={() => moveBlock(activeBlock, 'up')}
+                    onMoveDown={() => moveBlock(activeBlock, 'down')}
+                    canMoveUp={activeBlock > 0}
+                    canMoveDown={activeBlock < blocks.length - 1}
+                    index={activeBlock}
+                    total={blocks.length}
+                  />
                 : <p className="muted">Choose or add a page section.</p>}
             </div>
             <div className="preview-stage">
@@ -858,13 +1118,96 @@ function WorkspaceApp() {
           </div>
         </div>
       )}
+      {/* Floating Workspace Toast Notification */}
+      {toast && (
+        <div className={`workspace-toast ${toast.type}`} role="status">
+          <span className="toast-icon">
+            {toast.type === 'success' ? '✓' : toast.type === 'error' ? '!' : 'ℹ'}
+          </span>
+          <span className="toast-text">{toast.message}</span>
+          <button
+            type="button"
+            className="toast-close"
+            onClick={() => setToast(null)}
+            aria-label="Dismiss notification"
+          >
+            ×
+          </button>
+        </div>
+      )}
     </main>
   )
 }
 
-function BlockForm({ block, portfolioId, onChange }: { block: PortfolioBlock; portfolioId: string; onChange: (block: PortfolioBlock) => void }) {
-  const [uploadingImage, setUploadingImage] = useState<'avatarUrl' | 'headerImageUrl' | null>(null)
+interface BlockFormProps {
+  block: PortfolioBlock
+  portfolioId: string
+  onChange: (block: PortfolioBlock) => void
+  onAutoSave?: (block: PortfolioBlock) => void
+  onRemove: () => void
+  onMoveUp: () => void
+  onMoveDown: () => void
+  canMoveUp: boolean
+  canMoveDown: boolean
+  index: number
+  total: number
+}
+
+function BlockForm({
+  block,
+  portfolioId,
+  onChange,
+  onAutoSave,
+  onRemove,
+  onMoveUp,
+  onMoveDown,
+  canMoveUp,
+  canMoveDown,
+  index,
+  total,
+}: BlockFormProps) {
+  const [uploadingImage, setUploadingImage] = useState<string | null>(null)
   const [imageError, setImageError] = useState('')
+
+  const sectionHeader = (
+    <div className="section-header-bar">
+      <div className="section-header-info">
+        <span className="section-header-tag">Section {index + 1} of {total}</span>
+        <span className="section-header-name">{block.type.toUpperCase()}</span>
+      </div>
+      <div className="section-header-actions">
+        <button
+          type="button"
+          className="btn-section-action"
+          onClick={onMoveUp}
+          disabled={!canMoveUp}
+          title="Move section up"
+          aria-label="Move section up"
+        >
+          ↑ Up
+        </button>
+        <button
+          type="button"
+          className="btn-section-action"
+          onClick={onMoveDown}
+          disabled={!canMoveDown}
+          title="Move section down"
+          aria-label="Move section down"
+        >
+          ↓ Down
+        </button>
+        <button
+          type="button"
+          className="btn-section-action btn-section-delete"
+          onClick={onRemove}
+          title="Delete this section"
+          aria-label="Delete this section"
+        >
+          ✕ Remove
+        </button>
+      </div>
+    </div>
+  )
 
   if (block.type === 'hero') {
     const heroData = block.data
@@ -929,7 +1272,9 @@ function BlockForm({ block, portfolioId, onChange }: { block: PortfolioBlock; po
           )
         }
 
-        onChange({ type: 'hero', data: { ...heroData, [field]: upload.publicUrl } })
+        const nextHero: PortfolioBlock = { type: 'hero', data: { ...heroData, [field]: upload.publicUrl } }
+        onChange(nextHero)
+        if (onAutoSave) void onAutoSave(nextHero)
       } catch (reason) {
         setImageError(reason instanceof Error ? reason.message : 'Image upload failed.')
       } finally {
@@ -963,7 +1308,11 @@ function BlockForm({ block, portfolioId, onChange }: { block: PortfolioBlock; po
                 type="button"
                 className="text-button"
                 disabled={uploadingImage !== null}
-                onClick={() => onChange({ type: 'hero', data: { ...heroData, [field]: undefined } })}
+                onClick={() => {
+                  const nextHero: PortfolioBlock = { type: 'hero', data: { ...heroData, [field]: undefined } }
+                  onChange(nextHero)
+                  if (onAutoSave) void onAutoSave(nextHero)
+                }}
               >
                 Remove
               </button>
@@ -975,6 +1324,7 @@ function BlockForm({ block, portfolioId, onChange }: { block: PortfolioBlock; po
 
     return (
       <div className="field-stack">
+        {sectionHeader}
         <label>
           Full Name
           <input
@@ -1058,6 +1408,7 @@ function BlockForm({ block, portfolioId, onChange }: { block: PortfolioBlock; po
 
     return (
       <div className="field-stack">
+        {sectionHeader}
         <div className="form-group-title">Primary Contact (vCard / NFC)</div>
         <div className="form-row">
           <label>
@@ -1158,6 +1509,7 @@ function BlockForm({ block, portfolioId, onChange }: { block: PortfolioBlock; po
   if (block.type === 'about') {
     return (
       <div className="field-stack">
+        {sectionHeader}
         <label>
           About Title <span className="optional">OPTIONAL</span>
           <input
@@ -1181,59 +1533,406 @@ function BlockForm({ block, portfolioId, onChange }: { block: PortfolioBlock; po
 
   if (block.type === 'projects') {
     const items = block.data.items ?? []
+
+    function updateItem(itemIndex: number, patch: Partial<(typeof items)[0]>) {
+      const next = items.map((it, idx) => (idx === itemIndex ? { ...it, ...patch } : it))
+      onChange({ type: 'projects', data: { items: next } })
+    }
+
+    function addItem() {
+      const next = [
+        ...items,
+        {
+          title: `Project ${items.length + 1}`,
+          description: '',
+          link: '',
+          imageUrl: '',
+        },
+      ]
+      onChange({ type: 'projects', data: { items: next } })
+    }
+
+    function removeItem(itemIndex: number) {
+      if (items.length <= 1) {
+        if (!window.confirm('Delete this project?')) return
+      }
+      const next = items.filter((_, idx) => idx !== itemIndex)
+      onChange({ type: 'projects', data: { items: next } })
+    }
+
+    function moveItem(itemIndex: number, direction: 'up' | 'down') {
+      if (direction === 'up' && itemIndex > 0) {
+        const next = [...items]
+        const temp = next[itemIndex - 1]
+        next[itemIndex - 1] = next[itemIndex]
+        next[itemIndex] = temp
+        onChange({ type: 'projects', data: { items: next } })
+      } else if (direction === 'down' && itemIndex < items.length - 1) {
+        const next = [...items]
+        const temp = next[itemIndex + 1]
+        next[itemIndex + 1] = next[itemIndex]
+        next[itemIndex] = temp
+        onChange({ type: 'projects', data: { items: next } })
+      }
+    }
+
+    async function handleProjectImage(itemIndex: number, file: File) {
+      if (!['image/jpeg', 'image/png', 'image/webp', 'image/avif'].includes(file.type)) {
+        setImageError('Choose a JPG, PNG, WebP, or AVIF image.')
+        return
+      }
+      if (file.size > 8 * 1024 * 1024) {
+        setImageError('Image must be 8 MB or smaller.')
+        return
+      }
+      setImageError('')
+      const uploadKey = `project-${itemIndex}`
+      setUploadingImage(uploadKey)
+      try {
+        const uploadResponse = await fetch(`${API_URL}/media/upload-url`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            portfolioId,
+            contentType: file.type,
+            imageType: 'portfolio',
+          }),
+        })
+        const upload = (await uploadResponse.json()) as {
+          assetId?: string
+          uploadUrl?: string
+          publicUrl?: string
+          headers?: Record<string, string>
+          message?: string | string[]
+        }
+        if (!uploadResponse.ok || !upload.assetId || !upload.uploadUrl || !upload.publicUrl) {
+          throw new Error('Failed to prepare project image upload.')
+        }
+        const putResponse = await fetch(upload.uploadUrl, {
+          method: 'PUT',
+          headers: upload.headers,
+          body: file,
+        })
+        if (!putResponse.ok) throw new Error('Image upload failed.')
+        const confirmResponse = await fetch(
+          `${API_URL}/media/assets/${upload.assetId}/confirm`,
+          {
+            method: 'POST',
+            credentials: 'include',
+          },
+        )
+        const confirmation = (await confirmResponse.json()) as {
+          publicUrl?: string
+          message?: string | string[]
+        }
+        if (!confirmResponse.ok || !confirmation.publicUrl) {
+          throw new Error(
+            Array.isArray(confirmation.message)
+              ? confirmation.message.join(', ')
+              : confirmation.message ?? 'Uploaded project thumbnail could not be verified.',
+          )
+        }
+        const next = items.map((it, idx) => (idx === itemIndex ? { ...it, imageUrl: confirmation.publicUrl } : it))
+        const nextProjects: PortfolioBlock = { type: 'projects', data: { items: next } }
+        onChange(nextProjects)
+        if (onAutoSave) void onAutoSave(nextProjects)
+      } catch (err) {
+        setImageError(err instanceof Error ? err.message : 'Image upload failed.')
+      } finally {
+        setUploadingImage(null)
+      }
+    }
+
     return (
       <div className="field-stack">
+        {sectionHeader}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)' }}>
+            PROJECTS ({items.length})
+          </span>
+          <button
+            type="button"
+            className="text-button"
+            style={{ fontSize: 11 }}
+            onClick={addItem}
+          >
+            + Add project
+          </button>
+        </div>
+
+        {items.length === 0 && (
+          <div style={{ padding: 20, textAlign: 'center', background: '#faf8f5', border: '1px dashed var(--line)', borderRadius: 8 }}>
+            <p style={{ fontSize: 12, color: 'var(--muted)', margin: '0 0 10px' }}>No projects added yet.</p>
+            <button type="button" className="btn-add-item" onClick={addItem}>
+              + Add your first project
+            </button>
+          </div>
+        )}
+
+        {items.map((item, idx) => (
+          <div key={`proj-${idx}`} className="item-card">
+            <div className="item-card-header">
+              <span className="item-card-title">
+                <span className="item-card-index">#{idx + 1}</span>
+                <span>{item.title || 'Untitled Project'}</span>
+              </span>
+              <div className="item-card-actions">
+                <button
+                  type="button"
+                  className="btn-item-action"
+                  onClick={() => moveItem(idx, 'up')}
+                  disabled={idx === 0}
+                  title="Move project up"
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  className="btn-item-action"
+                  onClick={() => moveItem(idx, 'down')}
+                  disabled={idx === items.length - 1}
+                  title="Move project down"
+                >
+                  ↓
+                </button>
+                <button
+                  type="button"
+                  className="btn-item-delete"
+                  onClick={() => removeItem(idx)}
+                  title="Remove this project"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+
+            <label>
+              Project Title
+              <input
+                value={item.title}
+                onChange={(e) => updateItem(idx, { title: e.target.value })}
+                placeholder="e.g. Mobile E-Commerce Redesign"
+              />
+            </label>
+
+            <label>
+              Link / URL <span className="optional">OPTIONAL</span>
+              <input
+                type="url"
+                value={item.link ?? ''}
+                onChange={(e) => updateItem(idx, { link: e.target.value })}
+                placeholder="https://example.com/project"
+              />
+            </label>
+
+            <label>
+              Description <span className="optional">OPTIONAL</span>
+              <textarea
+                rows={3}
+                value={item.description ?? ''}
+                onChange={(e) => updateItem(idx, { description: e.target.value })}
+                placeholder="Brief summary of your role, stack, or outcome..."
+              />
+            </label>
+
+            <div className="portfolio-image-field" style={{ margin: 0 }}>
+              <span className="portfolio-image-label">Thumbnail / Preview Image <span className="optional">OPTIONAL</span></span>
+              {item.imageUrl && (
+                <img
+                  className="project-thumb-preview"
+                  src={resolveMediaUrl(item.imageUrl)}
+                  alt={`${item.title} thumbnail`}
+                />
+              )}
+              <div className="portfolio-image-actions">
+                <label className="secondary-button portfolio-image-upload" style={{ minHeight: 32, fontSize: 11 }}>
+                  {uploadingImage === `project-${idx}` ? 'Uploading…' : item.imageUrl ? 'Replace thumbnail' : 'Upload thumbnail'}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/avif"
+                    disabled={uploadingImage !== null}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) void handleProjectImage(idx, file)
+                      e.target.value = ''
+                    }}
+                  />
+                </label>
+                {item.imageUrl && (
+                  <button
+                    type="button"
+                    className="text-button"
+                    style={{ fontSize: 11 }}
+                    onClick={() => {
+                      const next = items.map((it, i) => (i === idx ? { ...it, imageUrl: '' } : it))
+                      const nextProjects: PortfolioBlock = { type: 'projects', data: { items: next } }
+                      onChange(nextProjects)
+                      if (onAutoSave) void onAutoSave(nextProjects)
+                    }}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {items.length > 0 && (
+          <button type="button" className="btn-add-item" onClick={addItem}>
+            + Add another project
+          </button>
+        )}
+
+        {imageError && <p className="notice error-notice" role="alert">{imageError}</p>}
+      </div>
+    )
+  }
+
+  if (block.type === 'links') {
+    const items = block.data.items ?? []
+    const title = block.data.title ?? 'Custom Links'
+
+    function updateItem(itemIndex: number, patch: Partial<(typeof items)[0]>) {
+      const next = items.map((it, idx) => (idx === itemIndex ? { ...it, ...patch } : it))
+      onChange({ type: 'links', data: { title, items: next } })
+    }
+
+    function addItem() {
+      const next = [...items, { title: 'New Link', url: 'https://' }]
+      onChange({ type: 'links', data: { title, items: next } })
+    }
+
+    function removeItem(itemIndex: number) {
+      const next = items.filter((_, idx) => idx !== itemIndex)
+      onChange({ type: 'links', data: { title, items: next } })
+    }
+
+    function moveItem(itemIndex: number, direction: 'up' | 'down') {
+      if (direction === 'up' && itemIndex > 0) {
+        const next = [...items]
+        const temp = next[itemIndex - 1]
+        next[itemIndex - 1] = next[itemIndex]
+        next[itemIndex] = temp
+        onChange({ type: 'links', data: { title, items: next } })
+      } else if (direction === 'down' && itemIndex < items.length - 1) {
+        const next = [...items]
+        const temp = next[itemIndex + 1]
+        next[itemIndex + 1] = next[itemIndex]
+        next[itemIndex] = temp
+        onChange({ type: 'links', data: { title, items: next } })
+      }
+    }
+
+    return (
+      <div className="field-stack">
+        {sectionHeader}
         <label>
-          Project Title
+          Section Title
           <input
-            value={items[0]?.title ?? ''}
-            onChange={(e) => onChange({ ...block, data: { items: [{ ...items[0], title: e.target.value }] } })}
-              placeholder="e.g. Koolink Digital Card"
+            value={title}
+            onChange={(e) => onChange({ type: 'links', data: { title: e.target.value, items } })}
+            placeholder="Custom Links"
           />
         </label>
-        <label>
-          Description
-          <textarea
-            rows={4}
-            value={items[0]?.description ?? ''}
-            onChange={(e) => onChange({ ...block, data: { items: [{ ...items[0], description: e.target.value }] } })}
-            placeholder="Short overview of your work..."
-          />
-        </label>
-        <label>
-          Project Link
-          <input
-            type="url"
-            value={items[0]?.link ?? ''}
-            onChange={(e) => onChange({ ...block, data: { items: [{ ...items[0], link: e.target.value }] } })}
-            placeholder="https://..."
-          />
-        </label>
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, marginBottom: 4 }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)' }}>
+            LINKS LIST ({items.length})
+          </span>
+          <button
+            type="button"
+            className="text-button"
+            style={{ fontSize: 11 }}
+            onClick={addItem}
+          >
+            + Add link
+          </button>
+        </div>
+
+        {items.map((item, idx) => (
+          <div key={`link-${idx}`} className="item-card">
+            <div className="item-card-header">
+              <span className="item-card-title">
+                <span className="item-card-index">#{idx + 1}</span>
+                <span>{item.title || 'Untitled Link'}</span>
+              </span>
+              <div className="item-card-actions">
+                <button
+                  type="button"
+                  className="btn-item-action"
+                  onClick={() => moveItem(idx, 'up')}
+                  disabled={idx === 0}
+                  title="Move up"
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  className="btn-item-action"
+                  onClick={() => moveItem(idx, 'down')}
+                  disabled={idx === items.length - 1}
+                  title="Move down"
+                >
+                  ↓
+                </button>
+                <button
+                  type="button"
+                  className="btn-item-delete"
+                  onClick={() => removeItem(idx)}
+                  title="Remove link"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+
+            <label>
+              Link Title
+              <input
+                value={item.title}
+                onChange={(e) => updateItem(idx, { title: e.target.value })}
+                placeholder="e.g. Schedule a 1:1 Call"
+              />
+            </label>
+
+            <label>
+              URL
+              <input
+                type="url"
+                value={item.url}
+                onChange={(e) => updateItem(idx, { url: e.target.value })}
+                placeholder="https://..."
+              />
+            </label>
+          </div>
+        ))}
+
+        <button type="button" className="btn-add-item" onClick={addItem}>
+          + Add another link
+        </button>
       </div>
     )
   }
 
   return (
     <div className="field-stack">
-      <label>
-        Section Title
-        <input
-          value={block.data.title ?? ''}
-          onChange={(e) => onChange({ ...block, data: { ...block.data, title: e.target.value } })}
-          placeholder="Custom Links"
-        />
-      </label>
+      {sectionHeader}
+      <p className="muted">Select a section above to customize.</p>
     </div>
   )
 }
 
 function PortfolioPreview({ blocks, theme, subdomain }: { blocks: PortfolioBlock[]; theme: PortfolioTheme; subdomain?: string }) {
   const [downloadNote, setDownloadNote] = useState<string | null>(null)
+  const [previewDevice, setPreviewDevice] = useState<'mobile' | 'laptop'>('laptop')
 
   const hero = blocks.find((b) => b.type === 'hero')
   const about = blocks.find((b) => b.type === 'about')
   const projects = blocks.find((b) => b.type === 'projects')
   const contact = blocks.find((b) => b.type === 'contact')
+  const linksBlock = blocks.find((b) => b.type === 'links')
 
   const heroData = (hero?.type === 'hero' ? hero.data : {}) as {
     name?: string
@@ -1265,6 +1964,11 @@ function PortfolioPreview({ blocks, theme, subdomain }: { blocks: PortfolioBlock
   const currentSubdomain = subdomain || 'yourname'
   const profileUrl = getPortfolioSubdomainUrl(currentSubdomain, true)
   const displayUrl = getPortfolioDomainLabel(currentSubdomain)
+  const accent = theme.accentColor || '#ff3535'
+
+  const hasProjects = Boolean(projects?.type === 'projects' && Array.isArray(projects.data?.items) && projects.data.items.length > 0)
+  const hasLinks = Boolean(linksBlock?.type === 'links' && Array.isArray(linksBlock.data?.items) && linksBlock.data.items.length > 0)
+  const hasSidebarContent = hasProjects || hasLinks
 
   function handleTestVcardDownload() {
     const parts = name.trim().split(' ')
@@ -1285,7 +1989,7 @@ function PortfolioPreview({ blocks, theme, subdomain }: { blocks: PortfolioBlock
         if (soc.url) lines.push(`X-SOCIALPROFILE;type=${soc.platform}:${soc.url}`)
       }
     }
-            lines.push('NOTE:Koolink NFC Digital Identity Card')
+    lines.push('NOTE:Koolink NFC Digital Identity Card')
     lines.push('END:VCARD')
 
     const blob = new Blob([lines.join('\r\n')], { type: 'text/vcard;charset=utf-8' })
@@ -1303,80 +2007,176 @@ function PortfolioPreview({ blocks, theme, subdomain }: { blocks: PortfolioBlock
   }
 
   return (
-    <div style={{
-      background: 'radial-gradient(circle at 50% 20%, #1f1a17 0%, #12100e 100%)',
-      padding: '24px 16px',
-      borderRadius: '24px',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-    }}>
+    <div
+      className="public-profile-viewport"
+      style={{
+        '--profile-accent': accent,
+        borderRadius: '16px',
+        minHeight: 680,
+        padding: previewDevice === 'mobile' ? '20px 12px 32px' : '24px 24px 44px',
+        transition: 'all 0.25s ease',
+        ...(heroData.headerImageUrl
+          ? {
+              backgroundImage: `linear-gradient(to bottom, rgba(18, 16, 14, 0.72) 0%, rgba(18, 16, 14, 0.96) 520px, #12100e 100%)`,
+              backgroundSize: '100% auto, cover',
+              backgroundPosition: 'top center',
+              backgroundRepeat: 'no-repeat',
+            }
+          : {}),
+      } as React.CSSProperties}
+    >
+      {/* Device Viewport Selector */}
       <div style={{
         width: '100%',
-        maxWidth: 380,
+        maxWidth: previewDevice === 'mobile' ? 420 : 1040,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 16,
+        marginBottom: 18,
+        transition: 'max-width 0.25s ease',
       }}>
-        <span style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 6,
-          padding: '4px 10px',
-          borderRadius: 9999,
-          background: 'rgba(255, 255, 255, 0.08)',
-          fontSize: 10,
-          fontWeight: 800,
-          letterSpacing: 0.8,
-          color: '#a89f91',
-        }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: theme.accentColor || '#ff3535' }} />
-          <span>NFC PREVIEW</span>
-        </span>
-        <span style={{ fontSize: 11, fontWeight: 700, color: '#f6f5f2' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button
+            type="button"
+            className="secondary-button"
+            style={{
+              height: 28,
+              padding: '0 10px',
+              fontSize: 11,
+              borderRadius: 20,
+              background: previewDevice === 'laptop' ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.05)',
+              color: '#fff',
+              borderColor: previewDevice === 'laptop' ? 'rgba(255,255,255,0.3)' : 'transparent',
+              cursor: 'pointer',
+            }}
+            onClick={() => setPreviewDevice('laptop')}
+          >
+            💻 Laptop View
+          </button>
+          <button
+            type="button"
+            className="secondary-button"
+            style={{
+              height: 28,
+              padding: '0 10px',
+              fontSize: 11,
+              borderRadius: 20,
+              background: previewDevice === 'mobile' ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.05)',
+              color: '#fff',
+              borderColor: previewDevice === 'mobile' ? 'rgba(255,255,255,0.3)' : 'transparent',
+              cursor: 'pointer',
+            }}
+            onClick={() => setPreviewDevice('mobile')}
+          >
+            Mobile View
+          </button>
+        </div>
+
+        <span style={{ fontSize: 11, fontWeight: 700, color: '#a89f91' }}>
           {displayUrl}
         </span>
       </div>
 
-      <div style={{ width: '100%', maxWidth: 380 }}>
-        <DigitalCard
-          name={name}
-          title={title}
-          company={company}
-          bio={bio}
-          avatarUrl={heroData.avatarUrl}
-          headerImageUrl={heroData.headerImageUrl}
-          phone={phone}
-          email={email}
-          socials={socials}
-          accentColor={theme.accentColor || '#ff3535'}
-          profileUrl={profileUrl}
-          displayUrl={displayUrl}
-          onSaveVcard={handleTestVcardDownload}
-        />
-        {downloadNote && (
-          <div style={{ marginTop: 10, textAlign: 'center', fontSize: 11, color: '#f48935', fontWeight: 700 }}>
-            {downloadNote}
+      <div style={{
+        width: '100%',
+        maxWidth: previewDevice === 'mobile' ? 420 : 1040,
+        transition: 'max-width 0.25s ease',
+      }}>
+        <div className={`profile-main-grid ${previewDevice === 'laptop' && hasSidebarContent ? 'has-sidebar' : 'single-column'}`}>
+          {/* Main Digital Card Column */}
+          <div className="profile-card-column">
+            <DigitalCard
+              name={name}
+              title={title}
+              company={company}
+              bio={bio}
+              avatarUrl={heroData.avatarUrl}
+              headerImageUrl={heroData.headerImageUrl}
+              phone={phone}
+              email={email}
+              socials={socials}
+              accentColor={accent}
+              profileUrl={profileUrl}
+              displayUrl={displayUrl}
+              onSaveVcard={handleTestVcardDownload}
+            />
+            {downloadNote && (
+              <div style={{ marginTop: 10, textAlign: 'center', fontSize: 11, color: '#f48935', fontWeight: 700 }}>
+                {downloadNote}
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {/* If any projects exist, display them neatly below */}
-      {projects?.type === 'projects' && Array.isArray(projects.data?.items) && projects.data.items.length > 0 && (
-        <div style={{ width: '100%', maxWidth: 380, marginTop: 24, borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: '#a89f91', letterSpacing: 1, marginBottom: 12 }}>
-            FEATURED PROJECTS
-          </div>
-          {projects.data.items.map((proj, pIdx) => (
-            <div key={pIdx} style={{ background: '#1c1815', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 10, padding: 12, marginBottom: 8, color: '#f6f5f2' }}>
-              <div style={{ fontWeight: 700, fontSize: 13 }}>{proj.title}</div>
-              {proj.description && <div style={{ fontSize: 12, color: '#a89f91', marginTop: 4 }}>{proj.description}</div>}
-              {proj.link && <a href={proj.link} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: '#ff3535', textDecoration: 'none', display: 'inline-block', marginTop: 6, fontWeight: 700 }}>View Project ↗</a>}
+          {/* Right Column (Projects & Links) */}
+          {hasSidebarContent && (
+            <div className="profile-content-column">
+              {hasProjects && projects && (
+                <section>
+                  <div className="profile-section-heading">
+                    <h2 className="profile-section-title">Featured Work</h2>
+                    <span className="profile-section-count">{projects.data.items.length} PROJECTS</span>
+                  </div>
+                  <div className="projects-responsive-grid">
+                    {projects.data.items.map((proj, pIdx) => (
+                      <article key={pIdx} className="project-showcase-card">
+                        {proj.imageUrl && (
+                          <div className="project-card-image-wrap">
+                            <img
+                              src={resolveMediaUrl(proj.imageUrl)}
+                              alt={proj.title}
+                              className="project-card-img"
+                            />
+                          </div>
+                        )}
+                        <div className="project-card-body">
+                          <h3 className="project-card-title">{proj.title}</h3>
+                          {proj.description && (
+                            <p className="project-card-desc">{proj.description}</p>
+                          )}
+                          {proj.link && (
+                            <a
+                              href={proj.link}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="project-card-link-btn"
+                            >
+                              <span>View Project</span>
+                              <span>↗</span>
+                            </a>
+                          )}
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {hasLinks && linksBlock && (
+                <section>
+                  <div className="profile-section-heading">
+                    <h2 className="profile-section-title">{linksBlock.data.title || 'Custom Links'}</h2>
+                    <span className="profile-section-count">{linksBlock.data.items.length} LINKS</span>
+                  </div>
+                  <div className="custom-links-container">
+                    {linksBlock.data.items.map((item, lIdx) => (
+                      <a
+                        key={lIdx}
+                        href={item.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="custom-link-tile"
+                      >
+                        <span>{item.title}</span>
+                        <span className="custom-link-arrow">↗</span>
+                      </a>
+                    ))}
+                  </div>
+                </section>
+              )}
             </div>
-          ))}
+          )}
         </div>
-      )}
+      </div>
     </div>
   )
 }

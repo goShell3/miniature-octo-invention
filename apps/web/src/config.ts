@@ -18,7 +18,7 @@ export function getApiUrl(): string {
     const isLocal =
       hostname === 'localhost' ||
       hostname === '127.0.0.1' ||
-      hostname.endsWith('.localhost') 
+      hostname.endsWith('.localhost')
 
     if (isLocal) {
       return 'http://localhost:3000'
@@ -36,5 +36,14 @@ export const API_URL = getApiUrl()
 
 export function resolveMediaUrl(url?: string): string | undefined {
   if (!url) return undefined
-  return url.startsWith('/media/assets/') ? `${API_URL}${url}` : url
+  if (
+    url.startsWith('http://') ||
+    url.startsWith('https://') ||
+    url.startsWith('data:') ||
+    url.startsWith('blob:')
+  ) {
+    return url
+  }
+  const cleanUrl = url.startsWith('/') ? url : `/${url}`
+  return `${API_URL}${cleanUrl}`
 }

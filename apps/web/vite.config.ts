@@ -1,3 +1,4 @@
+import path from 'node:path'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
 
@@ -23,6 +24,11 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    resolve: {
+      alias: {
+        '@amalink/types': path.resolve(process.cwd(), '../../packages/types/src/index.ts'),
+      },
+    },
     server: {
       host: true,          // bind to 0.0.0.0 so cloudflared can reach it
       port: 5173,

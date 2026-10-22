@@ -1,0 +1,341 @@
+/* =====================================================================
+   PublicProfile — Responsive Portfolio Viewport & Desktop/Mobile Layout
+   ===================================================================== */
+
+.public-profile-viewport {
+  min-height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #12100e;
+  background-image:
+    radial-gradient(ellipse 70% 45% at 50% -10%, color-mix(in srgb, var(--profile-accent, #ff3535) 18%, transparent), transparent 70%),
+    radial-gradient(circle 500px at 90% 15%, color-mix(in srgb, var(--profile-accent, #ff3535) 9%, transparent), transparent),
+    radial-gradient(circle 600px at 10% 70%, rgba(244, 137, 53, 0.06), transparent),
+    radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 26px 26px;
+  color: #f6f5f2;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 20px 48px;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.public-profile-shell {
+  width: 100%;
+  max-width: 1040px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ── Top Header Navigation ────────────────────────────────────────── */
+.public-profile-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+
+.profile-draft-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 10px;
+  font-weight: 700;
+  color: #a89f91;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.profile-draft-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--profile-accent, #ff3535);
+  box-shadow: 0 0 6px var(--profile-accent, #ff3535);
+}
+
+.profile-brand-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  color: #f6f5f2;
+  font-size: 12px;
+  font-weight: 800;
+  opacity: 0.9;
+  transition: opacity 0.15s ease;
+}
+
+.profile-brand-link:hover {
+  opacity: 1;
+}
+
+/* ── Responsive Main Grid (Desktop & Mobile) ──────────────────────── */
+.profile-main-grid {
+  width: 100%;
+  display: grid;
+  gap: 32px;
+}
+
+/* Desktop & Laptop Layout (min-width: 860px) */
+@media (min-width: 860px) {
+  .profile-main-grid.has-sidebar {
+    grid-template-columns: 420px minmax(0, 1fr);
+    align-items: flex-start;
+  }
+
+  .profile-card-column {
+    position: sticky;
+    top: 24px;
+    width: 100%;
+  }
+
+  .profile-content-column {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    min-width: 0;
+  }
+
+  .projects-responsive-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+}
+
+/* When only the digital card is present (no projects or links) */
+.profile-main-grid.single-column {
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+/* Mobile Layout (max-width: 859px) */
+@media (max-width: 859px) {
+  .public-profile-shell {
+    max-width: 440px;
+  }
+
+  .profile-main-grid {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .profile-card-column {
+    width: 100%;
+  }
+
+  .profile-content-column {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .projects-responsive-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+}
+
+/* ── Section Header Headers ───────────────────────────────────────── */
+.profile-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 14px 4px;
+}
+
+.profile-section-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: #a89f91;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-section-title::before {
+  content: "";
+  display: inline-block;
+  width: 4px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--profile-accent, #ff3535);
+}
+
+.profile-section-count {
+  font-size: 10px;
+  font-weight: 700;
+  color: #7a7269;
+}
+
+/* ── Project Showcase Cards ───────────────────────────────────────── */
+.project-showcase-card {
+  background: #1c1815;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.project-showcase-card:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+}
+
+.project-card-image-wrap {
+  width: 100%;
+  height: 160px;
+  overflow: hidden;
+  background: #141210;
+  position: relative;
+}
+
+.project-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.project-showcase-card:hover .project-card-img {
+  transform: scale(1.03);
+}
+
+.project-card-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.project-card-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: #ffffff;
+  margin: 0 0 6px;
+  line-height: 1.3;
+}
+
+.project-card-desc {
+  font-size: 13px;
+  color: #a89f91;
+  line-height: 1.5;
+  margin: 0 0 14px;
+  flex: 1;
+}
+
+.project-card-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--profile-accent, #ff3535);
+  text-decoration: none;
+  margin-top: auto;
+  align-self: flex-start;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.project-card-link-btn:hover {
+  background: var(--profile-accent, #ff3535);
+  color: #ffffff;
+  border-color: var(--profile-accent, #ff3535);
+}
+
+/* ── Custom Link Tiles ────────────────────────────────────────────── */
+.custom-links-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.custom-link-tile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #1c1815;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 14px;
+  padding: 14px 18px;
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.18s ease;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.custom-link-tile:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: #24201c;
+  transform: translateY(-1px);
+}
+
+.custom-link-arrow {
+  color: var(--profile-accent, #ff3535);
+  font-size: 15px;
+  font-weight: 700;
+  transition: transform 0.15s ease;
+}
+
+.custom-link-tile:hover .custom-link-arrow {
+  transform: translate(2px, -2px);
+}
+
+/* ── Public Profile Footer ────────────────────────────────────────── */
+.public-profile-footer {
+  margin-top: 36px;
+  text-align: center;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.profile-powered-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #a89f91;
+  text-decoration: none;
+  opacity: 0.75;
+  transition: opacity 0.15s ease;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.profile-powered-link:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.08);
+}
