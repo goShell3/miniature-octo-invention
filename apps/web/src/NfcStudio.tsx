@@ -85,34 +85,24 @@ function toLines(value: string, limit: number) {
 
 async function createCardSvg(backgroundColor: string, textColor: string, portfolioUrl: string, portfolio: Portfolio) {
   const { name, tagline } = getIdentity(portfolio)
-  const safeName = toLines(name, 21).map(escapeXml)
-  const nameSvg = safeName.map((line, index) => `<text x="58" y="${348 + index * 48}" class="name">${line}</text>`).join('')
-  const taglineSvg = toLines(tagline, 34).map(escapeXml).map((line, index) => `<text x="60" y="${438 + index * 24}" class="tagline">${line}</text>`).join('')
-  const qrSvg = await QRCode.toString(portfolioUrl, {
-    type: 'svg',
-    errorCorrectionLevel: 'H',
-    margin: 4,
-    color: { dark: '#101010', light: '#ffffff' },
-  })
-  const qrViewBox = qrSvg.match(/viewBox="([^"]+)"/)?.[1] ?? '0 0 100 100'
-  const qrContents = qrSvg.replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '')
-  const embeddedQr = `<svg x="632" y="228" width="168" height="168" viewBox="${qrViewBox}" shape-rendering="crispEdges">${qrContents}</svg>`
+  const safeName = toLines(name, 26).map(escapeXml)
+  const nameSvg = safeName.map((line, index) => `<text x="58" y="${280 + index * 52}" class="name">${line}</text>`).join('')
+  const taglineSvg = toLines(tagline, 44).map(escapeXml).map((line, index) => `<text x="60" y="${380 + index * 26}" class="tagline">${line}</text>`).join('')
   const safeUrl = escapeXml(portfolioUrl)
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="85.6mm" height="54mm" viewBox="0 0 856 540" role="img" aria-label="Koolink NFC card for ${escapeXml(name)}">
-    <style>text{font-family:Arial,sans-serif;fill:${textColor}}.brand{font-size:24px;font-weight:700}.mark{font-size:24px;font-weight:800;fill:${backgroundColor}}.eyebrow{font-size:11px;font-weight:700;letter-spacing:2px;opacity:.68}.name{font-family:Georgia,serif;font-size:46px}.tagline{font-size:17px;opacity:.78}.domain{font-size:14px;font-weight:700}.qr-label{font-size:10px;font-weight:700;letter-spacing:1px}</style>
+    <style>text{font-family:Arial,sans-serif;fill:${textColor}}.brand{font-size:24px;font-weight:700}.mark{font-size:24px;font-weight:800;fill:${backgroundColor}}.eyebrow{font-size:12px;font-weight:700;letter-spacing:2.5px;opacity:.7}.name{font-family:Georgia,serif;font-size:48px;font-weight:600}.tagline{font-size:20px;opacity:.82}.domain{font-size:15px;font-weight:700}.tap-wave{font-size:13px;font-weight:800;letter-spacing:1px;opacity:.85}</style>
     <rect width="856" height="540" rx="24" fill="${backgroundColor}"/>
     <rect x="24" y="24" width="808" height="492" rx="18" fill="none" stroke="${textColor}" stroke-opacity=".18"/>
     <rect x="58" y="52" width="42" height="42" rx="4" fill="${textColor}"/>
     <text x="79" y="82" text-anchor="middle" class="mark">K</text>
     <text x="116" y="82" class="brand">koolink</text>
-    <text x="60" y="292" class="eyebrow">YOUR DIGITAL IDENTITY</text>
+    <text x="796" y="82" text-anchor="end" class="tap-wave">))) CONTACTLESS</text>
+    <text x="60" y="215" class="eyebrow">YOUR DIGITAL IDENTITY</text>
     ${nameSvg}
     ${taglineSvg}
     <text x="60" y="493" class="domain">${escapeXml(portfolio.subdomain)}</text>
-    <rect x="626" y="222" width="180" height="180" rx="5" fill="#ffffff"/>
-    ${embeddedQr}
-    <text x="716" y="426" text-anchor="middle" class="qr-label">SCAN PORTFOLIO</text>
+    <text x="796" y="493" text-anchor="end" class="domain">TAP TO OPEN</text>
     <title>${safeUrl}</title>
   </svg>`
 }
@@ -143,6 +133,19 @@ export function NfcStudio({ portfolio, onBack, initialTier, onOrderCreated }: { 
   const [copied, setCopied] = useState(false)
   const [selectedTier, setSelectedTier] = useState<NfcCardTier>(initialTier ?? 'individual')
   const [quantity, setQuantity] = useState(1)
+  const [cardSide, setCardSide] = useState<'front' | 'back'>('front')
+  const [tilt, setTilt] = useState({ x: 0, y: 0 })
+
+  function handleCardMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = ((e.clientX - rect.left) / rect.width - 0.5) * 16
+    const y = -((e.clientY - rect.top) / rect.height - 0.5) * 16
+    setTilt({ x, y })
+  }
+
+  function handleCardMouseLeave() {
+    setTilt({ x: 0, y: 0 })
+  }
 
   useEffect(() => {
     let isCurrent = true
@@ -239,24 +242,123 @@ export function NfcStudio({ portfolio, onBack, initialTier, onOrderCreated }: { 
         </aside>
 
         <section className="nfc-preview-column" aria-label="Card preview">
-          <div className="nfc-preview-label"><span>FRONT / LIVE PREVIEW</span><span>85.6 × 54 MM</span></div>
+          <div className="nfc-preview-label">
+            <span>{cardSide === 'front' ? 'FRONT / LIVE 3D PREVIEW' : 'BACK / CHIP & QR PREVIEW'}</span>
+            <span>85.6 × 54 MM</span>
+          </div>
+
+          <div className="nfc-side-selector">
+            <button
+              type="button"
+              className={`nfc-side-pill ${cardSide === 'front' ? 'active' : ''}`}
+              onClick={() => setCardSide('front')}
+            >
+              📇 Front Side
+            </button>
+            <button
+              type="button"
+              className={`nfc-side-pill ${cardSide === 'back' ? 'active' : ''}`}
+              onClick={() => setCardSide('back')}
+            >
+              🔄 Back Side (QR & Chip)
+            </button>
+          </div>
+
           <div className="nfc-card-wrap">
-            <article className="nfc-card" style={cardStyle}>
-              <div className="nfc-card-brand"><span className="nfc-card-mark">K</span><strong>Koolink</strong></div>
-              <div className="nfc-card-content">
-                <span className="nfc-card-kicker">YOUR DIGITAL IDENTITY</span>
-                <h2>{identity.name}</h2>
-                <p>{identity.tagline}</p>
+            <div
+              className="nfc-perspective-stage"
+              onMouseMove={handleCardMouseMove}
+              onMouseLeave={handleCardMouseLeave}
+              onClick={() => setCardSide((s) => (s === 'front' ? 'back' : 'front'))}
+              title="Click card to flip between front and back"
+            >
+              <div
+                className="nfc-card-flipper"
+                style={{
+                  transform: `rotateX(${tilt.y}deg) rotateY(${tilt.x + (cardSide === 'back' ? 180 : 0)}deg)`,
+                }}
+              >
+                {/* Front Face */}
+                <article className="nfc-card nfc-card-face front" style={cardStyle}>
+                  <div className="nfc-card-brand" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span className="nfc-card-mark">K</span>
+                      <strong>Koolink</strong>
+                    </div>
+                    <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: 1.5, opacity: 0.75 }}>
+                      ))) CONTACTLESS
+                    </span>
+                  </div>
+                  <div className="nfc-card-content">
+                    <span className="nfc-card-kicker">YOUR DIGITAL IDENTITY</span>
+                    <h2>{identity.name}</h2>
+                    <p>{identity.tagline}</p>
+                  </div>
+                  <div className="nfc-card-foot">
+                    <span>{portfolio.subdomain}.sewnet.et</span>
+                    <b><i className="nfc-wave" /> TAP TO OPEN</b>
+                  </div>
+                </article>
+
+                {/* Back Face */}
+                <article className="nfc-card-face back" style={cardStyle}>
+                  <div className="nfc-card-brand" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span className="nfc-card-mark">K</span>
+                      <strong>Koolink Smart Card</strong>
+                    </div>
+                    <span className="nfc-card-chip-badge">
+                      <span>📡</span> NTAG216 CHIP
+                    </span>
+                  </div>
+
+                  <div className="nfc-card-back-grid">
+                    <div className="nfc-card-back-info">
+                      <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: 1.5, opacity: 0.65 }}>
+                        CONTACTLESS SMART TAP
+                      </span>
+                      <strong style={{ fontSize: 16, fontFamily: 'Georgia, serif' }}>
+                        {identity.name}
+                      </strong>
+                      <span style={{ fontSize: 12, opacity: 0.8 }}>
+                        {portfolio.subdomain}.sewnet.et
+                      </span>
+                      <p style={{ fontSize: 10, opacity: 0.65, margin: '6px 0 0', lineHeight: 1.4 }}>
+                        Hold card near top of iPhone or center back of Android to open digital card.
+                      </p>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                      {qrDataUrl && (
+                        <img
+                          src={qrDataUrl}
+                          alt="QR Code"
+                          style={{
+                            width: 110,
+                            height: 110,
+                            background: '#fff',
+                            padding: 6,
+                            borderRadius: 8,
+                            display: 'block',
+                          }}
+                        />
+                      )}
+                      <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: 1 }}>CAMERA BACKUP</span>
+                    </div>
+                  </div>
+
+                  <div className="nfc-card-foot">
+                    <span style={{ fontSize: 9, opacity: 0.7 }}>
+                      AUTHENTICATED NFC CARD · 888 BYTES
+                    </span>
+                    <b><i className="nfc-wave" /> TAP ANYWHERE</b>
+                  </div>
+                </article>
               </div>
-              <div className="nfc-card-qr">
-                {qrDataUrl && <img src={qrDataUrl} alt={`QR code linking to ${portfolio.subdomain}`} />}
-                <span>SCAN PORTFOLIO</span>
-              </div>
-              <div className="nfc-card-foot"><span>{portfolio.subdomain}</span><b><i className="nfc-wave" /> TAP TO OPEN</b></div>
-            </article>
+            </div>
           </div>
           <div className="nfc-preview-actions">
-            <span>Koolink identity stays on every design.</span>
+            <span>Click card or use buttons above to flip front &amp; back.</span>
             <button className="secondary-button" onClick={downloadTemplate} title="Download print-ready SVG">↓ Download SVG</button>
           </div>
           <p className="nfc-export-note">SVG artwork is sized to standard card dimensions (85.6 × 54 mm). Add bleed and chip placement with your print supplier.</p>
@@ -267,7 +369,79 @@ export function NfcStudio({ portfolio, onBack, initialTier, onOrderCreated }: { 
           {portfolio.status !== 'published' ? (
             <div className="nfc-publish-note"><span>01</span><h2>Publish to activate your card.</h2><p>The NFC chip links to your live portfolio. Save and publish it before requesting a physical card.</p></div>
           ) : order ? (
-            <div className="nfc-order-success" role="status"><span className="nfc-order-check">✓</span><p className="eyebrow">REQUEST RECEIVED</p><h2>Your card request is pending.</h2><p>{order.quantity} {order.quantity === 1 ? 'card' : 'cards'} · {order.unitPrice.toLocaleString()} ETB each</p><strong>{order.totalAmount.toLocaleString()} {order.currency} total</strong><p>Request status: <strong>{order.status}</strong></p><div className="nfc-short-link">{order.shortUrl}</div><button className="secondary-button" onClick={copyShortUrl}>{copied ? 'Copied' : 'Copy tap link'}</button><button className="text-button" onClick={() => setOrder(null)}>New card request</button></div>
+            <div className="nfc-order-success" role="status">
+              <span className="nfc-order-check">✓</span>
+              <p className="eyebrow">ORDER REQUEST RECEIVED</p>
+              <h2>Your card request is registered!</h2>
+              <p>
+                {order.quantity} {order.quantity === 1 ? 'card' : 'cards'} · {order.unitPrice.toLocaleString()} ETB each
+              </p>
+              <strong style={{ fontSize: 20, color: 'var(--green)' }}>
+                {order.totalAmount.toLocaleString()} {order.currency} Total
+              </strong>
+              <p>
+                Order Ref: <strong>KL-{order.id.slice(0, 8).toUpperCase()}</strong>
+              </p>
+
+              <div className="nfc-payment-guide">
+                <h3>💳 Complete Payment in Ethiopia</h3>
+                <p>Transfer via Telebirr or Commercial Bank of Ethiopia (CBE) using your order reference code:</p>
+                <div className="nfc-payment-options">
+                  <div className="nfc-pay-method">
+                    <div className="nfc-pay-info">
+                      <strong>Telebirr Transfer</strong>
+                      <span>091 123 4567 (Koolink Ethiopia)</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="nfc-copy-code-btn"
+                      onClick={() => navigator.clipboard.writeText('0911234567')}
+                    >
+                      Copy No.
+                    </button>
+                  </div>
+
+                  <div className="nfc-pay-method">
+                    <div className="nfc-pay-info">
+                      <strong>Commercial Bank of Ethiopia (CBE)</strong>
+                      <span>1000 1234 56789 (Koolink Tech)</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="nfc-copy-code-btn"
+                      onClick={() => navigator.clipboard.writeText('1000123456789')}
+                    >
+                      Copy Acc.
+                    </button>
+                  </div>
+                </div>
+
+                <a
+                  href={`https://wa.me/251911234567?text=${encodeURIComponent(`Hi Koolink! I placed card order ref KL-${order.id.slice(0, 8).toUpperCase()} for ${order.totalAmount} ETB (${portfolio.subdomain}). Here is my payment confirmation.`)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="nfc-whatsapp-confirm"
+                >
+                  <span>💬 Confirm via WhatsApp / Telegram</span>
+                </a>
+              </div>
+
+              <div style={{ width: '100%', marginTop: 8 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>
+                  NFC TAP REDIRECT SHORTLINK:
+                </span>
+                <div className="nfc-short-link">{order.shortUrl}</div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 8, width: '100%', marginTop: 4 }}>
+                <button className="secondary-button" style={{ flex: 1 }} onClick={copyShortUrl}>
+                  {copied ? 'Copied!' : 'Copy tap link'}
+                </button>
+                <button className="text-button" onClick={() => setOrder(null)}>
+                  New request
+                </button>
+              </div>
+            </div>
           ) : (
             <form className="nfc-order-form" onSubmit={submitOrder}>
               <p className="nfc-order-copy">Choose your card tier and delivery address in Ethiopia:</p>

@@ -33,6 +33,12 @@ export interface DigitalCardProps {
 
 export function renderSocialIcon(platform: string): ReactNode {
   switch (platform.toLowerCase()) {
+    case 'facebook':
+      return (
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+        </svg>
+      )
     case 'instagram':
       return (
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -153,14 +159,34 @@ export function DigitalCard({
   profileUrl = 'https://sewnet.et/yourname',
   displayUrl = 'koo.link/yourname',
   previewOnly = false,
-  initialQrMode = 'vcard',
   onSaveVcard,
   vcardDownloadUrl,
   vcardFilename,
 }: DigitalCardProps) {
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('')
-  // qrMode: 'vcard' directly syncs contact when scanned by phone camera!
-  const [qrMode, setQrMode] = useState<'vcard' | 'url'>(initialQrMode)
+  const [showFullscreenQr, setShowFullscreenQr] = useState(false)
+  const [showExchangeModal, setShowExchangeModal] = useState(false)
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [avatarError, setAvatarError] = useState(false)
+
+  useEffect(() => {
+    setAvatarError(false)
+  }, [avatarUrl])
+
+  // Visitor Exchange Form State
+  const [visitorName, setVisitorName] = useState('')
+  const [visitorPhone, setVisitorPhone] = useState('')
+  const [visitorEmail, setVisitorEmail] = useState('')
+  const [visitorCompany, setVisitorCompany] = useState('')
+  const [visitorNote, setVisitorNote] = useState('')
+  const [exchangeSuccess, setExchangeSuccess] = useState(false)
+
+  function showToast(message: string) {
+    setToastMessage(message)
+    setTimeout(() => {
+      setToastMessage(null)
+    }, 3200)
+  }
 
   // Derive initial letter (e.g. "K" or first character of name)
   const initial = (name.trim().charAt(0) || 'K').toUpperCase()
@@ -177,29 +203,137 @@ export function DigitalCard({
     titleCompany = 'Your title at your company'
   }
 
-  // Generate dynamic QR code: encodes either direct vCard for instant camera sync, or live web URL with ?sync=vcf
-  useEffect(() => {
-    let isCurrent = true
+  // Save Contact handler (downloads vCard or invokes callback)
+  function handleSaveContact() {
+    if (previewOnly) {
+      showToast('Preview mode: Contact download simulated')
+      return
+    }
+    if (onSaveVcard) {
+      onSaveVcard()
+      return
+    }
+    if (vcardDownloadUrl) {
+      const a = document.createElement('a')
+      a.href = vcardDownloadUrl
+      a.download = vcardFilename || `${name.toLowerCase().replace(/\s+/g, '-')}-contact.vcf`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      showToast('Contact file downloaded!')
+      return
+    }
+    const vcardText = buildVCardText({
+      name,
+      title,
+      company,
+      phone,
+      email,
+      bio,
+      profileUrl,
+      socials,
+    })
+    const blob = new Blob([vcardText], { type: 'text/vcard;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${name.toLowerCase().replace(/\s+/g, '-')}-contact.vcf`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    showToast('Contact saved to your phone!')
+  }
 
-    let qrTarget = ''
-    if (qrMode === 'vcard') {
-      qrTarget = buildVCardText({
-        name,
-        title,
-        company,
-        phone,
-        email,
-        bio,
-        profileUrl,
-        socials,
-      })
-    } else {
-      const url = profileUrl || 'https://sewnet.et'
-      qrTarget = `${url}${url.includes('?') ? '&' : '?'}sync=vcf`
+  // Native Web Share API with clipboard copy fallback
+  async function handleShare() {
+    const targetUrl = profileUrl || (typeof window !== 'undefined' ? window.location.href : '')
+    const shareData = {
+      title: `${name} — Digital Identity Card`,
+      text: `${name}${title ? ` · ${title}` : ''}${company ? ` (${company})` : ''}`,
+      url: targetUrl,
     }
 
+    if (
+      typeof navigator !== 'undefined' &&
+      navigator.share &&
+      navigator.canShare &&
+      navigator.canShare(shareData)
+    ) {
+      try {
+        await navigator.share(shareData)
+        return
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') return
+      }
+    }
+
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(targetUrl)
+        showToast('Profile link copied to clipboard!')
+      } catch {
+        showToast('Address: ' + targetUrl)
+      }
+    }
+  }
+
+  // Handle Contact Exchange submission
+  function handleExchangeSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!visitorName.trim()) {
+      alert('Please enter your name.')
+      return
+    }
+    if (!visitorPhone.trim() && !visitorEmail.trim()) {
+      alert('Please provide at least a phone number or email address.')
+      return
+    }
+
+    // Build reciprocal vCard text for the visitor so they can download their card or share it
+    const exchangeVcard = buildVCardText({
+      name: visitorName,
+      title: visitorCompany,
+      company: visitorCompany,
+      phone: visitorPhone,
+      email: visitorEmail,
+      bio: visitorNote ? `Met via Koolink card. Note: ${visitorNote}` : 'Met via Koolink NFC Card',
+    })
+
+    // If cardholder has email or phone, open direct connect
+    const cleanPhone = phone ? phone.replace(/[^0-9+]/g, '') : ''
+    const subject = encodeURIComponent(`Nice meeting you! My contact info (${visitorName})`)
+    const bodyText = encodeURIComponent(
+      `Hi ${name},\n\nIt was great connecting with you!\n\nHere are my details:\nName: ${visitorName}\nPhone: ${visitorPhone}\nEmail: ${visitorEmail}\nCompany: ${visitorCompany}\n${visitorNote ? `Note: ${visitorNote}\n` : ''}\nSent via your Koolink Digital Profile.`
+    )
+
+    if (email) {
+      window.open(`mailto:${email}?subject=${subject}&body=${bodyText}`, '_blank')
+    } else if (cleanPhone) {
+      window.open(`https://wa.me/${cleanPhone.replace(/^\+/, '')}?text=${bodyText}`, '_blank')
+    }
+
+    // Also download visitor's vCard as backup
+    const blob = new Blob([exchangeVcard], { type: 'text/vcard;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${visitorName.toLowerCase().replace(/\s+/g, '-')}-contact.vcf`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+
+    setExchangeSuccess(true)
+  }
+
+  // Generate dynamic QR code encoding the live profile URL
+  useEffect(() => {
+    let isCurrent = true
+    const qrTarget = profileUrl || 'https://sewnet.et'
+
     QRCode.toDataURL(qrTarget, {
-      width: 400,
+      width: 440,
       margin: 1,
       color: {
         dark: '#1c1917',
@@ -216,152 +350,315 @@ export function DigitalCard({
     return () => {
       isCurrent = false
     }
-  }, [qrMode, name, title, company, phone, email, bio, profileUrl, socials])
+  }, [profileUrl])
 
   return (
-    <div className="digital-card-container" style={{ '--card-accent': accentColor } as CSSProperties}>
-      <div className="digital-card">
-        {/* Top Orange Header Banner */}
-        <div
-          className="card-top-banner"
-          style={headerImageUrl ? {
-            backgroundImage: `linear-gradient(180deg, rgba(20, 18, 16, 0.12), rgba(20, 18, 16, 0.38)), url("${resolveMediaUrl(headerImageUrl)}")`,
-          } : undefined}
-        />
-
-        {/* Centered Circular Avatar overlapping banner and card body */}
-        <div className="card-avatar-wrapper">
-          {avatarUrl ? (
-            <img src={resolveMediaUrl(avatarUrl)} alt={name} className="card-avatar-img" />
+    <div className="intro-card-wrapper" style={{ '--card-accent': accentColor } as CSSProperties}>
+      {/* 1. Identity Box (Dark Rounded Card) */}
+      <div
+        className="intro-identity-card"
+        style={
+          headerImageUrl
+            ? {
+                backgroundImage: `linear-gradient(to bottom, rgba(34,34,34,0.7), rgba(34,34,34,0.96)), url(${resolveMediaUrl(headerImageUrl)})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }
+            : undefined
+        }
+      >
+        <div className="intro-avatar-box">
+          {avatarUrl && !avatarError ? (
+            <img
+              src={resolveMediaUrl(avatarUrl)}
+              alt={name}
+              className="intro-avatar-photo"
+              onError={() => setAvatarError(true)}
+            />
           ) : (
-            <div className="card-avatar-fallback">{initial}</div>
+            <div className="intro-avatar-placeholder">
+              <span>{initial}</span>
+            </div>
           )}
         </div>
 
-        {/* Card Content Section */}
-        <div className="card-content">
-          <h1 className="card-name">{name || 'Your Name'}</h1>
-
-          <p className="card-title-company">{titleCompany}</p>
-
-          <p className="card-bio">
-            {bio || 'Your short bio appears here.'}
-          </p>
-
-          {/* Side-by-side Action Buttons: Call & Email */}
-          <div className="card-action-row">
-            <a
-              href={phone ? `tel:${phone}` : '#'}
-              className="card-pill-btn call-btn"
-              onClick={previewOnly && !phone ? (e) => e.preventDefault() : undefined}
-            >
-              Call
-            </a>
-            <a
-              href={email ? `mailto:${email}` : '#'}
-              className="card-pill-btn email-btn"
-              onClick={previewOnly && !email ? (e) => e.preventDefault() : undefined}
-            >
-              Email
-            </a>
-          </div>
-
-          {/* Social Icons row if any present */}
-          {socials.length > 0 && (
-            <div className="card-social-row">
-              {socials.map((soc, idx) => (
-                <a
-                  key={idx}
-                  href={soc.url || '#'}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="card-social-btn"
-                  title={soc.label || soc.platform}
-                >
-                  {renderSocialIcon(soc.platform)}
-                </a>
-              ))}
-            </div>
-          )}
-
-          {/* QR Scan Sync Mode Toggle */}
-          <div className="card-qr-mode-wrap">
-            <div className="card-qr-mode-toggle" role="group" aria-label="QR Code scan mode">
-              <button
-                type="button"
-                className={`qr-mode-pill ${qrMode === 'vcard' ? 'active' : ''}`}
-                onClick={() => setQrMode('vcard')}
-                title="When scanned by camera, directly adds contact to phonebook"
-              >
-                <span>📇 Camera Sync (vCard)</span>
-              </button>
-              <button
-                type="button"
-                className={`qr-mode-pill ${qrMode === 'url' ? 'active' : ''}`}
-                onClick={() => setQrMode('url')}
-                title="When scanned, opens full digital profile in browser"
-              >
-                <span>🌐 Web Profile</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Centerpiece QR Code */}
-          <div className="card-qr-box">
-            {qrCodeDataUrl ? (
-              <img src={qrCodeDataUrl} alt="QR Code" className="card-qr-image" />
-            ) : (
-              <div className="card-qr-skeleton" />
-            )}
-          </div>
-
-          <div className="card-qr-subhint">
-            {qrMode === 'vcard'
-              ? 'Point camera to sync contact directly to phone'
-              : 'Point camera to open web profile & download contact'}
-          </div>
-
-          {/* Profile URL Footer */}
-          <div className="card-url-footer">
-            <a href={profileUrl} target="_blank" rel="noreferrer" className="card-url-text">
-              {displayUrl || profileUrl.replace(/^https?:\/\//, '')}
-            </a>
-          </div>
+        <div className="intro-identity-meta">
+          <h1 className="intro-name">{name || 'Your Name'}</h1>
+          {title && <p className="intro-title">{title}</p>}
+          {company && <p className="intro-company">{company}</p>}
         </div>
       </div>
 
-      {/* Save Contact action for NFC taps (vCard download) */}
-      {!previewOnly && (vcardDownloadUrl || onSaveVcard) && (
-        <div className="card-vcard-action-bar">
-          {vcardDownloadUrl ? (
+      {/* 2. Main Two Action Pills: SAVE CONTACT & CONNECT */}
+      <div className="intro-action-pills">
+        <button
+          type="button"
+          className="intro-pill-btn save-contact"
+          onClick={handleSaveContact}
+          title="Save Contact to your phonebook"
+        >
+          SAVE CONTACT
+        </button>
+        <button
+          type="button"
+          className="intro-pill-btn connect"
+          onClick={() => {
+            setExchangeSuccess(false)
+            setShowExchangeModal(true)
+          }}
+          title="Exchange contact info"
+        >
+          CONNECT
+        </button>
+      </div>
+
+      {/* 3. Circular Social Icons */}
+      {socials.length > 0 && (
+        <div className="intro-social-circle-row">
+          {socials.map((soc, idx) => (
             <a
-              href={vcardDownloadUrl}
-              download={vcardFilename || 'contact.vcf'}
-              className="card-save-vcard-btn"
+              key={idx}
+              href={soc.url || '#'}
+              target="_blank"
+              rel="noreferrer"
+              className="intro-social-circle-btn"
+              title={soc.label || soc.platform}
             >
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                <circle cx="8.5" cy="7" r="4"/>
-                <line x1="20" y1="8" x2="20" y2="14"/>
-                <line x1="23" y1="11" x2="17" y2="11"/>
-              </svg>
-              <span>Save Contact to Phone (.vcf)</span>
+              {renderSocialIcon(soc.platform)}
             </a>
+          ))}
+        </div>
+      )}
+
+      {/* 4. Bio Paragraph */}
+      {bio && (
+        <div className="intro-bio-text">
+          {bio}
+        </div>
+      )}
+
+      {/* 5. Contact Rows with Left Accent Icons and Right Chevron `>` */}
+      <div className="intro-contact-list">
+        {email && (
+          <a href={`mailto:${email}`} className="intro-contact-item">
+            <div className="intro-contact-left">
+              <span className="intro-contact-icon email">@</span>
+              <span className="intro-contact-text">{email}</span>
+            </div>
+            <span className="intro-contact-arrow">›</span>
+          </a>
+        )}
+        {phone && (
+          <a href={`tel:${phone}`} className="intro-contact-item">
+            <div className="intro-contact-left">
+              <span className="intro-contact-icon phone">📞</span>
+              <span className="intro-contact-text">{phone}</span>
+            </div>
+            <span className="intro-contact-arrow">›</span>
+          </a>
+        )}
+      </div>
+
+      {/* 6. High-Contrast Scannable QR Code */}
+      <div className="intro-qr-section">
+        <div
+          className="intro-qr-box"
+          onClick={() => setShowFullscreenQr(true)}
+          title="Click to view full-screen QR code"
+        >
+          {qrCodeDataUrl ? (
+            <img src={qrCodeDataUrl} alt="QR Code" className="intro-qr-img" />
           ) : (
+            <div className="intro-qr-skeleton" />
+          )}
+          <span className="intro-qr-hint">⤢ Enlarge</span>
+        </div>
+        <div className="intro-domain-label">
+          {displayUrl || profileUrl.replace(/^https?:\/\//, '')}
+        </div>
+      </div>
+
+      {/* ── Fullscreen High-Contrast QR Modal ──────────────────────── */}
+      {showFullscreenQr && (
+        <div className="fullscreen-qr-overlay" onClick={() => setShowFullscreenQr(false)}>
+          <div className="fullscreen-qr-card" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
-              onClick={onSaveVcard}
-              className="card-save-vcard-btn"
+              className="fullscreen-qr-close"
+              onClick={() => setShowFullscreenQr(false)}
+              aria-label="Close"
             >
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                <circle cx="8.5" cy="7" r="4"/>
-                <line x1="20" y1="8" x2="20" y2="14"/>
-                <line x1="23" y1="11" x2="17" y2="11"/>
-              </svg>
-              <span>Save Contact to Phone (.vcf)</span>
+              ×
             </button>
-          )}
+
+            <div className="fullscreen-qr-header">
+              {avatarUrl && !avatarError ? (
+                <img
+                  src={resolveMediaUrl(avatarUrl)}
+                  alt={name}
+                  className="fullscreen-qr-avatar"
+                  onError={() => setAvatarError(true)}
+                />
+              ) : (
+                <div className="fullscreen-qr-fallback">{initial}</div>
+              )}
+              <h3 className="fullscreen-qr-name">{name}</h3>
+              <p className="fullscreen-qr-title">{titleCompany}</p>
+            </div>
+
+            {/* Crisp High-Contrast QR Code box */}
+            <div className="fullscreen-qr-box">
+              {qrCodeDataUrl && (
+                <img src={qrCodeDataUrl} alt={`QR Code for ${name}`} className="fullscreen-qr-img" />
+              )}
+            </div>
+
+            <p style={{ fontSize: 12, color: '#726b63', margin: '4px 0 14px' }}>
+              Scan with any smartphone camera to open this digital profile.
+            </p>
+
+            <div className="fullscreen-qr-actions">
+              <button
+                type="button"
+                className="btn-qr-action"
+                onClick={() => {
+                  navigator.clipboard.writeText(profileUrl || window.location.href)
+                  showToast('Profile link copied!')
+                }}
+              >
+                Copy Link
+              </button>
+              <button
+                type="button"
+                className="btn-qr-action primary"
+                onClick={handleShare}
+              >
+                Share Profile ↗
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Contact Exchange Modal ("Connect Back") ────────────────── */}
+      {showExchangeModal && (
+        <div className="exchange-overlay" onClick={() => setShowExchangeModal(false)}>
+          <div className="exchange-card" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="fullscreen-qr-close"
+              onClick={() => setShowExchangeModal(false)}
+              aria-label="Close"
+            >
+              ×
+            </button>
+
+            {!exchangeSuccess ? (
+              <>
+                <div className="exchange-header">
+                  <h3>Connect with {name}</h3>
+                  <p>Send your contact information directly so you can stay in touch.</p>
+                </div>
+
+                <form className="exchange-form" onSubmit={handleExchangeSubmit}>
+                  <label>
+                    Your Full Name *
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Samuel Alazar"
+                      value={visitorName}
+                      onChange={(e) => setVisitorName(e.target.value)}
+                      autoFocus
+                    />
+                  </label>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    <label>
+                      Phone Number
+                      <input
+                        type="tel"
+                        placeholder="+251 9..."
+                        value={visitorPhone}
+                        onChange={(e) => setVisitorPhone(e.target.value)}
+                      />
+                    </label>
+                    <label>
+                      Email Address
+                      <input
+                        type="email"
+                        placeholder="you@email.com"
+                        value={visitorEmail}
+                        onChange={(e) => setVisitorEmail(e.target.value)}
+                      />
+                    </label>
+                  </div>
+
+                  <label>
+                    Company / Organization (Optional)
+                    <input
+                      type="text"
+                      placeholder="e.g. Horizon Tech"
+                      value={visitorCompany}
+                      onChange={(e) => setVisitorCompany(e.target.value)}
+                    />
+                  </label>
+
+                  <label>
+                    Add a Note (Optional)
+                    <textarea
+                      rows={2}
+                      placeholder="e.g. Met at the Fintech Summit..."
+                      value={visitorNote}
+                      onChange={(e) => setVisitorNote(e.target.value)}
+                    />
+                  </label>
+
+                  <div className="exchange-form-actions">
+                    <button
+                      type="button"
+                      className="btn-qr-action"
+                      onClick={() => setShowExchangeModal(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn-qr-action primary"
+                    >
+                      Exchange Contact ↗
+                    </button>
+                  </div>
+                </form>
+              </>
+            ) : (
+              <div className="exchange-success-box">
+                <div className="exchange-success-icon">✓</div>
+                <h3 style={{ fontSize: 20, fontWeight: 800, margin: '0 0 6px', color: '#191513' }}>
+                  Contact Information Prepared!
+                </h3>
+                <p style={{ fontSize: 13, color: '#726b63', lineHeight: 1.5, margin: '0 0 20px' }}>
+                  Your contact card (.vcf) was generated and pre-filled for direct connection with {name}.
+                </p>
+                <button
+                  type="button"
+                  className="btn-qr-action primary"
+                  style={{ width: '100%' }}
+                  onClick={() => setShowExchangeModal(false)}
+                >
+                  Done
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Floating Toast Notification */}
+      {toastMessage && (
+        <div className="card-floating-toast" role="status">
+          <span>✨</span>
+          <span>{toastMessage}</span>
         </div>
       )}
     </div>

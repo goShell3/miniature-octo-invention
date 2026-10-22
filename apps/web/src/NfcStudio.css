@@ -235,3 +235,207 @@
 	.nfc-card-qr img { width: min(100%, 88px); padding: 4px; }
 	.nfc-card-qr span { font-size: 6px; }
 }
+
+
+/* =====================================================================
+   Step 3: 3D Realistic Card Preview, Flip & Ethiopian Payment Instructions
+   ===================================================================== */
+
+.nfc-side-selector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.nfc-side-pill {
+  border: 1px solid var(--line);
+  background: #ffffff;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.nfc-side-pill.active {
+  background: var(--ink);
+  color: #ffffff;
+  border-color: var(--ink);
+}
+
+.nfc-perspective-stage {
+  perspective: 1200px;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.nfc-card-flipper {
+  width: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nfc-card-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 14px;
+}
+
+.nfc-card-face.front {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  padding: 7% 7.5%;
+}
+
+.nfc-card-face.front .nfc-card-content {
+  margin: auto 0;
+  max-width: 100%;
+}
+
+.nfc-card-face.front .nfc-card-content h2 {
+  font-size: 34px;
+  line-height: 1.15;
+  margin: 6px 0 8px;
+}
+
+.nfc-card-face.front .nfc-card-content p {
+  font-size: 14px;
+  opacity: 0.85;
+}
+
+.nfc-card-face.back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 6.5%;
+  background: var(--card-background, #101010);
+  color: var(--card-text, #fff);
+  box-shadow: 0 18px 35px rgba(25, 21, 19, 0.22), 0 2px 5px rgba(25, 21, 19, 0.15);
+}
+
+.nfc-card-back-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 16px;
+  margin: auto 0;
+}
+
+.nfc-card-back-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nfc-card-chip-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  width: fit-content;
+}
+
+/* Payment Instructions (Telebirr & CBE) */
+.nfc-payment-guide {
+  margin-top: 14px;
+  border: 1px solid var(--line);
+  background: #faf8f5;
+  border-radius: 8px;
+  padding: 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.nfc-payment-guide h3 {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 0 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nfc-payment-guide p {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 10px;
+  line-height: 1.45;
+}
+
+.nfc-payment-options {
+  display: grid;
+  gap: 8px;
+}
+
+.nfc-pay-method {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nfc-pay-info strong {
+  display: block;
+  font-size: 11px;
+  color: var(--ink);
+}
+
+.nfc-pay-info span {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--green);
+}
+
+.nfc-copy-code-btn {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  background: #faf8f5;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.nfc-whatsapp-confirm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 38px;
+  background: #22c55e;
+  color: #ffffff;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  margin-top: 10px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.nfc-whatsapp-confirm:hover {
+  background: #16a34a;
+}

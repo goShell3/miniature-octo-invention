@@ -1,299 +1,627 @@
 /* =====================================================================
-   DigitalCard — NFC Smart Digital Business Card Mockup
-   Matches the design from uploaded media:
-   - Outer card frame: 38px radius, clean warm off-white #f6f5f2
-  - Top banner: Koolink red
-   - Overlapping circular avatar: 104px, 5px white ring, beige fill
-   - Call (terracotta) & Email (warm cream) side-by-side pills
-   - Centerpiece QR code with live target URL
-   - Domain / profile address footer
+   DigitalCard — Modern Dark Executive NFC Smart Profile (Intro™ Style)
+   Matches the uploaded screenshot:
+   - Deep obsidian/charcoal card
+   - Dark identity card with rectangular portrait avatar on left, bold name & title on right
+   - SAVE CONTACT (dark) & CONNECT (vibrant accent) side-by-side pills
+   - Circular social buttons (WhatsApp, LinkedIn, Instagram, Facebook, etc.)
+   - Clean readable bio paragraph
+   - Contact list items with left accent icons (@, phone) and right chevron >
+   - High-contrast scannable QR code & domain footer
    ===================================================================== */
 
-.digital-card-container {
-  --card-accent: #ff3535;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.intro-card-wrapper {
+  --card-accent: #ff4e18;
   width: 100%;
-}
-
-.digital-card {
-  width: 100%;
-  max-width: 380px;
-  background: #f6f5f2;
-  border-radius: 38px;
-  overflow: hidden;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08);
-  position: relative;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  color: #191513;
+  max-width: 440px;
   margin: 0 auto;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #f6f5f2;
+  box-sizing: border-box;
 }
 
-/* ── Top Orange Banner ────────────────────────────────────────────── */
-.card-top-banner {
-  height: 140px;
-  background: var(--card-accent);
-  background-position: center;
-  background-size: cover;
-  width: 100%;
-  position: relative;
-}
-
-/* ── Overlapping Avatar ───────────────────────────────────────────── */
-.card-avatar-wrapper {
-  position: relative;
-  width: 104px;
-  height: 104px;
-  border-radius: 50%;
-  margin: -52px auto 0;
-  border: 5px solid #ffffff;
-  background: #ebd7c7;
-  display: grid;
-  place-items: center;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  z-index: 2;
-  overflow: hidden;
-}
-
-.card-avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-}
-
-.card-avatar-fallback {
-  font-size: 36px;
-  font-weight: 800;
-  color: #1a1614;
-  line-height: 1;
+/* ── Top Brand Indicator ─────────────────────────────────────────── */
+.intro-brand-tag {
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+  color: #ffffff;
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 18px;
   user-select: none;
 }
 
-/* ── Card Content Body ────────────────────────────────────────────── */
-.card-content {
-  padding: 16px 24px 28px;
-  text-align: center;
+.intro-brand-tag small {
+  font-size: 10px;
+  font-weight: 800;
+  margin-left: 1px;
+}
+
+/* ── 1. Hero Identity Card ───────────────────────────────────────── */
+.intro-identity-card {
+  background: #222222;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 18px 20px;
+  display: grid;
+  grid-template-columns: 106px 1fr;
+  gap: 16px;
+  align-items: center;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.intro-avatar-box {
+  width: 106px;
+  height: 126px;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #2b2b2b;
+  flex-shrink: 0;
+  position: relative;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+.intro-avatar-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.intro-avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  font-size: 38px;
+  font-weight: 800;
+  color: #ffffff;
+  background: #2c2c2c;
+  user-select: none;
+}
+
+.intro-identity-meta {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  gap: 4px;
+  min-width: 0;
 }
 
-.card-name {
-  font-size: 24px;
+.intro-name {
+  font-size: 21px;
   font-weight: 800;
-  color: #191513;
-  letter-spacing: -0.015em;
-  margin: 0 0 5px;
+  color: #ffffff;
+  margin: 0;
   line-height: 1.2;
-}
-
-.card-title-company {
-  font-size: 15px;
-  font-weight: 450;
-  color: #59534c;
-  margin: 0 0 7px;
-  line-height: 1.35;
-}
-
-.card-bio {
-  font-size: 14px;
-  line-height: 1.45;
-  color: #6b645d;
-  max-width: 300px;
-  margin: 0 0 20px;
   word-break: break-word;
 }
 
-/* ── Call & Email Action Pills ────────────────────────────────────── */
-.card-action-row {
-  display: flex;
-  gap: 12px;
-  width: 100%;
-  max-width: 280px;
-  margin-bottom: 14px;
+.intro-title {
+  font-size: 13px;
+  color: #9c9c9c;
+  margin: 2px 0 0;
+  line-height: 1.4;
 }
 
-.card-pill-btn {
-  flex: 1;
-  height: 42px;
+.intro-company {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #ebebeb;
+  margin: 2px 0 0;
+  line-height: 1.35;
+}
+
+/* ── 2. Two Main Action Pills ────────────────────────────────────── */
+.intro-action-pills {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 20px;
+  width: 100%;
+}
+
+.intro-pill-btn {
+  height: 48px;
   border-radius: 9999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 15px;
-  font-weight: 600;
-  text-decoration: none;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
   border: 0;
   cursor: pointer;
-  transition: opacity 0.15s, transform 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  transition: all 0.18s ease;
+  user-select: none;
 }
 
-.card-pill-btn:hover {
-  opacity: 0.9;
+.intro-pill-btn.save-contact {
+  background: #262626;
+  color: #e5e5e5;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.intro-pill-btn.save-contact:hover {
+  background: #333333;
+  color: #ffffff;
   transform: translateY(-1px);
 }
 
-.card-pill-btn:active {
+.intro-pill-btn.connect {
+  background: var(--card-accent, #ff4e18);
+  color: #ffffff;
+  box-shadow: 0 4px 18px rgba(255, 78, 24, 0.35);
+}
+
+.intro-pill-btn.connect:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.intro-pill-btn:active {
   transform: translateY(0);
 }
 
-.card-pill-btn.call-btn {
-  background: #f2be9b;
-  color: #8c4f2d;
-}
-
-.card-pill-btn.email-btn {
-  background: #eae6df;
-  color: #5f5952;
-}
-
-/* ── Social Networks Row ──────────────────────────────────────────── */
-.card-social-row {
+/* ── 3. Circular Social Icons Row ────────────────────────────────── */
+.intro-social-circle-row {
   display: flex;
-  gap: 8px;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 24px;
   flex-wrap: wrap;
-  margin-top: 4px;
-  margin-bottom: 16px;
 }
 
-.card-social-btn {
-  width: 36px;
-  height: 36px;
+.intro-social-circle-btn {
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
-  background: #eae6df;
-  color: #59534c;
+  background: #222222;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #ffffff;
   display: grid;
   place-items: center;
   text-decoration: none;
-  transition: background 0.15s, color 0.15s, transform 0.15s;
+  transition: all 0.18s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.card-social-btn:hover {
-  background: #dfd8cf;
-  color: #191513;
-  transform: scale(1.08);
+.intro-social-circle-btn:hover {
+  background: #2e2e2e;
+  border-color: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
 }
 
-/* ── QR Mode Toggle ──────────────────────────────────────────────── */
-.card-qr-mode-wrap {
-  margin: 10px auto 4px;
+/* ── 4. Bio Paragraph ────────────────────────────────────────────── */
+.intro-bio-text {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #a8a8a8;
+  margin-top: 22px;
+  padding: 0 4px;
+  white-space: pre-line;
+  text-align: left;
 }
 
-.card-qr-mode-toggle {
-  display: inline-flex;
-  padding: 3px;
-  background: #ebe6df;
-  border-radius: 9999px;
-  gap: 3px;
+/* ── 5. Contact List Rows with Right Chevron ─────────────────────── */
+.intro-contact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+  width: 100%;
 }
 
-.qr-mode-pill {
-  border: 0;
-  background: transparent;
-  color: #726b63;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 9999px;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+.intro-contact-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 16px;
+  border-radius: 14px;
+  background: #1c1c1c;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.18s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-.qr-mode-pill.active {
-  background: #ffffff;
-  color: #191513;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+.intro-contact-item:hover {
+  background: #252525;
+  border-color: rgba(255, 255, 255, 0.18);
+  transform: translateY(-1px);
 }
 
-.card-qr-subhint {
-  font-size: 10.5px;
-  color: #8c847a;
-  margin: 4px 0 10px;
-  font-weight: 500;
+.intro-contact-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
 }
 
-/* ── Centerpiece QR Code ──────────────────────────────────────────── */
-.card-qr-box {
-  margin: 8px auto 4px;
-  width: 180px;
-  height: 180px;
+.intro-contact-icon {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--card-accent, #ff4e18);
   display: grid;
   place-items: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
 }
 
-.card-qr-image {
-  width: 180px;
-  height: 180px;
+.intro-contact-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #dedede;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.intro-contact-arrow {
+  font-size: 20px;
+  font-weight: 700;
+  color: #555555;
+  transition: transform 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.intro-contact-item:hover .intro-contact-arrow {
+  color: #ffffff;
+  transform: translateX(3px);
+}
+
+/* ── 6. High-Contrast Scannable QR Section ───────────────────────── */
+.intro-qr-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 26px;
+  gap: 8px;
+  width: 100%;
+}
+
+.intro-qr-box {
+  background: #ffffff;
+  padding: 12px 12px 8px;
+  border-radius: 18px;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+}
+
+.intro-qr-box:hover {
+  transform: scale(1.03);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.55);
+}
+
+.intro-qr-img {
+  width: 140px;
+  height: 140px;
   object-fit: contain;
   display: block;
 }
 
-.card-qr-skeleton {
-  width: 180px;
-  height: 180px;
-  border-radius: 8px;
+.intro-qr-skeleton {
+  width: 140px;
+  height: 140px;
+  border-radius: 10px;
   background: #eae6df;
   animation: pulse 1.5s infinite;
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 0.3; }
+.intro-qr-hint {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #191513;
+  text-transform: uppercase;
 }
 
-/* ── Profile URL Footer ───────────────────────────────────────────── */
-.card-url-footer {
+.intro-domain-label {
+  font-size: 12px;
+  color: #7a7a7a;
+  font-weight: 600;
   margin-top: 4px;
 }
 
-.card-url-text {
-  font-size: 14px;
-  font-weight: 500;
-  color: #59534c;
-  text-decoration: none;
-  transition: color 0.15s;
+/* ── Fullscreen High-Contrast QR Modal ────────────────────────────── */
+.fullscreen-qr-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 10, 9, 0.82);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  animation: qr-fade-in 0.2s ease-out;
 }
 
-.card-url-text:hover {
-  color: #191513;
-  text-decoration: underline;
+@keyframes qr-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
-/* ── Save Contact Action Bar (vCard) ──────────────────────────────── */
-.card-vcard-action-bar {
-  margin-top: 20px;
+.fullscreen-qr-card {
   width: 100%;
   max-width: 380px;
+  background: #ffffff;
+  color: #12100e;
+  border-radius: 28px;
+  padding: 28px 24px 24px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  animation: qr-pop-up 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: center;
 }
 
-.card-save-vcard-btn {
+@keyframes qr-pop-up {
+  from { opacity: 0; transform: scale(0.92) translateY(12px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.fullscreen-qr-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 0;
+  background: #f1ece5;
+  color: #59534c;
+  font-size: 20px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.fullscreen-qr-close:hover {
+  background: #e2dbd1;
+  color: #191513;
+}
+
+.fullscreen-qr-header {
+  margin-bottom: 14px;
+}
+
+.fullscreen-qr-avatar {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 3px solid #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  object-fit: cover;
+  margin: 0 auto 10px;
+  display: block;
+}
+
+.fullscreen-qr-fallback {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: #191513;
+  color: #fff;
+  font-size: 24px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 10px;
+}
+
+.fullscreen-qr-name {
+  font-size: 20px;
+  font-weight: 800;
+  color: #191513;
+  margin: 0 0 2px;
+}
+
+.fullscreen-qr-title {
+  font-size: 13px;
+  color: #726b63;
+  margin: 0;
+}
+
+.fullscreen-qr-box {
+  width: 260px;
+  height: 260px;
+  background: #ffffff;
+  border: 1px solid #ece6dc;
+  border-radius: 18px;
+  padding: 12px;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  margin: 12px 0;
+}
+
+.fullscreen-qr-img {
   width: 100%;
-  height: 48px;
-  border-radius: 14px;
-  background: #201c18;
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.fullscreen-qr-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  margin-top: 14px;
+}
+
+.btn-qr-action {
+  flex: 1;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid #dcd5ca;
+  background: #fbf9f6;
+  color: #191513;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.btn-qr-action:hover {
+  background: #f1ece5;
+  border-color: #c4bbb0;
+}
+
+.btn-qr-action.primary {
+  background: #191513;
+  color: #ffffff;
+  border-color: #191513;
+}
+
+.btn-qr-action.primary:hover {
+  background: #2b2521;
+}
+
+/* ── Contact Exchange Modal ───────────────────────────────────────── */
+.exchange-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 10, 9, 0.82);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  animation: qr-fade-in 0.2s ease-out;
+}
+
+.exchange-card {
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  color: #191513;
+  border-radius: 24px;
+  padding: 28px 24px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+  position: relative;
+  animation: qr-pop-up 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: left;
+}
+
+.exchange-header {
+  margin-bottom: 20px;
+}
+
+.exchange-header h3 {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0 0 4px;
+  color: #191513;
+}
+
+.exchange-header p {
   font-size: 13px;
+  color: #726b63;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.exchange-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.exchange-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
   font-weight: 700;
-  text-decoration: none;
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-  transition: background 0.15s, transform 0.15s;
+  color: #3b3530;
 }
 
-.card-save-vcard-btn:hover {
-  background: #2a2520;
-  transform: translateY(-1px);
+.exchange-form input,
+.exchange-form textarea {
+  width: 100%;
+  border: 1px solid #dcd5ca;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  background: #faf8f5;
+  color: #191513;
+  box-sizing: border-box;
 }
 
-.card-save-vcard-btn:active {
-  transform: translateY(0);
+.exchange-form input:focus,
+.exchange-form textarea:focus {
+  outline: none;
+  border-color: #191513;
+  background: #ffffff;
+}
+
+.exchange-form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.exchange-success-box {
+  text-align: center;
+  padding: 20px 10px;
+}
+
+.exchange-success-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #f0fdf4;
+  color: #16a34a;
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+  margin: 0 auto 14px;
+  border: 2px solid #bbf7d0;
+}
+
+/* Floating Toast Alert */
+.card-floating-toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #191513;
+  color: #ffffff;
+  padding: 10px 18px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: toast-arrive 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes toast-arrive {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
 }
