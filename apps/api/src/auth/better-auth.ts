@@ -133,7 +133,7 @@ export const auth = betterAuth({
   socialProviders,
   emailAndPassword: {
     enabled: true,
-    minPasswordLength: 12,
+    minPasswordLength: 8,
     maxPasswordLength: 72,
     password: {
       hash: (password) => bcrypt.hash(password, 12),
