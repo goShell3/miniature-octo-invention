@@ -3,14 +3,22 @@ import {
   Controller,
   Get,
   Param,
+  Patch,
   Post,
+  Query,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { Res } from '@nestjs/common';
-import { AuthenticatedRequest, BetterAuthGuard } from '../auth/better-auth.guard';
+import {
+  AdminGuard,
+  AuthenticatedRequest,
+  BetterAuthGuard,
+} from '../auth/better-auth.guard';
 import { CreateNfcOrderDto } from './dto/create-nfc-order.dto';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { VerifyPaymentDto } from './dto/verify-payment.dto';
 import { NfcOrdersService } from './nfc-orders.service';
 
 @Controller()
@@ -27,6 +35,20 @@ export class NfcOrdersController {
   }
 
   @UseGuards(BetterAuthGuard)
+  @Post('nfc-orders/:id/verify-payment')
+  verifyPayment(
+    @Req() request: AuthenticatedRequest,
+    @Param('id') orderId: string,
+    @Body() input: VerifyPaymentDto,
+  ) {
+    return this.nfcOrdersService.verifyPayment(
+      orderId,
+      request.user.userId,
+      input,
+    );
+  }
+
+  @UseGuards(BetterAuthGuard)
   @Get('nfc-orders/me')
   findMine(@Req() request: AuthenticatedRequest) {
     return this.nfcOrdersService.findMine(request.user.userId);
@@ -39,6 +61,36 @@ export class NfcOrdersController {
     @Param('portfolioId') portfolioId: string,
   ) {
     return this.nfcOrdersService.analytics(request.user.userId, portfolioId);
+  }
+
+  // --- Admin Order Management & Print Queue Endpoints ---
+  @UseGuards(BetterAuthGuard, AdminGuard)
+  @Get('admin/orders/stats')
+  getAdminStats() {
+    return this.nfcOrdersService.getAdminQueueStats();
+  }
+
+  @UseGuards(BetterAuthGuard, AdminGuard)
+  @Get('admin/orders')
+  findAllAdmin(
+    @Query('status') status?: string,
+    @Query('paymentStatus') paymentStatus?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.nfcOrdersService.findAllAdmin({
+      status,
+      paymentStatus,
+      search,
+    });
+  }
+
+  @UseGuards(BetterAuthGuard, AdminGuard)
+  @Patch('admin/orders/:id/status')
+  updateOrderStatus(
+    @Param('id') id: string,
+    @Body() input: UpdateOrderStatusDto,
+  ) {
+    return this.nfcOrdersService.updateOrderStatus(id, input);
   }
 
   @Get('c/:code')

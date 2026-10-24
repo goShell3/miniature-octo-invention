@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 import { CardTapEntity } from './card-tap.entity';
 import { PortfolioEntity } from './portfolio.entity';
-import { NfcCardTier } from '@amalink/types';
+import { NfcCardTier, PaymentMethod, PaymentStatus } from '@amalink/types';
 
 @Entity({ name: 'nfc_orders' })
 export class NfcOrderEntity {
@@ -44,6 +44,24 @@ export class NfcOrderEntity {
     postalCode?: string;
     countryCode: string;
   };
+
+  @Column({ name: 'payment_method', type: 'varchar', nullable: true })
+  paymentMethod!: PaymentMethod | null;
+
+  @Column({ name: 'payment_status', type: 'varchar', default: 'unpaid' })
+  paymentStatus!: PaymentStatus;
+
+  @Column({ name: 'payment_reference', type: 'varchar', nullable: true })
+  paymentReference!: string | null;
+
+  @Column({ name: 'cheki_url', type: 'text', nullable: true })
+  chekiUrl!: string | null;
+
+  @Column({ name: 'payment_verified_at', type: 'timestamptz', nullable: true })
+  paymentVerifiedAt!: Date | null;
+
+  @Column({ name: 'payment_verification_data', type: 'jsonb', nullable: true })
+  paymentVerificationData!: Record<string, any> | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;

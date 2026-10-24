@@ -2,11 +2,20 @@ import { randomBytes } from 'node:crypto';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
-import { NFC_CARD_TIER_PRICES_ETB, NfcCardTier, getTierFromQuantity } from '@amalink/types';
+import {
+  AdminOrderSummary,
+  AdminQueueStats,
+  NFC_CARD_TIER_PRICES_ETB,
+  NfcCardTier,
+  getTierFromQuantity,
+} from '@amalink/types';
 import { CardTapEntity } from '../database/entities/card-tap.entity';
 import { NfcOrderEntity } from '../database/entities/nfc-order.entity';
 import { PortfolioEntity } from '../database/entities/portfolio.entity';
 import { UserEntity } from '../database/entities/user.entity';
+import { ChekiService } from './cheki.service';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { VerifyPaymentDto } from './dto/verify-payment.dto';
 
 @Injectable()
 export class NfcOrdersService {
@@ -19,6 +28,7 @@ export class NfcOrdersService {
     private readonly tapsRepository: Repository<CardTapEntity>,
     @InjectRepository(UserEntity)
     private readonly usersRepository: Repository<UserEntity>,
+    private readonly chekiService: ChekiService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -70,6 +80,7 @@ export class NfcOrdersService {
         portfolio,
         shortLinkCode: randomBytes(6).toString('base64url'),
         status: 'pending',
+        paymentStatus: 'unpaid',
         tier: resolvedTier,
         quantity: input.quantity,
         unitPrice: NFC_CARD_TIER_PRICES_ETB[resolvedTier],
@@ -82,50 +93,186 @@ export class NfcOrdersService {
     );
 
     await this.ordersRepository.save(order);
-    return {
-      id: order.id,
-      status: order.status,
-      tier: order.tier,
-      quantity: order.quantity,
-      unitPrice: order.unitPrice,
-      totalAmount: order.unitPrice * order.quantity,
-      currency: 'ETB',
-      shortUrl: this.getShortUrl(order.shortLinkCode),
-      createdAt: order.createdAt,
-    };
+    return this.formatOrder(order);
   }
 
   async findMine(ownerId: string) {
-    return this.ordersRepository
-      .find({
-        where: { portfolio: { owner: { id: ownerId } } },
-        relations: { portfolio: true },
-        order: { createdAt: 'DESC' },
-        select: {
-          id: true,
-          shortLinkCode: true,
-          status: true,
-          tier: true,
-          quantity: true,
-          unitPrice: true,
-          createdAt: true,
-          portfolio: { id: true, subdomain: true },
+    const orders = await this.ordersRepository.find({
+      where: { portfolio: { owner: { id: ownerId } } },
+      relations: { portfolio: true },
+      order: { createdAt: 'DESC' },
+    });
+    return orders.map((order) => this.formatOrder(order));
+  }
+
+  async verifyPayment(orderId: string, ownerId: string, input: VerifyPaymentDto) {
+    const order = await this.ordersRepository.findOne({
+      where: {
+        id: orderId,
+        portfolio: { owner: { id: ownerId } },
+      },
+      relations: { portfolio: true },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (order.paymentStatus === 'paid') {
+      return {
+        success: true,
+        verified: true,
+        message: 'Order has already been verified and paid.',
+        order: this.formatOrder(order),
+      };
+    }
+
+    const expectedAmount = order.unitPrice * order.quantity;
+    const result = await this.chekiService.verifyPayment({
+      bank: input.method,
+      reference: input.reference,
+      chekiUrl: input.chekiUrl,
+      expectedAmount,
+    });
+
+    if (result.verified) {
+      order.paymentStatus = 'paid';
+      order.status = 'printing';
+      order.paymentMethod = input.method || (result.bank?.toLowerCase().includes('cbe') ? 'cbe' : 'telebirr');
+      order.paymentReference = result.reference || input.reference || null;
+      order.chekiUrl = result.sourceUrl || input.chekiUrl || null;
+      order.paymentVerifiedAt = new Date();
+      order.paymentVerificationData = result.raw || {
+        amount: result.amount,
+        senderName: result.senderName,
+        receiverName: result.receiverName,
+        date: result.date,
+      };
+
+      await this.ordersRepository.save(order);
+
+      return {
+        success: true,
+        verified: true,
+        message: 'Payment successfully verified via Cheki! Order moved to printing queue.',
+        order: this.formatOrder(order),
+        details: {
+          reference: order.paymentReference,
+          amount: result.amount,
+          receiverName: result.receiverName,
+          senderName: result.senderName,
+          date: result.date,
         },
-      })
-      .then((orders) =>
-        orders.map((order) => ({
-          id: order.id,
-          status: order.status,
-          tier: order.tier,
-          quantity: order.quantity,
-          unitPrice: order.unitPrice,
-          totalAmount: order.unitPrice * order.quantity,
-          currency: 'ETB',
-          shortUrl: this.getShortUrl(order.shortLinkCode),
-          portfolio: order.portfolio,
-          createdAt: order.createdAt,
-        })),
+      };
+    }
+
+    // In case verification failed, persist reference & attempted URL for admin review
+    if (input.reference || input.chekiUrl) {
+      order.paymentReference = input.reference || order.paymentReference;
+      order.chekiUrl = input.chekiUrl || order.chekiUrl;
+      if (input.method) order.paymentMethod = input.method;
+      await this.ordersRepository.save(order);
+    }
+
+    return {
+      success: false,
+      verified: false,
+      message: result.message || 'Payment could not be verified by Cheki. Please check your reference or receipt URL.',
+      order: this.formatOrder(order),
+    };
+  }
+
+  // --- Admin Order Management & Print Queue Methods ---
+  async findAllAdmin(filter?: { status?: string; paymentStatus?: string; search?: string }): Promise<AdminOrderSummary[]> {
+    const qb = this.ordersRepository
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.portfolio', 'portfolio')
+      .leftJoinAndSelect('portfolio.owner', 'owner')
+      .orderBy('order.createdAt', 'DESC');
+
+    if (filter?.status && filter.status !== 'all') {
+      qb.andWhere('order.status = :status', { status: filter.status });
+    }
+
+    if (filter?.paymentStatus && filter.paymentStatus !== 'all') {
+      qb.andWhere('order.paymentStatus = :paymentStatus', { paymentStatus: filter.paymentStatus });
+    }
+
+    if (filter?.search) {
+      const s = `%${filter.search.toLowerCase()}%`;
+      qb.andWhere(
+        '(LOWER(order.id::text) LIKE :s OR LOWER(order.shortLinkCode) LIKE :s OR LOWER(order.paymentReference) LIKE :s OR LOWER(portfolio.subdomain) LIKE :s OR LOWER(owner.name) LIKE :s OR LOWER(owner.email) LIKE :s OR LOWER(owner.phoneNumber) LIKE :s OR LOWER(order.shippingAddress::text) LIKE :s)',
+        { s },
       );
+    }
+
+    const orders = await qb.getMany();
+    return orders.map((order) => this.formatAdminOrder(order));
+  }
+
+  async getAdminQueueStats(): Promise<AdminQueueStats> {
+    const orders = await this.ordersRepository.find();
+
+    let totalRevenueETB = 0;
+    let totalCards = 0;
+    let printingCount = 0;
+    let pendingCount = 0;
+    let shippedCount = 0;
+    let deliveredCount = 0;
+    let unpaidCount = 0;
+
+    for (const order of orders) {
+      const qty = order.quantity || 1;
+      totalCards += qty;
+      if (order.paymentStatus === 'paid') {
+        totalRevenueETB += qty * (order.unitPrice || 0);
+      } else {
+        unpaidCount++;
+      }
+
+      if (order.status === 'printing') printingCount++;
+      else if (order.status === 'pending') pendingCount++;
+      else if (order.status === 'shipped') shippedCount++;
+      else if (order.status === 'delivered') deliveredCount++;
+    }
+
+    return {
+      totalOrders: orders.length,
+      printingCount,
+      pendingCount,
+      shippedCount,
+      deliveredCount,
+      totalRevenueETB,
+      totalCards,
+      unpaidCount,
+    };
+  }
+
+  async updateOrderStatus(orderId: string, input: UpdateOrderStatusDto): Promise<AdminOrderSummary> {
+    const order = await this.ordersRepository.findOne({
+      where: { id: orderId },
+      relations: { portfolio: { owner: true } },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+
+    if (input.status) {
+      order.status = input.status;
+      // If advancing to printing queue and unpaid, automatically mark paid
+      if (input.status === 'printing' && order.paymentStatus !== 'paid') {
+        order.paymentStatus = 'paid';
+        order.paymentVerifiedAt = new Date();
+      }
+    }
+
+    if (input.paymentStatus) {
+      order.paymentStatus = input.paymentStatus;
+      if (input.paymentStatus === 'paid' && !order.paymentVerifiedAt) {
+        order.paymentVerifiedAt = new Date();
+      }
+    }
+
+    await this.ordersRepository.save(order);
+    return this.formatAdminOrder(order);
   }
 
   async findTarget(code: string) {
@@ -165,6 +312,63 @@ export class NfcOrdersService {
       .select('COUNT(tap.id)', 'count')
       .getRawOne<{ count: string }>();
     return { portfolioId, cardTaps: Number(taps?.count ?? 0) };
+  }
+
+  private formatOrder(order: NfcOrderEntity) {
+    return {
+      id: order.id,
+      status: order.status,
+      paymentStatus: order.paymentStatus ?? 'unpaid',
+      paymentMethod: order.paymentMethod ?? null,
+      paymentReference: order.paymentReference ?? null,
+      chekiUrl: order.chekiUrl ?? null,
+      paymentVerifiedAt: order.paymentVerifiedAt ? order.paymentVerifiedAt.toISOString() : null,
+      tier: order.tier,
+      quantity: order.quantity,
+      unitPrice: order.unitPrice,
+      totalAmount: order.unitPrice * order.quantity,
+      currency: 'ETB',
+      shortUrl: this.getShortUrl(order.shortLinkCode),
+      shippingAddress: order.shippingAddress,
+      portfolio: order.portfolio ? { id: order.portfolio.id, subdomain: order.portfolio.subdomain } : undefined,
+      createdAt: order.createdAt,
+    };
+  }
+
+  private formatAdminOrder(order: NfcOrderEntity): AdminOrderSummary {
+    const owner = order.portfolio?.owner;
+    return {
+      id: order.id,
+      status: order.status,
+      paymentStatus: order.paymentStatus ?? 'unpaid',
+      paymentMethod: order.paymentMethod ?? null,
+      paymentReference: order.paymentReference ?? null,
+      chekiUrl: order.chekiUrl ?? null,
+      paymentVerifiedAt: order.paymentVerifiedAt ? order.paymentVerifiedAt.toISOString() : null,
+      tier: order.tier,
+      quantity: order.quantity,
+      unitPrice: order.unitPrice,
+      totalAmount: order.unitPrice * order.quantity,
+      currency: 'ETB',
+      shortUrl: this.getShortUrl(order.shortLinkCode),
+      shippingAddress: order.shippingAddress,
+      paymentVerificationData: order.paymentVerificationData,
+      portfolio: {
+        id: order.portfolio?.id ?? '',
+        subdomain: order.portfolio?.subdomain ?? '',
+        status: order.portfolio?.status ?? 'published',
+      },
+      owner: {
+        id: owner?.id ?? '',
+        email: owner?.email ?? '',
+        name: owner?.name ?? 'Anonymous Customer',
+        companyName: owner?.companyName ?? null,
+        phoneNumber: owner?.phoneNumber ?? null,
+        tinNumber: owner?.tinNumber ?? null,
+        customerType: owner?.customerType ?? 'individual',
+      },
+      createdAt: order.createdAt,
+    };
   }
 
   private getShortUrl(code: string) {

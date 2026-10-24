@@ -1,3 +1,16 @@
+const RESERVED_SUBDOMAINS = ['www', 'app', 'api', 'admin', 'auth']
+
+export function isAdminRoute(): boolean {
+  if (typeof window === 'undefined') return false
+  const pathname = window.location.pathname.toLowerCase()
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) return true
+  const hostname = window.location.hostname.toLowerCase()
+  if (hostname.startsWith('admin.')) return true
+  const searchParams = new URLSearchParams(window.location.search)
+  if (searchParams.get('view') === 'admin') return true
+  return false
+}
+
 export function getSubdomain(): string | null {
   if (typeof window === 'undefined') return null
   const hostname = window.location.hostname.toLowerCase()
@@ -7,7 +20,7 @@ export function getSubdomain(): string | null {
   const querySub = searchParams.get('subdomain')
   if (querySub) {
     const clean = querySub.trim().toLowerCase()
-    if (clean && clean !== 'www' && clean !== 'app' && clean !== 'api') {
+    if (clean && !RESERVED_SUBDOMAINS.includes(clean)) {
       return clean
     }
   }
@@ -15,7 +28,7 @@ export function getSubdomain(): string | null {
   // 2. Localhost subdomains: e.g. "robben.localhost"
   if (hostname.endsWith('.localhost')) {
     const sub = hostname.slice(0, -'.localhost'.length)
-    if (sub && sub !== 'www' && sub !== 'app' && sub !== 'api') {
+    if (sub && !RESERVED_SUBDOMAINS.includes(sub)) {
       return sub
     }
   }
@@ -39,7 +52,7 @@ export function getSubdomain(): string | null {
   const rootDomain = import.meta.env.VITE_ROOT_DOMAIN?.toLowerCase()
   if (rootDomain && hostname.endsWith(`.${rootDomain}`)) {
     const sub = hostname.slice(0, -(`.${rootDomain}`).length)
-    if (sub && sub !== 'www' && sub !== 'app' && sub !== 'api') {
+    if (sub && !RESERVED_SUBDOMAINS.includes(sub)) {
       return sub
     }
   }
@@ -48,7 +61,7 @@ export function getSubdomain(): string | null {
   const parts = hostname.split('.')
   if (parts.length > 2) {
     const sub = parts[0]
-    if (sub && sub !== 'www' && sub !== 'app' && sub !== 'api') {
+    if (sub && !RESERVED_SUBDOMAINS.includes(sub)) {
       return sub
     }
   }

@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
-import type { NfcCardTier, PortfolioBlock, PortfolioTheme, SocialLink } from '@amalink/types'
+import { NFC_CARD_TIER_META, TIER_PROFILE_LIMITS } from '@amalink/types'
+import type { NfcCardTier, PortfolioBlock, PortfolioTheme, SocialLink, UserProfile } from '@amalink/types'
 import { authClient } from './auth-client'
 import { HomePage } from './HomePage'
 import { SetupWizard, wizardDataToBlocks } from './SetupWizard'
@@ -9,16 +10,13 @@ import { PublicProfilePage } from './PublicProfilePage'
 import { API_URL, resolveMediaUrl } from './config'
 import './Builder.css'
 import './PublicProfile.css'
-import { getSubdomain, getPortfolioDomainLabel, getPortfolioSubdomainUrl } from './url-helpers'
-export { getSubdomain, getPortfolioSubdomainUrl, getPortfolioDomainLabel }
+import { getSubdomain, getPortfolioDomainLabel, getPortfolioSubdomainUrl, isAdminRoute } from './url-helpers'
+export { getSubdomain, getPortfolioSubdomainUrl, getPortfolioDomainLabel, isAdminRoute }
 import { DigitalCard } from './DigitalCard'
 import { BrandLogo } from './BrandLogo'
+import { AdminPage } from './AdminPage'
 
-interface User {
-  id: string
-  email: string
-  customerType?: NfcCardTier
-}
+type User = UserProfile
 
 interface Portfolio {
   id: string
@@ -114,7 +112,7 @@ const sectionLabels: Record<PortfolioBlock['type'], string> = {
   links: 'Custom Links',
 }
 
-function WorkspaceApp() {
+function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void }) {
   const [user, setUser] = useState<User | null>(null)
   const [viewLanding, setViewLanding] = useState(false)
   const [isSessionPending, setIsSessionPending] = useState(true)
@@ -124,6 +122,7 @@ function WorkspaceApp() {
   const [selected, setSelected] = useState<Portfolio | null>(null)
   const [showNfcStudio, setShowNfcStudio] = useState(false)
   const [selectedCardTier, setSelectedCardTier] = useState<NfcCardTier | null>(getStoredCardTier)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [blocks, setBlocks] = useState<PortfolioBlock[]>([])
   const [theme, setTheme] = useState<PortfolioTheme>({ id: 'minimal', accentColor: '#ff3535' })
   const [toast, setToast] = useState<{ id: number; message: string; type: 'success' | 'error' | 'info' } | null>(null)
@@ -184,11 +183,25 @@ function WorkspaceApp() {
     authClient.getSession({}).then(({ data, error: sessionError }) => {
       if (!isCurrent) return
       if (sessionError) console.warn('Session restore error:', sessionError.message)
-      const sessionUser = data?.user as { id: string; email: string; customerType?: string } | undefined
-      const customerType = sessionUser && cardTiers.includes(sessionUser.customerType as NfcCardTier)
-        ? sessionUser.customerType as NfcCardTier
-        : undefined
-      setUser(sessionUser ? { id: sessionUser.id, email: sessionUser.email, customerType } : null)
+      const sessionUser = data?.user as (Record<string, unknown> & { id: string; email: string }) | undefined
+      if (sessionUser) {
+        const storedTier = getStoredCardTier()
+        const customerType = (cardTiers.includes(sessionUser.customerType as NfcCardTier)
+          ? sessionUser.customerType
+          : storedTier) as NfcCardTier | undefined
+        setUser({
+          id: sessionUser.id,
+          email: sessionUser.email,
+          name: sessionUser.name as string | undefined,
+          customerType,
+          companyName: sessionUser.companyName as string | undefined,
+          phoneNumber: sessionUser.phoneNumber as string | undefined,
+          tinNumber: sessionUser.tinNumber as string | undefined,
+          teamSize: sessionUser.teamSize as string | undefined,
+        })
+      } else {
+        setUser(null)
+      }
       setIsSessionPending(false)
     }).catch((reason: unknown) => {
       if (!isCurrent) return
@@ -647,6 +660,38 @@ function WorkspaceApp() {
           >
             NFC Cards &amp; Pricing
           </button>
+          <div className="user-account-badge" title={user.customerType ? `${user.customerType.toUpperCase()} Account` : 'Individual Account'}>
+            <span className="user-tier-pill">
+              {user.customerType ? (user.customerType === 'business' ? 'S&M Business' : user.customerType.charAt(0).toUpperCase() + user.customerType.slice(1)) : 'Individual'}
+            </span>
+            {user.companyName && (
+              <span className="user-company-pill">{user.companyName}</span>
+            )}
+          </div>
+          {(user.role === 'admin' || user.email === 'roben@sewnet.et' || user.email?.includes('admin')) && (
+            <button
+              type="button"
+              style={{
+                height: 30,
+                padding: '0 10px',
+                fontSize: 11,
+                fontWeight: 700,
+                background: '#0f172a',
+                color: '#38bdf8',
+                border: '1px solid #334155',
+                borderRadius: 6,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 5,
+              }}
+              onClick={onNavigateToAdmin}
+              title="Go to Dedicated Admin Fulfillment Portal (/admin)"
+            >
+              <span>🛡️ Admin Portal</span>
+              <span>↗</span>
+            </button>
+          )}
           <span className="user-email">{user.email}</span>
           <button
             className="text-button"
@@ -671,7 +716,7 @@ function WorkspaceApp() {
                 {dashboardView === 'profiles' ? 'Your Profiles' : 'Card Orders'}
               </h1>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
               <div className="dashboard-nav-tabs">
                 <button
                   type="button"
@@ -688,18 +733,70 @@ function WorkspaceApp() {
                   Card Orders ({orders.length})
                 </button>
               </div>
-              {dashboardView === 'profiles' && (
-                <button
-                  type="button"
-                  className="primary-button"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 38 }}
-                  onClick={() => { setWizardError(''); setShowWizard(true) }}
-                >
-                  <span>+</span> New Profile
-                </button>
-              )}
+              {dashboardView === 'profiles' && (() => {
+                const userTier: NfcCardTier = user.customerType ?? 'individual'
+                const tierMeta = NFC_CARD_TIER_META[userTier]
+                const profileLimit = TIER_PROFILE_LIMITS[userTier]
+                const isLimitReached = profileLimit !== null && portfolios.length >= profileLimit
+                return (
+                  <div className="dashboard-header-right-actions">
+                    <div
+                      className={`profile-limit-pill ${isLimitReached ? 'limit-reached' : ''}`}
+                      title={isLimitReached ? `${tierMeta.name} limit of ${profileLimit} profiles reached` : `${portfolios.length} of ${profileLimit ?? '∞'} ${tierMeta.name} profiles used`}
+                      onClick={() => { if (isLimitReached) setShowUpgradeModal(true) }}
+                    >
+                      <span className="profile-limit-dot" />
+                      <span>
+                        {portfolios.length} / {profileLimit !== null ? profileLimit : '∞'} Profiles
+                      </span>
+                      {isLimitReached && <span className="profile-upgrade-hint">Upgrade</span>}
+                    </div>
+
+                    <button
+                      type="button"
+                      className="primary-button"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 38 }}
+                      onClick={() => {
+                        if (isLimitReached) {
+                          setShowUpgradeModal(true)
+                          return
+                        }
+                        setWizardError('')
+                        setShowWizard(true)
+                      }}
+                    >
+                      <span>+</span> New Profile
+                    </button>
+                  </div>
+                )
+              })()}
             </div>
           </div>
+
+          {dashboardView === 'profiles' && (() => {
+            const userTier: NfcCardTier = user.customerType ?? 'individual'
+            const tierMeta = NFC_CARD_TIER_META[userTier]
+            const profileLimit = TIER_PROFILE_LIMITS[userTier]
+            return (
+              <div className="dashboard-announcement-banner">
+                <div className="announcement-content">
+                  <span className="coming-soon-badge">Coming Soon</span>
+                  {userTier === 'individual' ? (
+                    <div className="announcement-text">
+                      <strong>Custom Domain Linking (.et) &amp; Offline vCard QR</strong>
+                      <p>Link your personal domain directly to your digital card with automated verification.</p>
+                    </div>
+                  ) : (
+                    <div className="announcement-text">
+                      <strong>Bulk Employee CSV Import &amp; Brand Palette Lock</strong>
+                      <p>Upload a team spreadsheet to auto-generate up to {profileLimit ?? 100} branded cards for {user.companyName || 'your organization'}.</p>
+                    </div>
+                  )}
+                </div>
+                <span className="announcement-tag">{tierMeta.name} Feature</span>
+              </div>
+            )
+          })()}
 
           {dashboardView === 'orders' ? (
             <div className="portfolio-list">
@@ -744,7 +841,16 @@ function WorkspaceApp() {
                   <button
                     type="button"
                     className="primary-button"
-                    onClick={() => { setWizardError(''); setShowWizard(true) }}
+                    onClick={() => {
+                      const userTier: NfcCardTier = user.customerType ?? 'individual'
+                      const profileLimit = TIER_PROFILE_LIMITS[userTier]
+                      if (profileLimit !== null && portfolios.length >= profileLimit) {
+                        setShowUpgradeModal(true)
+                        return
+                      }
+                      setWizardError('')
+                      setShowWizard(true)
+                    }}
                   >
                     + Create Your First Profile
                   </button>
@@ -800,11 +906,85 @@ function WorkspaceApp() {
               )}
             </div>
           )}
+
+          {showUpgradeModal && (() => {
+            const userTier: NfcCardTier = user.customerType ?? 'individual'
+            const tierMeta = NFC_CARD_TIER_META[userTier]
+            const profileLimit = TIER_PROFILE_LIMITS[userTier]
+            return (
+              <div className="upgrade-modal-backdrop" onClick={() => setShowUpgradeModal(false)}>
+                <div className="upgrade-modal-card" onClick={(e) => e.stopPropagation()}>
+                  <div className="upgrade-modal-header">
+                    <div>
+                      <span className="upgrade-modal-eyebrow">PROFILE LIMIT REACHED</span>
+                      <h2>Upgrade Account Capacity</h2>
+                    </div>
+                    <button
+                      type="button"
+                      className="auth-close-btn"
+                      onClick={() => setShowUpgradeModal(false)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <p className="upgrade-modal-desc">
+                    Your <strong>{tierMeta.name}</strong> account allows a maximum of{' '}
+                    <strong>{profileLimit} {profileLimit === 1 ? 'profile' : 'profiles'}</strong> ({portfolios.length} used).
+                    Upgrade to an organization tier to create multiple team profiles and unlock volume card discounts.
+                  </p>
+
+                  <div className="upgrade-tier-grid">
+                    {(['individual', 'business', 'enterprise', 'corporate'] as NfcCardTier[]).map((tierKey) => {
+                      const meta = NFC_CARD_TIER_META[tierKey]
+                      const isCurrent = userTier === tierKey
+                      return (
+                        <div key={tierKey} className={`upgrade-tier-card ${isCurrent ? 'current' : ''}`}>
+                          <div className="upgrade-tier-card-header">
+                            <strong>{meta.name}</strong>
+                            {isCurrent && <span className="current-badge">Current</span>}
+                          </div>
+                          <div className="upgrade-tier-limit-badge">
+                            {meta.profileLimit !== null ? `Up to ${meta.profileLimit} Profiles` : 'Unlimited Profiles'}
+                          </div>
+                          <div className="upgrade-tier-price">
+                            <span>{meta.priceETB.toLocaleString()} ETB</span>
+                            <small>/ card ({meta.rangeLabel})</small>
+                          </div>
+                          <p className="upgrade-tier-desc">{meta.description}</p>
+                          {!isCurrent && (
+                            <button
+                              type="button"
+                              className="primary-button upgrade-action-btn"
+                              onClick={() => {
+                                setShowUpgradeModal(false)
+                                setSelectedCardTier(tierKey)
+                                setShowNfcStudio(true)
+                              }}
+                            >
+                              Select {meta.name} →
+                            </button>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  <div className="upgrade-modal-footer">
+                    <button type="button" className="text-button" onClick={() => setShowUpgradeModal(false)}>
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
         </section>
       ) : showNfcStudio ? (
         <div className="editor">
           <NfcStudio
             portfolio={selected}
+            user={user}
             initialTier={user.customerType ?? selectedCardTier ?? undefined}
             onOrderCreated={() => { void refreshOrders().catch((reason: Error) => setError(reason.message)) }}
             onBack={() => setShowNfcStudio(false)}
@@ -2182,13 +2362,46 @@ function PortfolioPreview({ blocks, theme, subdomain }: { blocks: PortfolioBlock
 }
 
 export function App() {
+  const [routePath, setRoutePath] = useState(() =>
+    typeof window !== 'undefined' ? window.location.pathname.toLowerCase() : '/'
+  )
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setRoutePath(window.location.pathname.toLowerCase())
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
+
+  function navigateTo(targetPath: string) {
+    if (typeof window !== 'undefined') {
+      window.history.pushState({}, '', targetPath)
+      setRoutePath(targetPath.toLowerCase())
+    }
+  }
+
   const activeSubdomain = getSubdomain()
 
   if (activeSubdomain) {
     return <PublicProfilePage subdomain={activeSubdomain} apiUrl={API_URL} />
   }
 
-  return <WorkspaceApp />
+  const isAdmin = isAdminRoute() || routePath === '/admin' || routePath.startsWith('/admin/')
+
+  if (isAdmin) {
+    return (
+      <AdminPage
+        onNavigateToUserWorkspace={() => navigateTo('/')}
+      />
+    )
+  }
+
+  return (
+    <WorkspaceApp
+      onNavigateToAdmin={() => navigateTo('/admin')}
+    />
+  )
 }
 
 export default App
