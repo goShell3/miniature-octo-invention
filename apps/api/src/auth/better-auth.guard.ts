@@ -1,12 +1,30 @@
 import {
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { fromNodeHeaders } from 'better-auth/node';
 import { auth } from './better-auth';
+import { NfcCardTier } from '@amalink/types';
+
+export interface AuthenticatedUser {
+  userId: string;
+  email: string;
+  name?: string;
+  role?: 'admin' | 'user';
+  customerType?: NfcCardTier;
+  companyName?: string;
+  phoneNumber?: string;
+  tinNumber?: string;
+  teamSize?: string;
+}
+
+export interface AuthenticatedRequest extends Request {
+  user: AuthenticatedUser;
+}
 
 @Injectable()
 export class BetterAuthGuard implements CanActivate {
@@ -17,14 +35,45 @@ export class BetterAuthGuard implements CanActivate {
     });
     if (!session) throw new UnauthorizedException();
 
+    const userObj = session.user as Record<string, any>;
+    const email = userObj.email?.toLowerCase() ?? '';
+    const isEmailAdmin =
+      email === 'roben@sewnet.et' ||
+      email.includes('admin') ||
+      (process.env.ADMIN_EMAILS ?? '')
+        .toLowerCase()
+        .split(',')
+        .map((s) => s.trim())
+        .includes(email);
+
     request.user = {
-      userId: session.user.id,
-      email: session.user.email,
+      userId: userObj.id,
+      email: userObj.email,
+      name: userObj.name,
+      role: userObj.role === 'admin' || isEmailAdmin ? 'admin' : 'user',
+      customerType: userObj.customerType,
+      companyName: userObj.companyName,
+      phoneNumber: userObj.phoneNumber,
+      tinNumber: userObj.tinNumber,
+      teamSize: userObj.teamSize,
     };
     return true;
   }
 }
 
-export interface AuthenticatedRequest extends Request {
-  user: { userId: string; email: string };
+@Injectable()
+export class AdminGuard implements CanActivate {
+  canActivate(context: ExecutionContext): boolean {
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    const user = request.user;
+    if (!user) throw new UnauthorizedException('Authentication required');
+
+    const isExplicitAdmin = user.role === 'admin';
+    const isDev = process.env.NODE_ENV !== 'production' || process.env.ALLOW_ALL_ADMIN === 'true';
+
+    if (!isExplicitAdmin && !isDev) {
+      throw new ForbiddenException('Admin privileges required to access this resource');
+    }
+    return true;
+  }
 }

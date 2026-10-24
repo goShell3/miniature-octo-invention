@@ -1,5 +1,4 @@
 import { Controller, Get, Req, UseGuards } from '@nestjs/common';
-import { Request } from 'express';
 import { BetterAuthGuard, AuthenticatedRequest } from './better-auth.guard';
 
 @Controller('auth')
@@ -19,6 +18,16 @@ export class AuthController {
   @UseGuards(BetterAuthGuard)
   @Get('me')
   getCurrentUser(@Req() request: AuthenticatedRequest) {
-    return { id: request.user.userId, email: request.user.email };
+    return {
+      id: request.user.userId,
+      email: request.user.email,
+      name: request.user.name,
+      role: request.user.role ?? 'user',
+      customerType: request.user.customerType,
+      companyName: request.user.companyName,
+      phoneNumber: request.user.phoneNumber,
+      tinNumber: request.user.tinNumber,
+      teamSize: request.user.teamSize,
+    };
   }
 }
