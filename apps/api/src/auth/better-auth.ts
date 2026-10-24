@@ -86,6 +86,14 @@ const defaultOrigins = [
   'http://*.localhost:*',
   'http://localhost:*',
   'http://127.0.0.1:*',
+  'https://koo-link.com',
+  'https://*.koo-link.com',
+  'https://*.koolink.com',
+  'https://koolink.com',
+  'https://*.koolink.co',
+  'https://koolink.co',
+  'https://*.koolink.io',
+  'https://koolink.io',
 ];
 const envOrigins = (process.env.WEB_ORIGIN ?? '')
   .split(',')

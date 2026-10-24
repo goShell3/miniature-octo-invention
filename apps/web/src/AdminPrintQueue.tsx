@@ -23,6 +23,27 @@ export function AdminPrintQueue({ onNotification }: AdminPrintQueueProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [busyOrderId, setBusyOrderId] = useState<string | null>(null)
   const [downloadingOrderId, setDownloadingOrderId] = useState<string | null>(null)
+  const [testingTelegram, setTestingTelegram] = useState(false)
+
+  async function handleTestTelegram() {
+    setTestingTelegram(true)
+    try {
+      const res = await fetch(`${API_URL}/admin/telegram/test`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+      const data = await res.json()
+      if (res.ok && data.success) {
+        onNotification?.('Telegram alert sent successfully! Check your Telegram chat.', 'success')
+      } else {
+        onNotification?.(`Telegram alert error: ${data.error || 'Failed to send'}`, 'error')
+      }
+    } catch (err: any) {
+      onNotification?.(`Telegram alert error: ${err?.message || 'Network error'}`, 'error')
+    } finally {
+      setTestingTelegram(false)
+    }
+  }
 
   const fetchStats = useCallback(async () => {
     try {
@@ -247,6 +268,16 @@ export function AdminPrintQueue({ onNotification }: AdminPrintQueueProps) {
             title="Refresh order queue"
           >
             ↻ Refresh
+          </button>
+          <button
+            type="button"
+            className="secondary-button"
+            style={{ height: 34, padding: '0 10px', fontSize: 11, background: '#229ED9', color: '#fff', borderColor: '#229ED9' }}
+            onClick={() => void handleTestTelegram()}
+            disabled={testingTelegram}
+            title="Send a test message to the configured Admin Telegram chat"
+          >
+            {testingTelegram ? 'Testing...' : '✈ Test Telegram'}
           </button>
         </div>
       </div>

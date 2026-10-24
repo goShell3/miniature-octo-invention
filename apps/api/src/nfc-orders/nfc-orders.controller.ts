@@ -93,6 +93,12 @@ export class NfcOrdersController {
     return this.nfcOrdersService.updateOrderStatus(id, input);
   }
 
+  @UseGuards(BetterAuthGuard, AdminGuard)
+  @Post('admin/telegram/test')
+  testTelegram() {
+    return this.nfcOrdersService.testTelegram();
+  }
+
   @Get('c/:code')
   async redirect(
     @Param('code') code: string,

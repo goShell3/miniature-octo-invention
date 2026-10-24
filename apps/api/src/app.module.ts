@@ -9,6 +9,7 @@ import { PortfoliosModule } from './portfolios/portfolios.module';
 import { RenderModule } from './render/render.module';
 import { MediaModule } from './media/media.module';
 import { NfcOrdersModule } from './nfc-orders/nfc-orders.module';
+import { TelegramModule } from './telegram/telegram.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { NfcOrdersModule } from './nfc-orders/nfc-orders.module';
     RenderModule,
     MediaModule,
     NfcOrdersModule,
+    TelegramModule,
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['apps/api/.env', '.env'],

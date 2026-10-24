@@ -13,6 +13,7 @@ import { CardTapEntity } from '../database/entities/card-tap.entity';
 import { NfcOrderEntity } from '../database/entities/nfc-order.entity';
 import { PortfolioEntity } from '../database/entities/portfolio.entity';
 import { UserEntity } from '../database/entities/user.entity';
+import { TelegramService } from '../telegram/telegram.service';
 import { ChekiService } from './cheki.service';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { VerifyPaymentDto } from './dto/verify-payment.dto';
@@ -29,6 +30,7 @@ export class NfcOrdersService {
     @InjectRepository(UserEntity)
     private readonly usersRepository: Repository<UserEntity>,
     private readonly chekiService: ChekiService,
+    private readonly telegramService: TelegramService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -60,7 +62,7 @@ export class NfcOrdersService {
 
     const owner = await this.usersRepository.findOne({
       where: { id: ownerId },
-      select: { id: true, customerType: true },
+      select: { id: true, email: true, companyName: true, customerType: true },
     });
     const resolvedTier: NfcCardTier = getTierFromQuantity(input.quantity);
 
@@ -93,6 +95,24 @@ export class NfcOrdersService {
     );
 
     await this.ordersRepository.save(order);
+
+    // Send instant Telegram admin notification
+    void this.telegramService
+      .sendNewOrderNotification({
+        id: order.id,
+        tier: order.tier,
+        quantity: order.quantity,
+        totalAmount: order.unitPrice * order.quantity,
+        currency: 'ETB',
+        customerName: address.name,
+        customerPhone: address.phone,
+        customerEmail: owner?.email,
+        companyName: owner?.companyName,
+        shippingAddress: address,
+        isPaid: false,
+      })
+      .catch((err) => console.error('Telegram notification error:', err));
+
     return this.formatOrder(order);
   }
 
@@ -111,7 +131,7 @@ export class NfcOrdersService {
         id: orderId,
         portfolio: { owner: { id: ownerId } },
       },
-      relations: { portfolio: true },
+      relations: { portfolio: { owner: true } },
     });
 
     if (!order) {
@@ -150,6 +170,25 @@ export class NfcOrdersService {
       };
 
       await this.ordersRepository.save(order);
+
+      // Send instant Telegram admin notification for paid card order
+      void this.telegramService
+        .sendNewOrderNotification({
+          id: order.id,
+          tier: order.tier,
+          quantity: order.quantity,
+          totalAmount: order.unitPrice * order.quantity,
+          currency: 'ETB',
+          customerName: order.shippingAddress?.name || 'Customer',
+          customerPhone: order.shippingAddress?.phone || '',
+          customerEmail: order.portfolio?.owner?.email,
+          companyName: order.portfolio?.owner?.companyName,
+          shippingAddress: order.shippingAddress,
+          paymentMethod: order.paymentMethod,
+          paymentReference: order.paymentReference,
+          isPaid: true,
+        })
+        .catch((err) => console.error('Telegram notification error:', err));
 
       return {
         success: true,
@@ -273,6 +312,12 @@ export class NfcOrdersService {
 
     await this.ordersRepository.save(order);
     return this.formatAdminOrder(order);
+  }
+
+  async testTelegram() {
+    return this.telegramService.sendAdminNotification(
+      `🚀 <b>Koolink Telegram Alert System Connected!</b>\n\nYour admin Telegram alerts are active. You will now receive instant notifications whenever a physical card order is requested or verified.`
+    );
   }
 
   async findTarget(code: string) {
