@@ -16,27 +16,32 @@ const oauthTokenRedirectPlugin: BetterAuthPlugin = {
       {
         matcher: (ctx: { path?: string }) => Boolean(ctx.path && ctx.path.includes('/callback')),
         handler: async (ctx: any) => {
-          const location = ctx.context?.responseHeaders?.get('location');
-          const setCookie = ctx.context?.responseHeaders?.get('set-cookie');
-          if (location && setCookie) {
-            const parsed = parseSetCookieHeader(setCookie);
-            for (const [name, cookie] of parsed.entries()) {
-              if (name.includes('session_token') && cookie.value) {
-                try {
-                  const url = new URL(location);
-                  url.searchParams.set('token', cookie.value);
-                  ctx.context.responseHeaders.set('location', url.toString());
-                } catch {
+          try {
+            const location =
+              ctx.context?.responseHeaders?.get('location') ||
+              ctx.context?.returned?.headers?.get?.('location');
+            const setCookie = ctx.context?.responseHeaders?.get('set-cookie');
+            if (location && setCookie) {
+              const parsed = parseSetCookieHeader(setCookie);
+              for (const [name, cookie] of parsed.entries()) {
+                if (name.includes('session_token') && cookie.value) {
                   const sep = location.includes('?') ? '&' : '?';
-                  ctx.context.responseHeaders.set(
-                    'location',
-                    `${location}${sep}token=${encodeURIComponent(cookie.value)}`,
-                  );
+                  const newLoc = `${location}${sep}token=${encodeURIComponent(cookie.value)}`;
+                  ctx.context?.responseHeaders?.set?.('location', newLoc);
+                  if (ctx.context?.returned?.headers?.set) {
+                    ctx.context.returned.headers.set('location', newLoc);
+                  }
+                  break;
                 }
-                break;
               }
             }
+          } catch (err) {
+            console.error('[oauth-token-redirect] Failed to append token to location:', err);
           }
+          return {
+            response: ctx.context?.returned,
+            headers: ctx.context?.responseHeaders ?? new Headers(),
+          };
         },
       },
     ],
