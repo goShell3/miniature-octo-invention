@@ -86,6 +86,7 @@ const defaultOrigins = [
   'http://*.localhost:*',
   'http://localhost:*',
   'http://127.0.0.1:*',
+  'https://www.koo-link.com',
   'https://koo-link.com',
   'https://*.koo-link.com',
   'https://*.koolink.com',

@@ -28,7 +28,7 @@ async function bootstrap() {
     'http://127.0.0.1:5173',
     'http://127.0.0.1:5174',
     'http://127.0.0.1:5175',
-    'www.koo-link.com',
+    'https://www.koo-link.com',
     'https://koo-link.com',
     'https://*.koo-link.com',
     'https://koolink.com',
