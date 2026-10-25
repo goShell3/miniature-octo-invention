@@ -50,7 +50,13 @@ function getStoredCardTier(): NfcCardTier | null {
 
 async function apiRequest<T>(path: string, options: RequestInit = {}) {
   const headers = new Headers(options.headers)
-  if (options.body) headers.set('Content-Type', 'application/json')
+  if (options.body && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json')
+  }
+  const token = getAuthToken()
+  if (token && !headers.has('Authorization') && !headers.has('authorization')) {
+    headers.set('Authorization', 'Bearer ' + token)
+  }
 
   const response = await fetch(`${API_URL}${path}`, {
     ...options,

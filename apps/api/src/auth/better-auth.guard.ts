@@ -33,7 +33,14 @@ export class BetterAuthGuard implements CanActivate {
     const session = await auth.api.getSession({
       headers: fromNodeHeaders(request.headers),
     });
-    if (!session) throw new UnauthorizedException();
+    if (!session) {
+      const authHeader = request.headers.authorization;
+      const cookieHeader = request.headers.cookie;
+      console.warn(
+        `[BetterAuthGuard] 401 Unauthorized on ${request.method} ${request.url}. Auth header: ${authHeader ? 'present' : 'none'}, Cookie: ${cookieHeader ? 'present' : 'none'}`,
+      );
+      throw new UnauthorizedException();
+    }
 
     const userObj = session.user as Record<string, any>;
     const email = userObj.email?.toLowerCase() ?? '';
