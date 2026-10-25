@@ -188,9 +188,8 @@ export const auth = betterAuth({
   account: {
     accountLinking: {
       enabled: true,
-      allowMultipleAccountsPerUser: false,
-      trustedProviders: ["google"],
-      emailVerification: false,
+      trustedProviders: ['google'],
+      requireLocalEmailVerified: false,
     },
   },
   trustedOrigins,
