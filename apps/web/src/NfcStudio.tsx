@@ -17,6 +17,7 @@ import type {
   PaymentStatus,
 } from '@amalink/types'
 import { API_URL } from './config'
+import { getAuthToken } from './auth-client'
 import { getPortfolioSubdomainUrl, getPortfolioDomainLabel } from './url-helpers'
 import './NfcStudio.css'
 import { BrandLogo } from './BrandLogo'
@@ -219,11 +220,13 @@ export function NfcStudio({
     setVerifyError('')
     setVerifySuccess('')
     try {
+      const token = getAuthToken()
       const response = await fetch(`${API_URL}/nfc-orders/${order.id}/verify-payment`, {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { Authorization: 'Bearer ' + token } : {}),
         },
         body: JSON.stringify({
           reference: chekiRef.trim(),
@@ -314,11 +317,13 @@ export function NfcStudio({
     setError('')
     setOrder(null)
     try {
+      const token = getAuthToken()
       const response = await fetch(`${API_URL}/nfc-orders`, {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { Authorization: 'Bearer ' + token } : {}),
         },
         body: JSON.stringify({
           portfolioId: portfolio.id,

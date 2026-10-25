@@ -7,6 +7,15 @@ import type {
   PaymentStatus,
 } from '@amalink/types'
 import { API_URL } from './config'
+import { getAuthToken } from './auth-client'
+
+function getAdminHeaders(extra: Record<string, string> = {}) {
+  const token = getAuthToken()
+  return {
+    ...extra,
+    ...(token ? { Authorization: 'Bearer ' + token } : {}),
+  }
+}
 import { getPortfolioSubdomainUrl } from './url-helpers'
 import { createCardSvg } from './NfcStudio'
 import './AdminPrintQueue.css'
@@ -90,7 +99,7 @@ export function AdminPrintQueue({ onNotification }: AdminPrintQueueProps) {
       const res = await fetch(`${API_URL}/admin/orders/${orderId}/status`, {
         method: 'PATCH',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ status: newStatus }),
       })
       if (!res.ok) throw new Error('Failed to update status')

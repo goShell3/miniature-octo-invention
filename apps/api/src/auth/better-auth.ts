@@ -5,7 +5,43 @@ import * as bcrypt from 'bcryptjs';
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import { PostgresDialect } from 'kysely';
-import { betterAuth } from 'better-auth';
+import { betterAuth, type BetterAuthPlugin } from 'better-auth';
+import { bearer } from 'better-auth/plugins';
+import { parseSetCookieHeader } from 'better-auth/cookies';
+
+const oauthTokenRedirectPlugin: BetterAuthPlugin = {
+  id: 'oauth-token-redirect',
+  hooks: {
+    after: [
+      {
+        matcher: (ctx: { path?: string }) => Boolean(ctx.path && ctx.path.includes('/callback')),
+        handler: async (ctx: any) => {
+          const location = ctx.context?.responseHeaders?.get('location');
+          const setCookie = ctx.context?.responseHeaders?.get('set-cookie');
+          if (location && setCookie) {
+            const parsed = parseSetCookieHeader(setCookie);
+            for (const [name, cookie] of parsed.entries()) {
+              if (name.includes('session_token') && cookie.value) {
+                try {
+                  const url = new URL(location);
+                  url.searchParams.set('token', cookie.value);
+                  ctx.context.responseHeaders.set('location', url.toString());
+                } catch {
+                  const sep = location.includes('?') ? '&' : '?';
+                  ctx.context.responseHeaders.set(
+                    'location',
+                    `${location}${sep}token=${encodeURIComponent(cookie.value)}`,
+                  );
+                }
+                break;
+              }
+            }
+          }
+        },
+      },
+    ],
+  },
+};
 
 const envFile = process.env.DOTENV_CONFIG_PATH ?? [
   path.resolve(process.cwd(), 'apps/api/.env'),
@@ -201,5 +237,6 @@ export const auth = betterAuth({
     },
     skipStateCookieCheck: true,
   },
+  plugins: [bearer(), oauthTokenRedirectPlugin],
   trustedOrigins,
 });

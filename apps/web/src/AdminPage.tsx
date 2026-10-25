@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { UserProfile } from '@amalink/types'
-import { authClient } from './auth-client'
+import { authClient, getAuthToken, setAuthToken } from './auth-client'
 import { API_URL } from './config'
 import { BrandLogo } from './BrandLogo'
 import { AdminPrintQueue } from './AdminPrintQueue'
@@ -25,7 +25,11 @@ export function AdminPage({ initialUser, onNavigateToUserWorkspace }: AdminPageP
   useEffect(() => {
     async function checkAuth() {
       try {
-        const res = await fetch(`${API_URL}/auth/me`, { credentials: 'include' })
+        const token = getAuthToken()
+        const res = await fetch(`${API_URL}/auth/me`, {
+          credentials: 'include',
+          headers: token ? { Authorization: 'Bearer ' + token } : {},
+        })
         if (res.ok) {
           const data = (await res.json()) as UserProfile
           setUser(data)
@@ -67,7 +71,11 @@ export function AdminPage({ initialUser, onNavigateToUserWorkspace }: AdminPageP
         return
       }
       // Re-fetch user profile with role
-      const meRes = await fetch(`${API_URL}/auth/me`, { credentials: 'include' })
+      const token = getAuthToken()
+      const meRes = await fetch(`${API_URL}/auth/me`, {
+        credentials: 'include',
+        headers: token ? { Authorization: 'Bearer ' + token } : {},
+      })
       if (meRes.ok) {
         const data = (await meRes.json()) as UserProfile
         setUser(data)
@@ -81,7 +89,7 @@ export function AdminPage({ initialUser, onNavigateToUserWorkspace }: AdminPageP
 
   async function handleSignOut() {
     try {
-      await authClient.signOut()
+      await authClient.signOut().catch(() => null); setAuthToken(null)
       setUser(null)
       showToast('Signed out from Admin Portal', 'info')
     } catch (err) {

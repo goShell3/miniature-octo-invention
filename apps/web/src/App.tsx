@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { NFC_CARD_TIER_META, TIER_PROFILE_LIMITS } from '@amalink/types'
 import type { NfcCardTier, PortfolioBlock, PortfolioTheme, SocialLink, UserProfile } from '@amalink/types'
-import { authClient } from './auth-client'
+import { authClient, getAuthToken, setAuthToken } from './auth-client'
 import { HomePage } from './HomePage'
 import { SetupWizard, wizardDataToBlocks } from './SetupWizard'
 import type { WizardData } from './SetupWizard'
@@ -178,10 +178,17 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
   const [subdomainSaving, setSubdomainSaving] = useState(false)
   const [editorMobileTab, setEditorMobileTab] = useState<'edit' | 'preview'>('edit')
 
-  // Check URL for OAuth error parameters on mount
+  // Check URL for OAuth token or error parameters on mount
   useEffect(() => {
     if (typeof window !== 'undefined' && window.location.search) {
       const params = new URLSearchParams(window.location.search)
+      let cleanNeeded = false
+      const token = params.get('token')
+      if (token) {
+        setAuthToken(token)
+        params.delete('token')
+        cleanNeeded = true
+      }
       const err = params.get('error')
       const desc = params.get('error_description')
       if (err) {
@@ -192,7 +199,13 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
             ? 'This email is associated with an existing account. Please sign in with your email and password, or link Google.'
             : desc || `Authentication notice: ${err.replace(/_/g, ' ')}`
         showToast(readable, 'error', 6000)
-        const cleanUrl = window.location.pathname + (window.location.hash || '')
+        params.delete('error')
+        params.delete('error_description')
+        cleanNeeded = true
+      }
+      if (cleanNeeded) {
+        const remaining = params.toString()
+        const cleanUrl = window.location.pathname + (remaining ? `?${remaining}` : '') + (window.location.hash || '')
         window.history.replaceState({}, document.title, cleanUrl)
       }
     }
@@ -586,7 +599,8 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
   }
 
   async function signOut() {
-    await authClient.signOut({})
+    await authClient.signOut({}).catch(() => null)
+    setAuthToken(null)
     setUser(null)
     setPortfolios([])
     setOrders([])
@@ -1448,7 +1462,7 @@ function BlockForm({
         const uploadResponse = await fetch(`${API_URL}/media/upload-url`, {
           method: 'POST',
           credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...(getAuthToken() ? { Authorization: 'Bearer ' + getAuthToken() } : {}) },
           body: JSON.stringify({
             portfolioId,
             contentType: file.type,
@@ -1478,6 +1492,7 @@ function BlockForm({
           {
             method: 'POST',
             credentials: 'include',
+            headers: getAuthToken() ? { Authorization: 'Bearer ' + getAuthToken() } : {},
           },
         )
         const confirmation = await confirmResponse.json() as {
@@ -1812,7 +1827,7 @@ function BlockForm({
         const uploadResponse = await fetch(`${API_URL}/media/upload-url`, {
           method: 'POST',
           credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...(getAuthToken() ? { Authorization: 'Bearer ' + getAuthToken() } : {}) },
           body: JSON.stringify({
             portfolioId,
             contentType: file.type,
@@ -1840,6 +1855,7 @@ function BlockForm({
           {
             method: 'POST',
             credentials: 'include',
+            headers: getAuthToken() ? { Authorization: 'Bearer ' + getAuthToken() } : {},
           },
         )
         const confirmation = (await confirmResponse.json()) as {

@@ -6,6 +6,7 @@ import type { CardSocial } from './DigitalCard'
 import { getPortfolioDomainLabel, getPortfolioSubdomainUrl } from './url-helpers'
 import { BrandLogo } from './BrandLogo'
 import { API_URL } from './config'
+import { getAuthToken } from './auth-client'
 import './SetupWizard.css'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -125,7 +126,7 @@ export function SetupWizard({ onFinish, checkSubdomain, busy, error }: SetupWiza
       const uploadResponse = await fetch(`${API_URL}/media/upload-url`, {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(getAuthToken() ? { Authorization: 'Bearer ' + getAuthToken() } : {}) },
         body: JSON.stringify({
           category: 'avatar',
           filename: file.name,
