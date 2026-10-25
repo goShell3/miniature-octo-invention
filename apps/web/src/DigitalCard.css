@@ -626,6 +626,75 @@
   to   { opacity: 1; transform: translate(-50%, 0); }
 }
 
+/* ── Sticky Mobile Bar & Native Bottom-Sheet ── */
+.intro-sticky-mobile-bar {
+  display: none;
+}
+
+@keyframes slide-up-bottom-sheet {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+@media (max-width: 640px) {
+  .intro-card-wrapper {
+    padding-bottom: 96px;
+  }
+
+  .intro-sticky-mobile-bar {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 10px 16px calc(12px + env(safe-area-inset-bottom));
+    background: rgba(22, 22, 22, 0.94);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    gap: 10px;
+    z-index: 1000;
+    box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.5);
+  }
+
+  .intro-sticky-mobile-bar .intro-pill-btn {
+    flex: 1;
+    height: 46px;
+    font-size: 12.5px;
+    font-weight: 800;
+    border-radius: 9999px;
+  }
+
+  .exchange-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .exchange-card {
+    border-radius: 24px 24px 0 0;
+    max-width: 100%;
+    padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
+    animation: slide-up-bottom-sheet 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .exchange-form input,
+  .exchange-form textarea {
+    font-size: 16px !important;
+    min-height: 44px;
+  }
+
+  .fullscreen-qr-overlay {
+    padding: 16px;
+  }
+
+  .fullscreen-qr-card {
+    border-radius: 20px;
+    padding: 24px 18px;
+    max-width: 100%;
+  }
+}
 
 /* ── Mobile Responsive Rules for Digital Card ── */
 @media (max-width: 380px) {

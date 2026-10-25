@@ -176,6 +176,7 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
   const [subdomainStatus, setSubdomainStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid'>('idle')
   const [subdomainError, setSubdomainError] = useState('')
   const [subdomainSaving, setSubdomainSaving] = useState(false)
+  const [editorMobileTab, setEditorMobileTab] = useState<'edit' | 'preview'>('edit')
 
   // Restore session on mount
   useEffect(() => {
@@ -872,7 +873,7 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
                         <div>
                           <div className="profile-card-name">
                             {portfolio.subdomain}
-                            <span style={{ color: 'var(--muted)', fontWeight: 400 }}>.sewnet.et</span>
+                            <span style={{ color: 'var(--muted)', fontWeight: 400 }}>.koo-link.com</span>
                           </div>
                           <div className="profile-card-domain">
                             Updated {new Date(portfolio.updatedAt).toLocaleDateString()}
@@ -1005,7 +1006,7 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
               <div className="editor-profile-identity">
                 <span className="editor-profile-name">
                   <strong>{selected.subdomain}</strong>
-                  <small>.sewnet.et</small>
+                  <small>.koo-link.com</small>
                 </span>
                 <span className={`status-badge status-${selected.status}`}>
                   <span className="status-dot" />
@@ -1108,8 +1109,27 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
               )}
             </div>
           </div>
+
+          {/* Mobile View Switcher (<= 840px) */}
+          <div className="editor-mobile-toggle-bar">
+            <button
+              type="button"
+              className={`editor-mobile-toggle-btn ${editorMobileTab === 'edit' ? 'active' : ''}`}
+              onClick={() => setEditorMobileTab('edit')}
+            >
+              ✎ Edit Content
+            </button>
+            <button
+              type="button"
+              className={`editor-mobile-toggle-btn ${editorMobileTab === 'preview' ? 'active' : ''}`}
+              onClick={() => setEditorMobileTab('preview')}
+            >
+              👁️ Live Preview
+            </button>
+          </div>
+
           <div className="editor-grid">
-            <aside className="editor-sidebar">
+            <aside className={`editor-sidebar ${editorMobileTab === 'preview' ? 'editor-mobile-hidden' : ''}`}>
               <div className="panel-label">PAGE CONTENT</div>
               <div className="block-list">
                 {blocks.map((block, index) => (
@@ -1194,7 +1214,7 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
                 </label>
               </div>
             </aside>
-            <div className="settings-panel">
+            <div className={`settings-panel ${editorMobileTab === 'preview' ? 'editor-mobile-hidden' : ''}`}>
               <div className="panel-label">SECTION SETTINGS</div>
               {blocks[activeBlock]
                 ? <BlockForm
@@ -1212,7 +1232,7 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
                   />
                 : <p className="muted">Choose or add a page section.</p>}
             </div>
-            <div className="preview-stage">
+            <div className={`preview-stage ${editorMobileTab === 'edit' ? 'editor-mobile-hidden' : ''}`}>
               <div className="preview-toolbar">
                 <span><i /> LIVE PREVIEW</span>
                 <span>{selected.status.toUpperCase()}</span>
@@ -1254,7 +1274,7 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
                   placeholder="your-name"
                   autoFocus
                 />
-                <span className="domain-suffix">.sewnet.et</span>
+                <span className="domain-suffix">.koo-link.com</span>
                 <div className="domain-status-badge">
                   {subdomainStatus === 'checking' && <span className="domain-badge checking">Checking…</span>}
                   {subdomainStatus === 'available' && <span className="domain-badge available">✓ Available</span>}

@@ -134,10 +134,10 @@ export function HomePage({
         </div>
 
         <div className="home-nav-actions">
-          <div className="nav-status-pill" title={`API is ${apiStatus}`}>
+          {/* <div className="nav-status-pill" title={`API is ${apiStatus}`}>
             <span className={`nav-status-dot ${apiStatus}`} />
             <span>{apiStatus === 'online' ? 'Connected' : apiStatus === 'checking' ? 'Connecting…' : 'Offline'}</span>
-          </div>
+          </div> */}
 
           {user ? (
             <button className="btn-nav-primary" onClick={onOpenApp}>

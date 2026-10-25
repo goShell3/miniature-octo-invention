@@ -1312,3 +1312,71 @@
   color: #0f172a;
 }
 
+
+
+/* ── Mobile Stepper (<= 840px) ── */
+.nfc-mobile-stepper {
+  display: none;
+  background: #ffffff;
+  border-bottom: 1px solid var(--line);
+  padding: 8px 16px;
+  gap: 8px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.nfc-mobile-step-btn {
+  flex: 1;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper, #fbfaf7);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+}
+
+.nfc-mobile-step-btn.active {
+  background: #191513;
+  color: #ffffff;
+  border-color: #191513;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+@media (max-width: 840px) {
+  .nfc-mobile-stepper {
+    display: flex;
+  }
+
+  .nfc-studio-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .nfc-mobile-hidden {
+    display: none !important;
+  }
+
+  .nfc-order-column {
+    grid-column: 1 / -1;
+    border-top: none;
+    padding: 24px 16px 60px;
+  }
+
+  .nfc-preview-column {
+    min-height: 480px;
+    padding: 20px 12px;
+  }
+
+  .nfc-studio input,
+  .nfc-studio select,
+  .nfc-studio textarea {
+    font-size: 16px !important;
+  }
+}

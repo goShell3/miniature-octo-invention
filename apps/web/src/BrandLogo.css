@@ -4,10 +4,28 @@
   --accent: #ff3535;
 }
 
+.koolink-brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
 .koolink-logo {
   display: block;
   flex: none;
   object-fit: contain;
+}
+
+.koolink-logo-desktop {
+  display: block;
+}
+
+.koolink-logo-mobile {
+  display: none;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .koolink-logo--nav { width: 108px; height: 56px; }
@@ -30,7 +48,29 @@
 .btn-add-social:hover { background: #fff0f0; }
 .preview-toolbar i { background: #ff3535; }
 
-@media (max-width: 480px) {
-  .koolink-logo--nav { width: 92px; height: 48px; }
-  .koolink-logo--auth { width: 118px; height: 62px; }
+/* ── Mobile Viewports <= 640px: Automatically switch to compact icon ── */
+@media (max-width: 640px) {
+  .koolink-logo-desktop {
+    display: none !important;
+  }
+  .koolink-logo-mobile {
+    display: block !important;
+  }
+  .koolink-brand-lockup--auth .koolink-logo-mobile {
+    width: 48px;
+    height: 48px;
+    margin-inline: auto;
+  }
+  .koolink-brand-lockup--wizard .koolink-logo-mobile {
+    width: 32px;
+    height: 32px;
+  }
+  .koolink-brand-lockup--workspace .koolink-logo-mobile {
+    width: 30px;
+    height: 30px;
+  }
+  .koolink-brand-lockup--nav .koolink-logo-mobile {
+    width: 32px;
+    height: 32px;
+  }
 }

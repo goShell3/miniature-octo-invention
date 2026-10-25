@@ -412,6 +412,29 @@ export function DigitalCard({
         </button>
       </div>
 
+      {/* 2b. Sticky Bottom Mobile Action Bar (Public Profile view) */}
+      {!previewOnly && (
+        <div className="intro-sticky-mobile-bar">
+          <button
+            type="button"
+            className="intro-pill-btn save-contact"
+            onClick={handleSaveContact}
+          >
+            📥 SAVE CONTACT
+          </button>
+          <button
+            type="button"
+            className="intro-pill-btn connect"
+            onClick={() => {
+              setExchangeSuccess(false)
+              setShowExchangeModal(true)
+            }}
+          >
+            💬 CONNECT
+          </button>
+        </div>
+      )}
+
       {/* 3. Circular Social Icons */}
       {socials.length > 0 && (
         <div className="intro-social-circle-row">

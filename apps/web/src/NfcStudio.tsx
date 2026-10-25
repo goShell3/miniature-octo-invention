@@ -17,7 +17,7 @@ import type {
   PaymentStatus,
 } from '@amalink/types'
 import { API_URL } from './config'
-import { getPortfolioSubdomainUrl } from './url-helpers'
+import { getPortfolioSubdomainUrl, getPortfolioDomainLabel } from './url-helpers'
 import './NfcStudio.css'
 import { BrandLogo } from './BrandLogo'
 
@@ -207,6 +207,7 @@ export function NfcStudio({
   const [verifying, setVerifying] = useState(false)
   const [verifyError, setVerifyError] = useState('')
   const [verifySuccess, setVerifySuccess] = useState('')
+  const [mobileStudioTab, setMobileStudioTab] = useState<'style' | 'preview' | 'checkout'>('style')
 
   async function handleVerifyPayment() {
     if (!order) return
@@ -356,9 +357,34 @@ export function NfcStudio({
         <div className="nfc-studio-brand"><BrandLogo variant="studio" /><small>NFC CARD / 85.6 × 54 MM</small></div>
       </header>
 
+      {/* Mobile Stepper (<= 840px) */}
+      <div className="nfc-mobile-stepper">
+        <button
+          type="button"
+          className={`nfc-mobile-step-btn ${mobileStudioTab === 'style' ? 'active' : ''}`}
+          onClick={() => setMobileStudioTab('style')}
+        >
+          🎨 1. Style Card
+        </button>
+        <button
+          type="button"
+          className={`nfc-mobile-step-btn ${mobileStudioTab === 'preview' ? 'active' : ''}`}
+          onClick={() => setMobileStudioTab('preview')}
+        >
+          👁️ 2. Preview 3D
+        </button>
+        <button
+          type="button"
+          className={`nfc-mobile-step-btn ${mobileStudioTab === 'checkout' ? 'active' : ''}`}
+          onClick={() => setMobileStudioTab('checkout')}
+        >
+          💳 3. Checkout
+        </button>
+      </div>
+
       <div className="nfc-studio-grid">
         {/* Left Panel: Placeholders, Text & Style Controls */}
-        <aside className="nfc-design-picker">
+        <aside className={`nfc-design-picker ${mobileStudioTab !== 'style' ? 'nfc-mobile-hidden' : ''}`}>
           <div className="panel-label">CARD PLACEHOLDERS &amp; TEXT</div>
 
           <div className="nfc-customizer-stack">
@@ -435,12 +461,12 @@ export function NfcStudio({
 
           <div className="nfc-data-note">
             <span className="nfc-note-mark">✦</span>
-            <p><strong>NFC Chip &amp; QR Linked to:</strong><br /><code>{portfolio.subdomain}.sewnet.et</code></p>
+            <p><strong>NFC Chip &amp; QR Linked to:</strong><br /><code>{getPortfolioDomainLabel(portfolio.subdomain)}</code></p>
           </div>
         </aside>
 
         {/* Center Panel: Live Card Preview (Duo View or 3D Flip) */}
-        <section className="nfc-preview-column" aria-label="Card preview">
+        <section className={`nfc-preview-column ${mobileStudioTab !== 'preview' ? 'nfc-mobile-hidden' : ''}`} aria-label="Card preview">
           <div className="nfc-preview-label">
             <span>{previewMode === 'duo' ? 'DUO PRESENTATION VIEW (LIKE PHOTO)' : `${cardSide.toUpperCase()} / 3D INTERACTIVE VIEW`}</span>
             <span>CR80 / 85.6 × 54 MM</span>
@@ -587,7 +613,7 @@ export function NfcStudio({
         </section>
 
         {/* Right Panel: Order Form & Ethiopian Payment Instructions */}
-        <aside className="nfc-order-column">
+        <aside className={`nfc-order-column ${mobileStudioTab !== 'checkout' ? 'nfc-mobile-hidden' : ''}`}>
           <div className="panel-label">REQUEST PHYSICAL CARDS</div>
           {portfolio.status !== 'published' ? (
             <div className="nfc-publish-note">
