@@ -178,8 +178,10 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
   const [subdomainSaving, setSubdomainSaving] = useState(false)
   const [editorMobileTab, setEditorMobileTab] = useState<'edit' | 'preview'>('edit')
 
-  // Check URL for OAuth token or error parameters on mount
+  // Restore session on mount (and ingest OAuth token if present)
   useEffect(() => {
+    let isCurrent = true
+
     if (typeof window !== 'undefined' && window.location.search) {
       const params = new URLSearchParams(window.location.search)
       let cleanNeeded = false
@@ -197,7 +199,7 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
             ? 'Sign-in session expired or state mismatch. Please try signing in with Google again.'
             : err === 'account_not_linked'
             ? 'This email is associated with an existing account. Please sign in with your email and password, or link Google.'
-            : desc || `Authentication notice: ${err.replace(/_/g, ' ')}`
+            : desc || ('Authentication notice: ' + err.replace(/_/g, ' '))
         showToast(readable, 'error', 6000)
         params.delete('error')
         params.delete('error_description')
@@ -205,16 +207,21 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
       }
       if (cleanNeeded) {
         const remaining = params.toString()
-        const cleanUrl = window.location.pathname + (remaining ? `?${remaining}` : '') + (window.location.hash || '')
+        const cleanUrl = window.location.pathname + (remaining ? ('?' + remaining) : '') + (window.location.hash || '')
         window.history.replaceState({}, document.title, cleanUrl)
       }
     }
-  }, [showToast])
 
-  // Restore session on mount
-  useEffect(() => {
-    let isCurrent = true
-    authClient.getSession({}).then(({ data, error: sessionError }) => {
+    const currentToken = getAuthToken()
+    authClient.getSession({
+      fetchOptions: currentToken
+        ? {
+            headers: {
+              authorization: 'Bearer ' + currentToken,
+            },
+          }
+        : undefined,
+    }).then(({ data, error: sessionError }) => {
       if (!isCurrent) return
       if (sessionError) console.warn('Session restore error:', sessionError.message)
       const sessionUser = data?.user as (Record<string, unknown> & { id: string; email: string }) | undefined
@@ -242,8 +249,9 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
       console.warn('Session restore failed:', reason)
       setIsSessionPending(false)
     })
+
     return () => { isCurrent = false }
-  }, [])
+  }, [showToast])
 
   // Poll API health with auto-recovery for cold starts (Render free tier)
   useEffect(() => {

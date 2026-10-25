@@ -107,16 +107,25 @@ async function bootstrap() {
 
   // Intercept OAuth callback redirects to append the session token to the return URL
   app.use('/api/auth/callback', (req: Request, res: Response, next: NextFunction) => {
-    const originalWriteHead = res.writeHead;
+    let capturedLocation: string | null = null;
+    const originalSetHeader = res.setHeader.bind(res);
+    res.setHeader = function (name: string, value: any) {
+      if (typeof name === 'string' && name.toLowerCase() === 'location') {
+        capturedLocation = String(value);
+      }
+      return originalSetHeader(name, value);
+    };
+
+    const originalWriteHead = res.writeHead.bind(res);
     res.writeHead = function (statusCode: number, ...args: any[]) {
       if (statusCode === 302 || statusCode === 301 || statusCode === 307) {
         let headers: any = args[0];
         if (typeof args[1] === 'object') headers = args[1];
-        const location = headers?.Location || headers?.location || res.getHeader('location');
+        const location = capturedLocation || headers?.Location || headers?.location || res.getHeader('location');
         const setCookie = headers?.['Set-Cookie'] || headers?.['set-cookie'] || res.getHeader('set-cookie');
         if (location && setCookie) {
           const cookieStr = Array.isArray(setCookie) ? setCookie.join('; ') : String(setCookie);
-          const match = cookieStr.match(/(?:better-auth\\.session_token)=([^;]+)/);
+          const match = cookieStr.match(/(?:session_token)=([^;]+)/);
           if (match && match[1]) {
             const token = decodeURIComponent(match[1]);
             const locStr = String(location);
@@ -124,11 +133,11 @@ async function bootstrap() {
             const newLoc = locStr + sep + 'token=' + encodeURIComponent(token);
             if (headers?.Location) headers.Location = newLoc;
             if (headers?.location) headers.location = newLoc;
-            res.setHeader('location', newLoc);
+            originalSetHeader('location', newLoc);
           }
         }
       }
-      return (originalWriteHead as any).apply(this, [statusCode, ...args]);
+      return (originalWriteHead as any)(statusCode, ...args);
     };
     next();
   });
