@@ -5,48 +5,8 @@ import * as bcrypt from 'bcryptjs';
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import { PostgresDialect } from 'kysely';
-import { betterAuth, type BetterAuthPlugin } from 'better-auth';
+import { betterAuth } from 'better-auth';
 import { bearer } from 'better-auth/plugins';
-import { parseSetCookieHeader } from 'better-auth/cookies';
-
-const oauthTokenRedirectPlugin: BetterAuthPlugin = {
-  id: 'oauth-token-redirect',
-  hooks: {
-    after: [
-      {
-        matcher: (ctx: { path?: string }) => Boolean(ctx.path && ctx.path.includes('/callback')),
-        handler: async (ctx: any) => {
-          try {
-            const location =
-              ctx.context?.responseHeaders?.get('location') ||
-              ctx.context?.returned?.headers?.get?.('location');
-            const setCookie = ctx.context?.responseHeaders?.get('set-cookie');
-            if (location && setCookie) {
-              const parsed = parseSetCookieHeader(setCookie);
-              for (const [name, cookie] of parsed.entries()) {
-                if (name.includes('session_token') && cookie.value) {
-                  const sep = location.includes('?') ? '&' : '?';
-                  const newLoc = `${location}${sep}token=${encodeURIComponent(cookie.value)}`;
-                  ctx.context?.responseHeaders?.set?.('location', newLoc);
-                  if (ctx.context?.returned?.headers?.set) {
-                    ctx.context.returned.headers.set('location', newLoc);
-                  }
-                  break;
-                }
-              }
-            }
-          } catch (err) {
-            console.error('[oauth-token-redirect] Failed to append token to location:', err);
-          }
-          return {
-            response: ctx.context?.returned,
-            headers: ctx.context?.responseHeaders ?? new Headers(),
-          };
-        },
-      },
-    ],
-  },
-};
 
 const envFile = process.env.DOTENV_CONFIG_PATH ?? [
   path.resolve(process.cwd(), 'apps/api/.env'),
@@ -242,6 +202,6 @@ export const auth = betterAuth({
     },
     skipStateCookieCheck: true,
   },
-  plugins: [bearer(), oauthTokenRedirectPlugin],
+  plugins: [bearer()],
   trustedOrigins,
 });

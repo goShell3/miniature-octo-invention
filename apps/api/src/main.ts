@@ -1,4 +1,5 @@
 import * as dns from 'node:dns';
+import type { Request, Response, NextFunction } from 'express';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { toNodeHandler } from 'better-auth/node';
@@ -104,7 +105,48 @@ async function bootstrap() {
     }),
   );
 
-  app.use('/api/auth', toNodeHandler(auth));
+  // Intercept OAuth callback redirects to append the session token to the return URL
+  app.use('/api/auth/callback', (req: Request, res: Response, next: NextFunction) => {
+    const originalWriteHead = res.writeHead;
+    res.writeHead = function (statusCode: number, ...args: any[]) {
+      if (statusCode === 302 || statusCode === 301 || statusCode === 307) {
+        let headers: any = args[0];
+        if (typeof args[1] === 'object') headers = args[1];
+        const location = headers?.Location || headers?.location || res.getHeader('location');
+        const setCookie = headers?.['Set-Cookie'] || headers?.['set-cookie'] || res.getHeader('set-cookie');
+        if (location && setCookie) {
+          const cookieStr = Array.isArray(setCookie) ? setCookie.join('; ') : String(setCookie);
+          const match = cookieStr.match(/(?:better-auth\\.session_token)=([^;]+)/);
+          if (match && match[1]) {
+            const token = decodeURIComponent(match[1]);
+            const locStr = String(location);
+            const sep = locStr.includes('?') ? '&' : '?';
+            const newLoc = locStr + sep + 'token=' + encodeURIComponent(token);
+            if (headers?.Location) headers.Location = newLoc;
+            if (headers?.location) headers.location = newLoc;
+            res.setHeader('location', newLoc);
+          }
+        }
+      }
+      return (originalWriteHead as any).apply(this, [statusCode, ...args]);
+    };
+    next();
+  });
+
+  const authNodeHandler = toNodeHandler(auth);
+  app.use('/api/auth', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await authNodeHandler(req, res);
+    } catch (err: any) {
+      console.error('[BETTER-AUTH UNCAUGHT ERROR]', err?.stack || err?.message || err);
+      if (!res.headersSent) {
+        res.status(500).json({
+          error: 'better_auth_server_error',
+          message: err?.message || 'Authentication error',
+        });
+      }
+    }
+  });
 
   const port = Number(process.env.PORT ?? 3000);
   await app.listen(port, '0.0.0.0');
