@@ -149,7 +149,7 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
   const [busy, setBusy] = useState(false)
   const [activeBlock, setActiveBlock] = useState(0)
   const [apiStatus, setApiStatus] = useState<'checking' | 'online' | 'offline'>('checking')
-  const [authProviders, setAuthProviders] = useState({ google: false, facebook: false })
+  const [authProviders, setAuthProviders] = useState({ google: true, facebook: false })
   // Wizard: shown when user has no portfolios yet, or when creating a new one via dashboard
   const [showWizard, setShowWizard] = useState(false)
   const [wizardBusy, setWizardBusy] = useState(false)

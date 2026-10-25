@@ -6,6 +6,30 @@
       "destination": "https://sewnet-api.onrender.com/api/:path*"
     },
     {
+      "source": "/auth/:path*",
+      "destination": "https://sewnet-api.onrender.com/auth/:path*"
+    },
+    {
+      "source": "/portfolios/:path*",
+      "destination": "https://sewnet-api.onrender.com/portfolios/:path*"
+    },
+    {
+      "source": "/media/:path*",
+      "destination": "https://sewnet-api.onrender.com/media/:path*"
+    },
+    {
+      "source": "/nfc-orders/:path*",
+      "destination": "https://sewnet-api.onrender.com/nfc-orders/:path*"
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "https://sewnet-api.onrender.com/admin/:path*"
+    },
+    {
+      "source": "/c/:path*",
+      "destination": "https://sewnet-api.onrender.com/c/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
