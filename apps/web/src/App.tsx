@@ -178,6 +178,26 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
   const [subdomainSaving, setSubdomainSaving] = useState(false)
   const [editorMobileTab, setEditorMobileTab] = useState<'edit' | 'preview'>('edit')
 
+  // Check URL for OAuth error parameters on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.search) {
+      const params = new URLSearchParams(window.location.search)
+      const err = params.get('error')
+      const desc = params.get('error_description')
+      if (err) {
+        const readable =
+          err === 'state_mismatch'
+            ? 'Sign-in session expired or state mismatch. Please try signing in with Google again.'
+            : err === 'account_not_linked'
+            ? 'This email is associated with an existing account. Please sign in with your email and password, or link Google.'
+            : desc || `Authentication notice: ${err.replace(/_/g, ' ')}`
+        showToast(readable, 'error', 6000)
+        const cleanUrl = window.location.pathname + (window.location.hash || '')
+        window.history.replaceState({}, document.title, cleanUrl)
+      }
+    }
+  }, [showToast])
+
   // Restore session on mount
   useEffect(() => {
     let isCurrent = true

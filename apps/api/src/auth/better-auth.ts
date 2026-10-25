@@ -102,10 +102,18 @@ const envOrigins = (process.env.WEB_ORIGIN ?? '')
   .filter(Boolean);
 const trustedOrigins = [...new Set([...defaultOrigins, ...envOrigins])];
 
+const isProduction =
+  process.env.NODE_ENV === 'production' ||
+  process.env.RENDER === 'true' ||
+  (process.env.BETTER_AUTH_URL ?? '').startsWith('https://');
+
 export const auth = betterAuth({
   appName: 'Koolink',
   baseURL: (process.env.BETTER_AUTH_URL ?? 'https://sewnet-api.onrender.com').replace(/\/+$/, ''),
   basePath: '/api/auth',
+  onAPIError: {
+    errorURL: process.env.FRONTEND_URL ?? 'https://www.koo-link.com',
+  },
   secret,
   database: new PostgresDialect({ pool }),
   user: {
@@ -167,8 +175,8 @@ export const auth = betterAuth({
       ipAddressHeaders: ['cf-connecting-ip', 'x-forwarded-for'],
     },
     defaultCookieAttributes: {
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      sameSite: isProduction ? 'none' : 'lax',
+      secure: isProduction,
     },
     database: {
       generateId: ({ model }) =>
@@ -191,6 +199,7 @@ export const auth = betterAuth({
       trustedProviders: ['google'],
       requireLocalEmailVerified: false,
     },
+    skipStateCookieCheck: true,
   },
   trustedOrigins,
 });

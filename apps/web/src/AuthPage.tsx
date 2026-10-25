@@ -209,6 +209,7 @@ export function AuthPage({
       const { error: authError } = await authClient.signIn.social({
         provider,
         callbackURL: window.location.origin,
+        errorCallbackURL: window.location.origin,
       })
       if (authError) throw new Error(authError.message ?? `Unable to continue with ${provider}`)
     } catch (reason) {
