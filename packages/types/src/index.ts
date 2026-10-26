@@ -24,6 +24,9 @@ export interface VerifyPaymentInput {
   reference?: string;
   chekiUrl?: string;
   method?: PaymentMethod;
+  verificationType?: 'url' | 'screenshot';
+  screenshotUrl?: string;
+  notes?: string;
 }
 
 export interface NfcOrderSummary {
@@ -34,6 +37,7 @@ export interface NfcOrderSummary {
   paymentReference?: string | null;
   chekiUrl?: string | null;
   paymentVerifiedAt?: string | null;
+  paymentVerificationData?: Record<string, any> | null;
   tier: NfcCardTier;
   quantity: number;
   unitPrice: number;

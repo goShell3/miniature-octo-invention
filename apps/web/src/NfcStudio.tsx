@@ -49,6 +49,7 @@ interface OrderResult {
   paymentReference?: string | null
   chekiUrl?: string | null
   paymentVerifiedAt?: string | null
+  paymentVerificationData?: Record<string, any> | null
   tier: NfcCardTier
   quantity: number
   unitPrice: number
@@ -210,10 +211,98 @@ export function NfcStudio({
   const [verifySuccess, setVerifySuccess] = useState('')
   const [mobileStudioTab, setMobileStudioTab] = useState<'style' | 'preview' | 'checkout'>('style')
 
-  async function handleVerifyPayment() {
+  // Verification mode: 'url' (Primary) vs 'screenshot' (Secondary)
+  const [verificationMode, setVerificationMode] = useState<'url' | 'screenshot'>('url')
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null)
+  const [screenshotFileName, setScreenshotFileName] = useState<string>('')
+  const [screenshotNotes, setScreenshotNotes] = useState<string>('')
+
+  async function handleVerifyPaymentUrl() {
     if (!order) return
     if (!chekiRef.trim()) {
-      setVerifyError('Please enter your transaction reference (FT... or Telebirr TXN) or receipt URL.')
+      setVerifyError('Please enter your transaction reference (e.g. CBE FT... or Telebirr TXN) or receipt URL.')
+      return
+    }
+    setVerifying(true)
+    setVerifyError('')
+    setVerifySuccess('')
+    try {
+      const token = getAuthToken()
+      const isUrl = chekiRef.trim().startsWith('http://') || chekiRef.trim().startsWith('https://')
+      const response = await fetch(`${API_URL}/nfc-orders/${order.id}/verify-payment`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: 'Bearer ' + token } : {}),
+        },
+        body: JSON.stringify({
+          verificationType: 'url',
+          reference: isUrl ? undefined : chekiRef.trim(),
+          chekiUrl: isUrl ? chekiRef.trim() : undefined,
+          method: payMethod,
+        }),
+      })
+      const result = await response.json()
+      if (!response.ok || !result.verified) {
+        throw new Error(result.message || 'Payment verification failed. Please check your reference or receipt URL, or upload a screenshot as secondary verification.')
+      }
+      setOrder(result.order)
+      setVerifySuccess(result.message || '✓ Payment verified via Cheki! Order moved to printing queue.')
+    } catch (err) {
+      setVerifyError(err instanceof Error ? err.message : 'Unable to verify payment with Cheki')
+    } finally {
+      setVerifying(false)
+    }
+  }
+
+  function handleScreenshotFileSelect(file: File) {
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      setVerifyError('Please select a valid image file (PNG, JPG, JPEG, WEBP).')
+      return
+    }
+    setScreenshotFileName(file.name)
+    setVerifyError('')
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const rawDataUrl = e.target?.result as string
+      // Compress screenshot to max 1200px width/height and 0.85 jpeg quality
+      const img = new Image()
+      img.onload = () => {
+        const maxDim = 1200
+        let w = img.width
+        let h = img.height
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = Math.round((h * maxDim) / w)
+            w = maxDim
+          } else {
+            w = Math.round((w * maxDim) / h)
+            h = maxDim
+          }
+        }
+        const canvas = document.createElement('canvas')
+        canvas.width = w
+        canvas.height = h
+        const ctx = canvas.getContext('2d')
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, w, h)
+          setScreenshotPreview(canvas.toDataURL('image/jpeg', 0.85))
+        } else {
+          setScreenshotPreview(rawDataUrl)
+        }
+      }
+      img.onerror = () => setScreenshotPreview(rawDataUrl)
+      img.src = rawDataUrl
+    }
+    reader.readAsDataURL(file)
+  }
+
+  async function handleVerifyPaymentScreenshot() {
+    if (!order) return
+    if (!screenshotPreview) {
+      setVerifyError('Please upload a screenshot of your payment receipt.')
       return
     }
     setVerifying(true)
@@ -229,18 +318,20 @@ export function NfcStudio({
           ...(token ? { Authorization: 'Bearer ' + token } : {}),
         },
         body: JSON.stringify({
-          reference: chekiRef.trim(),
+          verificationType: 'screenshot',
+          screenshotUrl: screenshotPreview,
           method: payMethod,
+          notes: screenshotNotes.trim() || undefined,
         }),
       })
       const result = await response.json()
-      if (!response.ok || !result.verified) {
-        throw new Error(result.message || 'Payment verification failed. Please check your reference or receipt URL.')
+      if (!response.ok) {
+        throw new Error(result.message || 'Unable to submit payment receipt screenshot.')
       }
       setOrder(result.order)
-      setVerifySuccess(result.message || '✓ Payment verified via Cheki! Order moved to printing queue.')
+      setVerifySuccess('✓ Receipt screenshot submitted! Our operations team has been notified and is verifying your payment.')
     } catch (err) {
-      setVerifyError(err instanceof Error ? err.message : 'Unable to verify payment with Cheki')
+      setVerifyError(err instanceof Error ? err.message : 'Unable to submit payment receipt screenshot')
     } finally {
       setVerifying(false)
     }
@@ -658,8 +749,39 @@ export function NfcStudio({
                     </div>
                   </div>
                 </div>
+              ) : order.paymentStatus === 'verifying' ? (
+                /* Screenshot Under Review Banner */
+                <div className="nfc-verifying-banner" role="status">
+                  <div className="nfc-verifying-badge">
+                    <span>⏳</span> Payment Verification Pending
+                  </div>
+                  <div className="nfc-verified-details">
+                    <div>Status: <strong>Operations Team Review in Progress</strong></div>
+                    <div>Payment Method: <strong>{(order.paymentMethod || payMethod).toUpperCase()}</strong></div>
+                    <div>Order Ref: <strong>KL-{order.id.slice(0, 8).toUpperCase()}</strong></div>
+                    <div>Amount: <strong>{order.totalAmount.toLocaleString()} ETB</strong></div>
+                    {order.paymentVerificationData?.notes && (
+                      <div>Note: <em>{order.paymentVerificationData.notes}</em></div>
+                    )}
+                    {order.paymentVerificationData?.screenshotUrl && (
+                      <div style={{ marginTop: 8 }}>
+                        <span style={{ fontSize: 10.5, fontWeight: 700, color: '#1e40af', display: 'block', marginBottom: 4 }}>
+                          SUBMITTED RECEIPT SCREENSHOT:
+                        </span>
+                        <img
+                          src={order.paymentVerificationData.screenshotUrl}
+                          alt="Receipt Screenshot"
+                          style={{ maxHeight: 110, maxWidth: '100%', borderRadius: 6, border: '1px solid #bfdbfe', objectFit: 'contain' }}
+                        />
+                      </div>
+                    )}
+                    <div style={{ marginTop: 8, fontSize: 11, color: '#1e40af', lineHeight: 1.45 }}>
+                      📸 Your receipt screenshot was submitted to our operations team. Once verified, manufacturing and printing will begin immediately.
+                    </div>
+                  </div>
+                </div>
               ) : (
-                /* Unpaid State: Manual Payment Guide & Cheki Verification */
+                /* Unpaid State: Manual Payment Guide & Multi-tier Verification */
                 <div className="nfc-payment-guide">
                   <div className="nfc-pay-method-tabs">
                     <button
@@ -752,59 +874,169 @@ export function NfcStudio({
                     </div>
                   )}
 
-                  {/* Cheki Automated Verification Form */}
+                  {/* ── Two-Tier Payment Verification Card ── */}
                   <div className="nfc-cheki-card">
-                    <div className="nfc-cheki-header">
-                      <div className="nfc-cheki-title">
-                        <span className="cheki-logo-badge">cheki</span>
-                        <div>
-                          <h4>Instant Payment Verification</h4>
+                    {/* Primary vs Secondary Segmented Switcher */}
+                    <div className="nfc-verify-tabs">
+                      <button
+                        type="button"
+                        className={`nfc-verify-tab ${verificationMode === 'url' ? 'active' : ''}`}
+                        onClick={() => {
+                          setVerificationMode('url')
+                          setVerifyError('')
+                        }}
+                      >
+                        <span className="nfc-verify-tab-main">⚡ Primary: Receipt URL</span>
+                        <span className="nfc-verify-tab-pill instant">Instant</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`nfc-verify-tab ${verificationMode === 'screenshot' ? 'active' : ''}`}
+                        onClick={() => {
+                          setVerificationMode('screenshot')
+                          setVerifyError('')
+                        }}
+                      >
+                        <span className="nfc-verify-tab-main">📸 Secondary: Screenshot</span>
+                        <span className="nfc-verify-tab-pill ops">Ops Review</span>
+                      </button>
+                    </div>
+
+                    {/* ── Mode 1: Primary Verification (URL / Cheki Automated) ── */}
+                    {verificationMode === 'url' ? (
+                      <div className="nfc-verify-pane">
+                        <div className="nfc-cheki-header">
+                          <div className="nfc-cheki-title">
+                            <span className="cheki-logo-badge">cheki</span>
+                            <div>
+                              <h4>Instant Receipt URL Verification</h4>
+                            </div>
+                          </div>
+                          <span className="nfc-cheki-badge-instant">Automated via Cheki</span>
+                        </div>
+                        <p>
+                          Paste your {payMethod === 'cbe' ? 'CBE mobile receipt link (https://mbreciept.cbe.com.et/...) or FT reference' : 'Telebirr transaction confirmation link or TXN ID'} for instant automated verification.
+                        </p>
+                        <div className="nfc-cheki-form">
+                          <div className="nfc-cheki-input-wrap">
+                            <input
+                              type="text"
+                              className="nfc-cheki-input"
+                              placeholder={payMethod === 'cbe' ? 'Enter CBE receipt URL (e.g. https://mbreciept.cbe.com.et/...) or FT ref' : 'Enter Telebirr receipt URL or TXN reference'}
+                              value={chekiRef}
+                              onChange={(e) => {
+                                setChekiRef(e.target.value)
+                                if (verifyError) setVerifyError('')
+                              }}
+                            />
+                            <button
+                              type="button"
+                              className="nfc-cheki-submit-btn"
+                              disabled={verifying || !chekiRef.trim()}
+                              onClick={handleVerifyPaymentUrl}
+                            >
+                              {verifying ? 'Verifying...' : 'Verify URL'}
+                            </button>
+                          </div>
                         </div>
                       </div>
-                      <span className="nfc-cheki-badge-instant">Automated via Cheki</span>
-                    </div>
-                    <p>
-                      Transfer via {payMethod === 'telebirr' ? `Telebirr (${MANUAL_PAYMENT_ACCOUNTS.telebirr.displayPhone})` : `CBE (${MANUAL_PAYMENT_ACCOUNTS.cbe.accountNumber})`} to <strong>{MANUAL_PAYMENT_ACCOUNTS.accountHolder}</strong>, then paste your Transaction Ref ID (e.g. FT... or Telebirr TXN) or receipt URL below to verify instantly.
-                    </p>
-                    <div className="nfc-cheki-form">
-                      <div className="nfc-cheki-input-wrap">
-                        <input
-                          type="text"
-                          className="nfc-cheki-input"
-                          placeholder={payMethod === 'cbe' ? 'Enter CBE FT ref (e.g. FT26...) or receipt URL' : 'Enter Telebirr transaction ref ID or URL'}
-                          value={chekiRef}
-                          onChange={(e) => {
-                            setChekiRef(e.target.value)
-                            if (verifyError) setVerifyError('')
-                          }}
-                        />
-                        <button
-                          type="button"
-                          className="nfc-cheki-submit-btn"
-                          disabled={verifying || !chekiRef.trim()}
-                          onClick={handleVerifyPayment}
-                        >
-                          {verifying ? 'Verifying...' : 'Verify with Cheki'}
-                        </button>
+                    ) : (
+                      /* ── Mode 2: Secondary Verification (Screenshot Upload) ── */
+                      <div className="nfc-verify-pane">
+                        <div className="nfc-cheki-header">
+                          <div className="nfc-cheki-title">
+                            <span className="cheki-logo-badge secondary">📸 ops</span>
+                            <div>
+                              <h4>Upload Payment Receipt Screenshot</h4>
+                            </div>
+                          </div>
+                          <span className="nfc-cheki-badge-secondary">Secondary Option</span>
+                        </div>
+                        <p>
+                          Upload a screenshot of your transfer confirmation from the {payMethod === 'cbe' ? 'CBE Mobile Banking app' : 'Telebirr app'}. Our operations team will verify your receipt and prioritize printing.
+                        </p>
+
+                        <div className="nfc-screenshot-upload-wrap">
+                          {!screenshotPreview ? (
+                            <label className="nfc-screenshot-dropzone">
+                              <span className="nfc-dropzone-icon">📷</span>
+                              <span className="nfc-dropzone-title">Click or drop payment receipt screenshot</span>
+                              <span className="nfc-dropzone-hint">PNG, JPG, JPEG, WEBP accepted (max 10MB)</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                style={{ display: 'none' }}
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0]
+                                  if (file) handleScreenshotFileSelect(file)
+                                }}
+                              />
+                            </label>
+                          ) : (
+                            <div className="nfc-screenshot-preview-box">
+                              <img
+                                src={screenshotPreview}
+                                alt="Payment Receipt Preview"
+                                className="nfc-screenshot-img-preview"
+                              />
+                              <div className="nfc-screenshot-meta">
+                                <span className="nfc-screenshot-name">{screenshotFileName || 'receipt-screenshot.jpg'}</span>
+                                <label className="nfc-screenshot-change-btn">
+                                  Change Screenshot
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    style={{ display: 'none' }}
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0]
+                                      if (file) handleScreenshotFileSelect(file)
+                                    }}
+                                  />
+                                </label>
+                              </div>
+                            </div>
+                          )}
+
+                          <div style={{ marginTop: 8 }}>
+                            <input
+                              type="text"
+                              className="nfc-cheki-input"
+                              placeholder="Optional note (e.g. sender name or phone number)"
+                              value={screenshotNotes}
+                              onChange={(e) => setScreenshotNotes(e.target.value)}
+                              style={{ width: '100%', marginBottom: 8 }}
+                            />
+                            <button
+                              type="button"
+                              className="nfc-cheki-submit-btn"
+                              style={{ width: '100%', height: 40 }}
+                              disabled={verifying || !screenshotPreview}
+                              onClick={handleVerifyPaymentScreenshot}
+                            >
+                              {verifying ? 'Submitting Screenshot...' : 'Submit Screenshot for Verification'}
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                      {verifyError && (
-                        <div className="nfc-cheki-alert-error" role="alert">
-                          ⚠️ {verifyError}
-                        </div>
-                      )}
-                      {verifySuccess && (
-                        <div className="nfc-cheki-alert-success" role="status">
-                          {verifySuccess}
-                        </div>
-                      )}
-                    </div>
+                    )}
+
+                    {verifyError && (
+                      <div className="nfc-cheki-alert-error" role="alert">
+                        ⚠️ {verifyError}
+                      </div>
+                    )}
+                    {verifySuccess && (
+                      <div className="nfc-cheki-alert-success" role="status">
+                        {verifySuccess}
+                      </div>
+                    )}
                   </div>
 
                   {/* Fallback WhatsApp / Telegram Confirmation */}
                   <div style={{ marginTop: 10 }}>
                     <a
                       href={`https://wa.me/${MANUAL_PAYMENT_ACCOUNTS.telebirr.rawPhone}?text=${encodeURIComponent(
-                        `Hi Koolink! I paid for order ref KL-${order.id.slice(0, 8).toUpperCase()} to ${MANUAL_PAYMENT_ACCOUNTS.accountHolder} via ${payMethod.toUpperCase()} (${order.totalAmount} ETB).${chekiRef ? ` My reference ID is ${chekiRef}.` : ' Here is my payment receipt screenshot.'}`
+                        `Hi Koolink! I paid for order ref KL-${order.id.slice(0, 8).toUpperCase()} to ${MANUAL_PAYMENT_ACCOUNTS.accountHolder} via ${payMethod.toUpperCase()} (${order.totalAmount} ETB).${chekiRef ? ` My reference is ${chekiRef}.` : ' Here is my payment receipt screenshot.'}`
                       )}`}
                       target="_blank"
                       rel="noreferrer"

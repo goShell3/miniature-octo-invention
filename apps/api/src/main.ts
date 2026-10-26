@@ -1,4 +1,5 @@
 import * as dns from 'node:dns';
+import { json, urlencoded } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
@@ -13,6 +14,9 @@ if (dns.setDefaultResultOrder) {
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  app.use(json({ limit: '10mb' }));
+  app.use(urlencoded({ limit: '10mb', extended: true }));
 
   const configuredOrigins = (process.env.WEB_ORIGIN ?? '')
     .split(',')

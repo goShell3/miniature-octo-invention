@@ -1312,6 +1312,184 @@
   color: #0f172a;
 }
 
+/* ── Verifying Pending Banner ── */
+.nfc-verifying-banner {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #7dd3fc;
+  border-radius: 10px;
+  padding: 14px;
+  margin-top: 14px;
+  box-shadow: 0 1px 4px rgba(2, 132, 199, 0.08);
+}
+
+.nfc-verifying-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #0369a1;
+  margin-bottom: 8px;
+}
+
+/* ── Two-Tier Verification Switcher ── */
+.nfc-verify-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 8px;
+  margin-bottom: 14px;
+}
+
+.nfc-verify-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #64748b;
+  transition: all 0.15s ease;
+}
+
+.nfc-verify-tab.active {
+  background: #ffffff;
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.nfc-verify-tab-pill {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.nfc-verify-tab-pill.instant {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.nfc-verify-tab-pill.ops {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.cheki-logo-badge.secondary {
+  background: #0284c7;
+}
+
+.nfc-cheki-badge-secondary {
+  display: inline-block;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* ── Screenshot Drag & Drop Box ── */
+.nfc-screenshot-upload-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nfc-screenshot-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 18px 12px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.nfc-screenshot-dropzone:hover {
+  border-color: #0284c7;
+  background: #f0f9ff;
+}
+
+.nfc-dropzone-icon {
+  font-size: 26px;
+  margin-bottom: 2px;
+}
+
+.nfc-dropzone-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.nfc-dropzone-hint {
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+.nfc-screenshot-preview-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.nfc-screenshot-img-preview {
+  width: 58px;
+  height: 58px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+}
+
+.nfc-screenshot-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.nfc-screenshot-name {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nfc-screenshot-change-btn {
+  font-size: 11px;
+  font-weight: 700;
+  color: #0284c7;
+  cursor: pointer;
+}
+
+.nfc-screenshot-change-btn:hover {
+  text-decoration: underline;
+}
+
 
 
 /* ── Mobile Stepper (<= 840px) ── */

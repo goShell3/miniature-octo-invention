@@ -18,6 +18,10 @@ import { ChekiService } from './cheki.service';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { VerifyPaymentDto } from './dto/verify-payment.dto';
 
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 @Injectable()
 export class NfcOrdersService {
   constructor(
@@ -147,6 +151,54 @@ export class NfcOrdersService {
       };
     }
 
+    // ── Secondary Verification: Screenshot Upload ──
+    if (input.verificationType === 'screenshot' || input.screenshotUrl) {
+      order.paymentStatus = 'verifying';
+      if (input.method) order.paymentMethod = input.method;
+      if (input.reference) order.paymentReference = input.reference;
+      order.paymentVerificationData = {
+        verificationType: 'screenshot',
+        screenshotUrl: input.screenshotUrl,
+        notes: input.notes,
+        submittedAt: new Date().toISOString(),
+      };
+      await this.ordersRepository.save(order);
+
+      // Send Telegram notification to admin team
+      const ref = `KL-${order.id.slice(0, 8).toUpperCase()}`;
+      const customerName = order.shippingAddress?.name || order.portfolio?.owner?.name || 'Customer';
+      const customerPhone = order.shippingAddress?.phone || order.portfolio?.owner?.phoneNumber || 'N/A';
+      const amount = (order.unitPrice * order.quantity).toLocaleString();
+      const methodLabel = (order.paymentMethod || input.method || 'Manual').toUpperCase();
+
+      void this.telegramService
+        .sendAdminNotification(
+          `📸 <b>PAYMENT RECEIPT SCREENSHOT SUBMITTED</b>\n\n` +
+          `<b>Order Ref:</b> <code>${ref}</code>\n` +
+          `<b>Status:</b> ⏳ <b>MANUAL VERIFICATION REQUIRED</b>\n` +
+          `<b>Customer:</b> ${escapeHtml(customerName)}\n` +
+          `<b>Phone:</b> <code>${escapeHtml(customerPhone)}</code>\n` +
+          `<b>Method:</b> ${methodLabel}\n` +
+          `<b>Amount:</b> <b>${amount} ETB</b> (${order.quantity} card${order.quantity > 1 ? 's' : ''})\n` +
+          (input.notes ? `<b>Customer Note:</b> <i>${escapeHtml(input.notes)}</i>\n` : '') +
+          `\n👉 <i>Review screenshot & approve in Operations Portal:</i>\nhttps://www.koo-link.com/admin`
+        )
+        .catch((err) => console.error('Telegram notification error:', err));
+
+      return {
+        success: true,
+        verified: false,
+        pendingReview: true,
+        message: 'Receipt screenshot submitted successfully! Our operations team has been notified and will verify your payment shortly.',
+        order: this.formatOrder(order),
+        details: {
+          verificationType: 'screenshot',
+          submittedAt: new Date().toISOString(),
+        },
+      };
+    }
+
+    // ── Primary Verification: Receipt URL / Cheki Automated Verification ──
     const expectedAmount = order.unitPrice * order.quantity;
     const result = await this.chekiService.verifyPayment({
       bank: input.method,
@@ -162,11 +214,14 @@ export class NfcOrdersService {
       order.paymentReference = result.reference || input.reference || null;
       order.chekiUrl = result.sourceUrl || input.chekiUrl || null;
       order.paymentVerifiedAt = new Date();
-      order.paymentVerificationData = result.raw || {
-        amount: result.amount,
-        senderName: result.senderName,
-        receiverName: result.receiverName,
-        date: result.date,
+      order.paymentVerificationData = {
+        verificationType: 'url',
+        ...(result.raw || {
+          amount: result.amount,
+          senderName: result.senderName,
+          receiverName: result.receiverName,
+          date: result.date,
+        }),
       };
 
       await this.ordersRepository.save(order);
@@ -205,7 +260,7 @@ export class NfcOrdersService {
       };
     }
 
-    // In case verification failed, persist reference & attempted URL for admin review
+    // In case automated URL verification failed, persist reference & attempted URL for admin review
     if (input.reference || input.chekiUrl) {
       order.paymentReference = input.reference || order.paymentReference;
       order.chekiUrl = input.chekiUrl || order.chekiUrl;
@@ -216,7 +271,7 @@ export class NfcOrdersService {
     return {
       success: false,
       verified: false,
-      message: result.message || 'Payment could not be verified by Cheki. Please check your reference or receipt URL.',
+      message: result.message || 'Payment URL could not be verified automatically. You can also upload a receipt screenshot as secondary verification or reach out on WhatsApp.',
       order: this.formatOrder(order),
     };
   }
@@ -368,6 +423,7 @@ export class NfcOrdersService {
       paymentReference: order.paymentReference ?? null,
       chekiUrl: order.chekiUrl ?? null,
       paymentVerifiedAt: order.paymentVerifiedAt ? order.paymentVerifiedAt.toISOString() : null,
+      paymentVerificationData: order.paymentVerificationData ?? null,
       tier: order.tier,
       quantity: order.quantity,
       unitPrice: order.unitPrice,

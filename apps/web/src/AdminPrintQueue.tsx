@@ -33,6 +33,10 @@ export function AdminPrintQueue({ onNotification }: AdminPrintQueueProps) {
   const [busyOrderId, setBusyOrderId] = useState<string | null>(null)
   const [downloadingOrderId, setDownloadingOrderId] = useState<string | null>(null)
   const [testingTelegram, setTestingTelegram] = useState(false)
+  const [previewScreenshot, setPreviewScreenshot] = useState<{
+    url: string;
+    order: AdminOrderSummary;
+  } | null>(null)
 
   async function handleTestTelegram() {
     setTestingTelegram(true)
@@ -111,6 +115,29 @@ export function AdminPrintQueue({ onNotification }: AdminPrintQueueProps) {
     } catch (err) {
       console.error(err)
       onNotification?.('Unable to update order status', 'error')
+    } finally {
+      setBusyOrderId(null)
+    }
+  }
+
+  async function handleApprovePayment(order: AdminOrderSummary) {
+    setBusyOrderId(order.id)
+    try {
+      const res = await fetch(`${API_URL}/admin/orders/${order.id}/status`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentStatus: 'paid', status: 'printing' }),
+      })
+      if (!res.ok) throw new Error('Failed to approve payment')
+      const updated = (await res.json()) as AdminOrderSummary
+      setOrders((prev) => prev.map((o) => (o.id === order.id ? updated : o)))
+      void fetchStats()
+      onNotification?.(`Payment approved! Order KL-${order.id.slice(0, 8).toUpperCase()} moved to printing.`, 'success')
+      setPreviewScreenshot(null)
+    } catch (err) {
+      console.error(err)
+      onNotification?.('Unable to approve payment', 'error')
     } finally {
       setBusyOrderId(null)
     }
@@ -331,8 +358,31 @@ export function AdminPrintQueue({ onNotification }: AdminPrintQueueProps) {
                     </span>
 
                     <span className={`admin-pay-badge ${order.paymentStatus}`}>
-                      {order.paymentStatus === 'paid' ? '✓ Paid' : order.paymentStatus.toUpperCase()}
+                      {order.paymentStatus === 'paid' ? '✓ Paid' : order.paymentStatus === 'verifying' ? '⏳ Verifying' : order.paymentStatus.toUpperCase()}
                     </span>
+
+                    {order.paymentVerificationData?.verificationType === 'screenshot' && (
+                      <span
+                        className="admin-badge"
+                        style={{
+                          background: '#fef3c7',
+                          color: '#92400e',
+                          border: '1px solid #fde68a',
+                          cursor: order.paymentVerificationData?.screenshotUrl ? 'pointer' : 'default',
+                          padding: '3px 8px',
+                          borderRadius: 6,
+                          fontSize: 10.5,
+                          fontWeight: 700,
+                        }}
+                        title="Customer uploaded a payment receipt screenshot"
+                        onClick={() => order.paymentVerificationData?.screenshotUrl && setPreviewScreenshot({
+                          url: order.paymentVerificationData.screenshotUrl,
+                          order,
+                        })}
+                      >
+                        📸 Screenshot Attached
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -399,8 +449,43 @@ export function AdminPrintQueue({ onNotification }: AdminPrintQueueProps) {
                     ) : (
                       <p style={{ color: 'var(--muted)', fontSize: 11 }}>No reference entered yet</p>
                     )}
+                    {order.paymentVerificationData?.verificationType === 'screenshot' && order.paymentVerificationData?.screenshotUrl && (
+                      <div style={{ marginTop: 6 }}>
+                        <button
+                          type="button"
+                          className="admin-contact-btn"
+                          style={{
+                            background: '#eff6ff',
+                            border: '1px solid #bfdbfe',
+                            padding: '3px 8px',
+                            borderRadius: 6,
+                            cursor: 'pointer',
+                            fontSize: 11,
+                            fontWeight: 700,
+                          }}
+                          onClick={() => setPreviewScreenshot({
+                            url: order.paymentVerificationData!.screenshotUrl,
+                            order,
+                          })}
+                        >
+                          👁️ View Receipt Screenshot
+                        </button>
+                      </div>
+                    )}
+                    {order.chekiUrl && (
+                      <p style={{ marginTop: 4, fontSize: 11 }}>
+                        <a
+                          href={order.chekiUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ color: '#059669', fontWeight: 600 }}
+                        >
+                          🔗 Cheki Receipt Link ↗
+                        </a>
+                      </p>
+                    )}
                     {order.paymentVerifiedAt && (
-                      <p style={{ fontSize: 10.5, color: '#16a34a' }}>
+                      <p style={{ fontSize: 10.5, color: '#16a34a', marginTop: 4 }}>
                         Verified: {new Date(order.paymentVerifiedAt).toLocaleDateString()}
                       </p>
                     )}
@@ -474,6 +559,133 @@ export function AdminPrintQueue({ onNotification }: AdminPrintQueueProps) {
               </article>
             )
           })}
+        </div>
+      )}
+
+      {/* Screenshot Preview Lightbox Modal */}
+      {previewScreenshot && (
+        <div
+          className="admin-modal-overlay"
+          onClick={() => setPreviewScreenshot(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.7)',
+            backdropFilter: 'blur(3px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000,
+            padding: 16,
+          }}
+        >
+          <div
+            className="admin-screenshot-modal"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#ffffff',
+              borderRadius: 12,
+              maxWidth: 580,
+              width: '100%',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '12px 18px',
+                borderBottom: '1px solid #e2e8f0',
+              }}
+            >
+              <div>
+                <strong style={{ fontSize: 14 }}>
+                  📸 Payment Receipt · KL-{previewScreenshot.order.id.slice(0, 8).toUpperCase()}
+                </strong>
+                <div style={{ fontSize: 11, color: 'var(--muted)' }}>
+                  Customer: {previewScreenshot.order.owner?.name || previewScreenshot.order.shippingAddress?.name || 'Customer'} · {previewScreenshot.order.totalAmount.toLocaleString()} ETB ({(previewScreenshot.order.paymentMethod || 'Manual').toUpperCase()})
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewScreenshot(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: 20,
+                  cursor: 'pointer',
+                  color: 'var(--muted)',
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div
+              style={{
+                padding: 16,
+                overflowY: 'auto',
+                textAlign: 'center',
+                background: '#f8fafc',
+              }}
+            >
+              <img
+                src={previewScreenshot.url}
+                alt="Payment Receipt Screenshot"
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '60vh',
+                  borderRadius: 8,
+                  boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                  objectFit: 'contain',
+                }}
+              />
+              {previewScreenshot.order.paymentVerificationData?.notes && (
+                <div style={{ marginTop: 12, fontSize: 12, color: '#334155', background: '#ffffff', padding: '8px 12px', borderRadius: 6, border: '1px solid #e2e8f0', textAlign: 'left' }}>
+                  <strong>Customer Note:</strong> {previewScreenshot.order.paymentVerificationData.notes}
+                </div>
+              )}
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '12px 18px',
+                borderTop: '1px solid #e2e8f0',
+                background: '#ffffff',
+              }}
+            >
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => setPreviewScreenshot(null)}
+                style={{ height: 38 }}
+              >
+                Close
+              </button>
+              {previewScreenshot.order.paymentStatus !== 'paid' ? (
+                <button
+                  type="button"
+                  className="primary-button"
+                  onClick={() => void handleApprovePayment(previewScreenshot.order)}
+                  style={{ height: 38, background: '#16a34a' }}
+                >
+                  ✓ Approve Payment &amp; Move to Printing
+                </button>
+              ) : (
+                <span style={{ fontSize: 12, color: '#16a34a', fontWeight: 700 }}>
+                  ✓ Payment is marked as Paid
+                </span>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
