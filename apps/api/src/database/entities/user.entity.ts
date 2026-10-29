@@ -34,6 +34,12 @@ export class UserEntity {
   @Column({ name: 'company_name', type: 'varchar', length: 150, nullable: true })
   companyName!: string | null;
 
+  @Column({ name: 'company_logo_url', type: 'text', nullable: true })
+  companyLogoUrl!: string | null;
+
+  @Column({ name: 'brand_color', type: 'varchar', length: 16, nullable: true })
+  brandColor!: string | null;
+
   @Column({ name: 'phone_number', type: 'varchar', length: 50, nullable: true })
   phoneNumber!: string | null;
 

@@ -38,6 +38,9 @@ export class PortfolioEntity {
   @Column({ type: 'varchar', default: 'draft' })
   status!: 'draft' | 'published' | 'unpublished';
 
+  @Column({ name: 'is_company_master', type: 'boolean', default: false })
+  isCompanyMaster!: boolean;
+
   @Column({ type: 'jsonb', nullable: true })
   theme!: PortfolioTheme | null;
 
