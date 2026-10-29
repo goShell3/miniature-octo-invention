@@ -421,7 +421,7 @@ export function AuthPage({
                 <div className="auth-input-group">
                   <div className="auth-label-row">
                     <label>Account Type</label>
-                    <span className="auth-hint">Automatic volume tier discount</span>
+                    {/* <span className="auth-hint">Automatic volume tier discount</span> */}
                   </div>
                   <div className="auth-tier-grid" role="group" aria-label="Account type">
                     {(['individual', 'business', 'enterprise', 'corporate'] as NfcCardTier[]).map((tierKey) => {
@@ -436,8 +436,8 @@ export function AuthPage({
                           disabled={busy}
                         >
                           <span className="auth-tier-btn-name">{m.name}</span>
-                          <span className="auth-tier-btn-price">{m.priceETB.toLocaleString()} ETB</span>
-                          <span className="auth-tier-btn-range">{m.rangeLabel}</span>
+                          {/* <span className="auth-tier-btn-price">{m.priceETB.toLocaleString()} ETB</span> */}
+                          {/* <span className="auth-tier-btn-range">{m.rangeLabel}</span> */}
                         </button>
                       )
                     })}

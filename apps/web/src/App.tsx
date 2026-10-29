@@ -5,6 +5,10 @@ import { authClient, getAuthToken, setAuthToken } from './auth-client'
 import { HomePage } from './HomePage'
 import { SetupWizard, wizardDataToBlocks } from './SetupWizard'
 import type { WizardData } from './SetupWizard'
+import { CompanyMasterWizard } from './CompanyMasterWizard'
+import type { CompanyMasterData } from './CompanyMasterWizard'
+import { EmployeeCardWizard } from './EmployeeCardWizard'
+import type { EmployeeCardData } from './EmployeeCardWizard'
 import { NfcStudio } from './NfcStudio'
 import { PublicProfilePage } from './PublicProfilePage'
 import { API_URL, resolveMediaUrl } from './config'
@@ -15,6 +19,10 @@ export { getSubdomain, getPortfolioSubdomainUrl, getPortfolioDomainLabel, isAdmi
 import { DigitalCard } from './DigitalCard'
 import { BrandLogo } from './BrandLogo'
 import { AdminPage } from './AdminPage'
+import { BrandKitModal } from './BrandKitModal'
+import { BulkEmployeeModal } from './BulkEmployeeModal'
+import { CorporateSettingsView } from './CorporateSettingsView'
+import type { CorporateSettingsData } from './CorporateSettingsView'
 
 type User = UserProfile
 
@@ -22,6 +30,7 @@ interface Portfolio {
   id: string
   subdomain: string
   status: 'draft' | 'published' | 'unpublished'
+  isCompanyMaster?: boolean
   theme: PortfolioTheme
   updatedAt: string
   content: { version: number; blocks: PortfolioBlock[] } | null
@@ -77,26 +86,26 @@ function initialBlocks(): PortfolioBlock[] {
     {
       type: 'hero',
       data: {
-        name: 'Roben Bayisa',
+        name: 'John Doe',
         tagline: 'Technology Strategist & Founder',
         company: 'Sewnet Digital',
         location: 'Addis Ababa, Ethiopia',
         avatarUrl: '',
         phone: '+251 91 123 4567',
-        email: 'roben@sewnet.et',
+        email: 'john@koo-link.com',
       },
     },
     {
       type: 'contact',
       data: {
-        email: 'roben@sewnet.et',
+        email: 'john@koo-link.com',
         phone: '+251 91 123 4567',
         whatsapp: '+251 91 123 4567',
-        telegram: '@roben_b',
+        telegram: '@john_doe',
         socials: [
-          { platform: 'instagram', url: 'https://instagram.com/roben_b', label: 'Instagram', handle: '@roben_b' },
-          { platform: 'linkedin', url: 'https://linkedin.com/in/roben-bayisa', label: 'LinkedIn', handle: 'in/roben-bayisa' },
-          { platform: 'telegram', url: 'https://t.me/roben_b', label: 'Telegram', handle: '@roben_b' },
+          { platform: 'instagram', url: 'https://instagram.com/johndoe', label: 'Instagram', handle: '@johndoe' },
+          { platform: 'linkedin', url: 'https://linkedin.com/in/john-doe', label: 'LinkedIn', handle: 'in/john-doe' },
+          { platform: 'telegram', url: 'https://t.me/john_doe', label: 'Telegram', handle: '@john_doe' },
           { platform: 'whatsapp', url: 'https://wa.me/251911234567', label: 'WhatsApp', handle: '+251 91 123 4567' },
         ],
       },
@@ -124,11 +133,14 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
   const [isSessionPending, setIsSessionPending] = useState(true)
   const [portfolios, setPortfolios] = useState<Portfolio[]>([])
   const [orders, setOrders] = useState<NfcOrderSummary[]>([])
-  const [dashboardView, setDashboardView] = useState<'profiles' | 'orders'>('profiles')
+  const [dashboardView, setDashboardView] = useState<'profiles' | 'orders' | 'settings'>('profiles')
   const [selected, setSelected] = useState<Portfolio | null>(null)
   const [showNfcStudio, setShowNfcStudio] = useState(false)
   const [selectedCardTier, setSelectedCardTier] = useState<NfcCardTier | null>(getStoredCardTier)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [showBrandKitModal, setShowBrandKitModal] = useState(false)
+  const [showBulkModal, setShowBulkModal] = useState(false)
+  const [wizardMode, setWizardMode] = useState<'individual' | 'organization' | null>(null)
   const [blocks, setBlocks] = useState<PortfolioBlock[]>([])
   const [theme, setTheme] = useState<PortfolioTheme>({ id: 'minimal', accentColor: '#ff3535' })
   const [toast, setToast] = useState<{ id: number; message: string; type: 'success' | 'error' | 'info' } | null>(null)
@@ -160,6 +172,11 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
   const [showWizard, setShowWizard] = useState(false)
   const [wizardBusy, setWizardBusy] = useState(false)
   const [wizardError, setWizardError] = useState('')
+
+  // Organization Employee Card Wizard state
+  const [showEmployeeWizard, setShowEmployeeWizard] = useState(false)
+  const [employeeWizardBusy, setEmployeeWizardBusy] = useState(false)
+  const [employeeWizardError, setEmployeeWizardError] = useState('')
 
   // Unsaved changes tracking
   const [savedSnapshot, setSavedSnapshot] = useState<string>('')
@@ -233,15 +250,19 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
       const sessionUser = data?.user as (Record<string, unknown> & { id: string; email: string }) | undefined
       if (sessionUser) {
         const storedTier = getStoredCardTier()
-        const customerType = (cardTiers.includes(sessionUser.customerType as NfcCardTier)
-          ? sessionUser.customerType
-          : storedTier) as NfcCardTier | undefined
+        const customerType = (storedTier && storedTier !== 'individual')
+          ? storedTier
+          : (cardTiers.includes(sessionUser.customerType as NfcCardTier)
+            ? sessionUser.customerType
+            : (storedTier ?? 'individual')) as NfcCardTier
         setUser({
           id: sessionUser.id,
           email: sessionUser.email,
           name: sessionUser.name as string | undefined,
           customerType,
           companyName: sessionUser.companyName as string | undefined,
+          companyLogoUrl: sessionUser.companyLogoUrl as string | undefined,
+          brandColor: sessionUser.brandColor as string | undefined,
           phoneNumber: sessionUser.phoneNumber as string | undefined,
           tinNumber: sessionUser.tinNumber as string | undefined,
           teamSize: sessionUser.teamSize as string | undefined,
@@ -375,6 +396,182 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
       setWizardError(reason instanceof Error ? reason.message : 'Unable to create portfolio')
     } finally {
       setWizardBusy(false)
+    }
+  }
+
+  async function finishCompanyMaster(companyData: CompanyMasterData) {
+    setWizardBusy(true)
+    setWizardError('')
+    try {
+      // 1. Update brand kit on the user profile
+      const token = getAuthToken()
+      await fetch(`${API_URL}/auth/brand-kit`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: 'Bearer ' + token } : {}),
+        },
+        body: JSON.stringify({
+          companyName: companyData.companyName.trim() || undefined,
+          companyLogoUrl: companyData.companyLogoUrl.trim() || undefined,
+          brandColor: companyData.brandColor.trim() || undefined,
+          customerType: companyData.customerType,
+        }),
+      })
+
+      window.sessionStorage.setItem(cardTierStorageKey, companyData.customerType)
+      setSelectedCardTier(companyData.customerType)
+
+      setUser((prev) => (prev ? {
+        ...prev,
+        customerType: companyData.customerType,
+        companyName: companyData.companyName.trim() || null,
+        companyLogoUrl: companyData.companyLogoUrl.trim() || null,
+        brandColor: companyData.brandColor.trim() || null,
+      } : null))
+
+      // 2. Create the master company portfolio
+      const blocks: PortfolioBlock[] = [
+        {
+          type: 'hero',
+          data: {
+            name: companyData.companyName,
+            tagline: companyData.tagline || `${companyData.companyName} Official Workspace`,
+            company: companyData.companyName,
+            companyLogoUrl: companyData.companyLogoUrl || undefined,
+            location: companyData.location || 'Addis Ababa, Ethiopia',
+            phone: companyData.phone || undefined,
+            email: companyData.email || undefined,
+          },
+        },
+        {
+          type: 'about',
+          data: {
+            title: `About ${companyData.companyName}`,
+            body: companyData.bio || `Official contactless digital presence and executive smart cards for ${companyData.companyName}.`,
+          },
+        },
+        {
+          type: 'contact',
+          data: {
+            email: companyData.email || undefined,
+            phone: companyData.phone || undefined,
+            socials: companyData.website ? [{ platform: 'website', url: companyData.website, label: 'Official Website' }] : [],
+          },
+        },
+      ]
+
+      const portfolio = await apiRequest<Portfolio>('/portfolios', {
+        method: 'POST',
+        body: JSON.stringify({
+          subdomain: companyData.subdomain,
+          isCompanyMaster: true,
+          blocks,
+          theme: { id: 'minimal', accentColor: companyData.brandColor },
+        }),
+      })
+
+      const next: Portfolio = {
+        ...portfolio,
+        isCompanyMaster: true,
+        content: portfolio.content ?? { version: 1, blocks },
+      }
+      setPortfolios((current) => [next, ...current])
+      setShowWizard(false)
+      setWizardMode(null)
+      showToast(`Welcome to ${companyData.companyName}! Master Company Portfolio published successfully.`)
+    } catch (reason) {
+      setWizardError(reason instanceof Error ? reason.message : 'Unable to configure organization')
+    } finally {
+      setWizardBusy(false)
+    }
+  }
+
+  async function finishEmployeeCard(empData: EmployeeCardData) {
+    setEmployeeWizardBusy(true)
+    setEmployeeWizardError('')
+    try {
+      const companyMaster = portfolios.find((p) => p.isCompanyMaster)
+      const masterHero = companyMaster?.content?.blocks?.find((b) => b.type === 'hero')
+      const masterHeroData = masterHero && masterHero.type === 'hero' ? masterHero.data : null
+
+      const companyName = user?.companyName || masterHeroData?.company || masterHeroData?.name || 'Company'
+      const companyLogoUrl = user?.companyLogoUrl || masterHeroData?.companyLogoUrl || undefined
+      const brandColor = user?.brandColor || companyMaster?.theme?.accentColor || '#0e0e11'
+      const location = masterHeroData?.location || 'Addis Ababa, Ethiopia'
+
+      const fullName = `${empData.firstName} ${empData.lastName}`.trim()
+      const socials = []
+      if (empData.linkedin) socials.push({ platform: 'linkedin', url: empData.linkedin, label: 'LinkedIn' })
+      if (empData.telegram) socials.push({ platform: 'telegram', url: empData.telegram, label: 'Telegram' })
+      if (empData.whatsapp) socials.push({ platform: 'whatsapp', url: empData.whatsapp, label: 'WhatsApp' })
+      if (empData.website) socials.push({ platform: 'website', url: empData.website, label: 'Website' })
+
+      const blocks: PortfolioBlock[] = [
+        {
+          type: 'hero',
+          data: {
+            name: fullName,
+            tagline: empData.title + (empData.department ? ` • ${empData.department}` : ''),
+            avatarUrl: empData.avatarUrl || undefined,
+            company: companyName,
+            companyLogoUrl: companyLogoUrl || undefined,
+            location,
+            phone: empData.phone || undefined,
+            email: empData.email || undefined,
+          },
+        },
+        ...(empData.bio ? [{
+          type: 'about' as const,
+          data: {
+            title: `About ${empData.firstName}`,
+            body: empData.bio,
+          },
+        }] : []),
+        {
+          type: 'contact',
+          data: {
+            email: empData.email || undefined,
+            phone: empData.phone || undefined,
+            socials,
+          },
+        },
+      ]
+
+      const portfolio = await apiRequest<Portfolio>('/portfolios', {
+        method: 'POST',
+        body: JSON.stringify({
+          subdomain: empData.subdomain,
+          isCompanyMaster: false,
+          blocks,
+          theme: { id: 'minimal', accentColor: brandColor },
+        }),
+      })
+
+      // Automatically publish employee card so its subdomain is live
+      let publishedPortfolio = portfolio
+      try {
+        publishedPortfolio = await apiRequest<Portfolio>(`/portfolios/${portfolio.id}/publish`, {
+          method: 'POST',
+        })
+      } catch {
+        // Fallback if already published or error
+      }
+
+      const next: Portfolio = {
+        ...publishedPortfolio,
+        isCompanyMaster: false,
+        content: publishedPortfolio.content ?? { version: 1, blocks },
+      }
+
+      setPortfolios((current) => [next, ...current])
+      setShowEmployeeWizard(false)
+      showToast(`Employee card for ${fullName} published and linked to ${companyName}!`)
+    } catch (reason) {
+      setEmployeeWizardError(reason instanceof Error ? reason.message : 'Unable to create employee card')
+    } finally {
+      setEmployeeWizardBusy(false)
     }
   }
 
@@ -658,14 +855,101 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
     )
   }
 
-  // Guided setup wizard — shown for first-time users or when creating a new portfolio
+  const storedTier = getStoredCardTier()
+  const effectiveTier = (cardTiers.includes(user?.customerType as NfcCardTier) && user?.customerType !== 'individual')
+    ? user?.customerType
+    : (selectedCardTier && selectedCardTier !== 'individual')
+      ? selectedCardTier
+      : (storedTier && storedTier !== 'individual')
+        ? storedTier
+        : (user?.customerType ?? 'individual')
+
+  const isOrgAccount =
+    wizardMode === 'organization' ||
+    (wizardMode !== 'individual' &&
+      (effectiveTier === 'business' || effectiveTier === 'enterprise' || effectiveTier === 'corporate'))
+
+  const companyMaster = portfolios.find((p) => p.isCompanyMaster)
+
+  // 1. Employee card wizard modal/flow
+  if (showEmployeeWizard && companyMaster) {
+    const masterHero = companyMaster.content?.blocks?.find((b) => b.type === 'hero')
+    const masterHeroData = masterHero && masterHero.type === 'hero' ? masterHero.data : null
+    const masterContact = companyMaster.content?.blocks?.find((b) => b.type === 'contact')
+    const masterContactData = masterContact && masterContact.type === 'contact' ? masterContact.data : null
+    const websiteUrl = masterContactData?.socials?.find((s) => s.platform === 'website')?.url
+
+    const companyInfo = {
+      companyName: user.companyName || masterHeroData?.company || masterHeroData?.name || 'Company',
+      companyLogoUrl: user.companyLogoUrl || masterHeroData?.companyLogoUrl,
+      brandColor: user.brandColor || companyMaster.theme?.accentColor || '#0e0e11',
+      location: masterHeroData?.location,
+      website: websiteUrl,
+      companySubdomain: companyMaster.subdomain,
+    }
+
+    return (
+      <EmployeeCardWizard
+        company={companyInfo}
+        onFinish={finishEmployeeCard}
+        checkSubdomain={checkSubdomainForWizard}
+        busy={employeeWizardBusy}
+        error={employeeWizardError}
+        onBack={() => {
+          setShowEmployeeWizard(false)
+          setEmployeeWizardError('')
+        }}
+      />
+    )
+  }
+
+  // 2. Organization accounts: first page must be Master Company Portfolio setup
+  if (isOrgAccount && !companyMaster) {
+    return (
+      <CompanyMasterWizard
+        user={user}
+        onFinish={finishCompanyMaster}
+        checkSubdomain={checkSubdomainForWizard}
+        busy={wizardBusy}
+        error={wizardError}
+        onSkip={() => {
+          setShowWizard(false)
+          setWizardMode('individual')
+        }}
+        onSwitchToIndividual={() => setWizardMode('individual')}
+      />
+    )
+  }
+
+  // 3. Guided setup wizard — shown for individual first-time users or when creating a new portfolio
   if (showWizard) {
+    if (isOrgAccount) {
+      return (
+        <CompanyMasterWizard
+          user={user}
+          onFinish={finishCompanyMaster}
+          checkSubdomain={checkSubdomainForWizard}
+          busy={wizardBusy}
+          error={wizardError}
+          onSkip={() => {
+            setShowWizard(false)
+            setWizardMode(null)
+          }}
+          onSwitchToIndividual={() => setWizardMode('individual')}
+        />
+      )
+    }
+
     return (
       <SetupWizard
         onFinish={finishWizard}
         checkSubdomain={checkSubdomainForWizard}
         busy={wizardBusy}
         error={wizardError}
+        initialCompanyName={user?.companyName || undefined}
+        initialCompanyLogoUrl={user?.companyLogoUrl || undefined}
+        initialBrandColor={user?.brandColor || undefined}
+        onSwitchToOrg={() => setWizardMode('organization')}
       />
     )
   }
@@ -709,7 +993,12 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
           >
             NFC Cards &amp; Pricing
           </button>
-          <div className="user-account-badge" title={user.customerType ? `${user.customerType.toUpperCase()} Account` : 'Individual Account'}>
+          <div
+            className="user-account-badge"
+            style={{ cursor: 'pointer' }}
+            onClick={() => setShowBrandKitModal(true)}
+            title="Click to manage Brand Kit & Account Tier"
+          >
             <span className="user-tier-pill">
               {user.customerType ? (user.customerType === 'business' ? 'S&M Business' : user.customerType.charAt(0).toUpperCase() + user.customerType.slice(1)) : 'Individual'}
             </span>
@@ -717,6 +1006,14 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
               <span className="user-company-pill">{user.companyName}</span>
             )}
           </div>
+          <button
+            type="button"
+            className="brand-kit-topbar-btn"
+            onClick={() => setShowBrandKitModal(true)}
+            title="Manage Organization Brand Kit (Company Logo & Brand Color)"
+          >
+            Brand Kit
+          </button>
           {(user.role === 'admin' || user.email === 'roben@sewnet.et' || user.email?.includes('admin')) && (
             <button
               type="button"
@@ -737,7 +1034,7 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
               onClick={onNavigateToAdmin}
               title="Go to Dedicated Admin Fulfillment Portal (/admin)"
             >
-              <span>🛡️ Admin Portal</span>
+              <span>Admin Portal</span>
               <span>↗</span>
             </button>
           )}
@@ -762,7 +1059,7 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
             <div>
               <p className="eyebrow">KOOLINK WORKSPACE</p>
               <h1 style={{ fontSize: 32, margin: 0, fontWeight: 700, color: 'var(--ink)' }}>
-                {dashboardView === 'profiles' ? 'Your Profiles' : 'Card Orders'}
+                {dashboardView === 'profiles' ? 'Your Profiles' : dashboardView === 'orders' ? 'Card Orders' : 'Company Settings'}
               </h1>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -781,6 +1078,15 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
                 >
                   Card Orders ({orders.length})
                 </button>
+                {isOrgAccount && companyMaster && (
+                  <button
+                    type="button"
+                    className={`dashboard-nav-tab ${dashboardView === 'settings' ? 'active' : ''}`}
+                    onClick={() => setDashboardView('settings')}
+                  >
+                    Company Settings
+                  </button>
+                )}
               </div>
               {dashboardView === 'profiles' && (() => {
                 const userTier: NfcCardTier = user.customerType ?? 'individual'
@@ -810,11 +1116,16 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
                           setShowUpgradeModal(true)
                           return
                         }
-                        setWizardError('')
-                        setShowWizard(true)
+                        if (isOrgAccount && companyMaster) {
+                          setEmployeeWizardError('')
+                          setShowEmployeeWizard(true)
+                        } else {
+                          setWizardError('')
+                          setShowWizard(true)
+                        }
                       }}
                     >
-                      <span>+</span> New Profile
+                      <span>+</span> {isOrgAccount && companyMaster ? 'Add Employee Card' : 'New Profile'}
                     </button>
                   </div>
                 )
@@ -844,6 +1155,83 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
                 </div>
                 <span className="announcement-tag">{tierMeta.name} Feature</span>
               </div>
+            )
+          })()}
+
+          {dashboardView === 'settings' && isOrgAccount && companyMaster && user && (() => {
+            const masterHero = companyMaster.content?.blocks?.find((b) => b.type === 'hero')
+            const masterHeroData = masterHero && masterHero.type === 'hero' ? masterHero.data as Record<string, string | undefined> : null
+            const settingsInitial: CorporateSettingsData = {
+              companyName: user.companyName || masterHeroData?.company || masterHeroData?.name || '',
+              subdomain: companyMaster.subdomain,
+              companyLogoUrl: user.companyLogoUrl || masterHeroData?.companyLogoUrl || '',
+              brandColor: user.brandColor || companyMaster.theme?.accentColor || '#0e0e11',
+              customerType: user.customerType ?? 'business',
+              location: masterHeroData?.location || '',
+              phone: masterHeroData?.phone || '',
+              email: masterHeroData?.email || '',
+              website: masterHeroData?.website || '',
+              bio: masterHeroData?.bio || '',
+            }
+            return (
+              <CorporateSettingsView
+                initialData={settingsInitial}
+                user={user}
+                portfolioCount={portfolios.length}
+                checkSubdomain={checkSubdomainForWizard}
+                onUpgradeClick={() => setShowUpgradeModal(true)}
+                onSave={async (data) => {
+                  await apiRequest('/auth/brand-kit', {
+                    method: 'PATCH',
+                    body: JSON.stringify({
+                      companyName: data.companyName,
+                      companyLogoUrl: data.companyLogoUrl || null,
+                      brandColor: data.brandColor || null,
+                      customerType: data.customerType,
+                    }),
+                  })
+                  setUser((prev) => prev ? {
+                    ...prev,
+                    companyName: data.companyName,
+                    companyLogoUrl: data.companyLogoUrl || undefined,
+                    brandColor: data.brandColor || undefined,
+                    customerType: data.customerType,
+                  } : null)
+                  if (data.customerType) {
+                    window.sessionStorage.setItem(cardTierStorageKey, data.customerType)
+                    setSelectedCardTier(data.customerType)
+                  }
+                  const updatedBlocks = (companyMaster.content?.blocks ?? []).map((b) => {
+                    if (b.type !== 'hero') return b
+                    return {
+                      ...b,
+                      data: {
+                        ...b.data,
+                        name: data.companyName,
+                        company: data.companyName,
+                        companyLogoUrl: data.companyLogoUrl || undefined,
+                        location: data.location || undefined,
+                        phone: data.phone || undefined,
+                        email: data.email || undefined,
+                        website: data.website || undefined,
+                        bio: data.bio || undefined,
+                      },
+                    }
+                  })
+                  await apiRequest('/portfolios/' + companyMaster.id, {
+                    method: 'PATCH',
+                    body: JSON.stringify({
+                      blocks: updatedBlocks,
+                      theme: { ...companyMaster.theme, accentColor: data.brandColor as `#${string}` },
+                    }),
+                  })
+                  setPortfolios((prev) => prev.map((p) => p.id === companyMaster.id
+                    ? { ...p, content: { ...p.content!, blocks: updatedBlocks }, theme: { ...p.theme, accentColor: data.brandColor as `#${string}` } }
+                    : p
+                  ))
+                  showToast('Company settings saved. All employee cards now share the updated brand.')
+                }}
+              />
             )
           })()}
 
@@ -880,6 +1268,248 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
                   <a href={order.shortUrl} target="_blank" rel="noreferrer" className="row-arrow" aria-label={`Open tap link for ${order.portfolio.subdomain}`}>↗</a>
                 </article>
               ))}
+            </div>
+          ) : isOrgAccount && companyMaster ? (
+            <div className="corporate-dashboard-view">
+              {/* 🏢 MASTER COMPANY PORTFOLIO SECTION */}
+              <div className="corp-section-header">
+                <div>
+                  <span className="corp-eyebrow">HEADQUARTERS IDENTITY</span>
+                  <h2 className="corp-section-title">Master Company Portfolio</h2>
+                </div>
+                <span className="corp-badge-master">Organization Master</span>
+              </div>
+
+              {(() => {
+                const hero = companyMaster.content?.blocks?.find((b) => b.type === 'hero')
+                const heroData = hero && hero.type === 'hero' ? hero.data : null
+                const masterName = user.companyName || heroData?.company || heroData?.name || companyMaster.subdomain
+                const logoUrl = user.companyLogoUrl || heroData?.companyLogoUrl
+                const masterSubUrl = getPortfolioSubdomainUrl(companyMaster.subdomain, companyMaster.status === 'draft')
+                const accent = user.brandColor || companyMaster.theme?.accentColor || '#0e0e11'
+
+                return (
+                  <div className="corp-master-card" onClick={() => selectPortfolio(companyMaster)}>
+                    <div className="corp-master-card-left">
+                      <div className="corp-master-logo-frame" style={{ borderColor: accent }}>
+                        {logoUrl ? (
+                          <img src={resolveMediaUrl(logoUrl)} alt={masterName} className="corp-master-logo-img" />
+                        ) : (
+                          <div className="corp-master-logo-fallback" style={{ background: accent }}>
+                            {masterName.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <div className="corp-master-info">
+                        <div className="corp-master-title-row">
+                          <h3 className="corp-master-company-name">{masterName}</h3>
+                          <span className="status-badge status-published">
+                            <span className="status-dot" /> Live
+                          </span>
+                        </div>
+                        <a
+                          href={masterSubUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="corp-master-url"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {companyMaster.subdomain}.koo-link.com ↗
+                        </a>
+                        <div className="corp-master-meta-row">
+                          {heroData?.location && <span>{heroData.location}</span>}
+                          {heroData?.phone && <span>{heroData.phone}</span>}
+                          {heroData?.email && <span>{heroData.email}</span>}
+                          <span className="corp-master-color-swatch" title={`Accent: ${accent}`}>
+                            <span className="color-dot" style={{ background: accent }} />
+                            {accent}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="corp-master-actions" onClick={(e) => e.stopPropagation()}>
+                      <a
+                        href={masterSubUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="secondary-button"
+                        style={{ height: 38, padding: '0 14px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}
+                      >
+                        View Live ↗
+                      </a>
+                      <button
+                        type="button"
+                        className="primary-button"
+                        style={{ height: 38, padding: '0 16px', fontSize: 12 }}
+                        onClick={() => selectPortfolio(companyMaster)}
+                      >
+                        Edit Master Presence →
+                      </button>
+                    </div>
+                  </div>
+                )
+              })()}
+
+              {/* 👥 EMPLOYEE DIGITAL CARDS SECTION */}
+              {(() => {
+                const employeeCards = portfolios.filter((p) => !p.isCompanyMaster)
+                const userTier: NfcCardTier = user.customerType ?? 'individual'
+                const profileLimit = TIER_PROFILE_LIMITS[userTier]
+                const isLimitReached = profileLimit !== null && portfolios.length >= profileLimit
+
+                return (
+                  <div className="corp-employees-wrapper">
+                    <div className="corp-section-header" style={{ marginTop: 24 }}>
+                      <div>
+                        <span className="corp-eyebrow">TEAM DIRECTORY</span>
+                        <h2 className="corp-section-title">
+                          Employee Digital Cards ({employeeCards.length})
+                        </h2>
+                        <p className="corp-section-sub">
+                          Cards automatically inherit your official logo, brand colors, and company affiliation from{' '}
+                          <strong>{user.companyName || 'your Master Company Portfolio'}</strong>.
+                        </p>
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          className="secondary-button"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 38, padding: '0 16px' }}
+                          onClick={() => {
+                            if (isLimitReached) {
+                              setShowUpgradeModal(true)
+                              return
+                            }
+                            setShowBulkModal(true)
+                          }}
+                        >
+                          Bulk Create Accounts
+                        </button>
+                        <button
+                          type="button"
+                          className="primary-button"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 38 }}
+                          onClick={() => {
+                            if (isLimitReached) {
+                              setShowUpgradeModal(true)
+                              return
+                            }
+                            setEmployeeWizardError('')
+                            setShowEmployeeWizard(true)
+                          }}
+                        >
+                          <span>+</span> Add Employee Card
+                        </button>
+                      </div>
+                    </div>
+
+                    {employeeCards.length === 0 ? (
+                      <div className="corp-empty-employees">
+                        <div className="corp-empty-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+                        <h3 className="corp-empty-title">No employee digital cards yet</h3>
+                        <p className="corp-empty-desc">
+                          Create individual contactless smart cards for your executives, team leads, and staff.
+                          Each card automatically features your official company logo and unified brand style.
+                        </p>
+                        <button
+                          type="button"
+                          className="primary-button"
+                          onClick={() => {
+                            if (isLimitReached) {
+                              setShowUpgradeModal(true)
+                              return
+                            }
+                            setEmployeeWizardError('')
+                            setShowEmployeeWizard(true)
+                          }}
+                        >
+                          + Add First Employee Card
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="corp-employee-grid">
+                        {employeeCards.map((card) => {
+                          const hero = card.content?.blocks?.find((b) => b.type === 'hero')
+                          const heroData = hero && hero.type === 'hero' ? hero.data : null
+                          const empName = heroData?.name || card.subdomain
+                          const empTitle = heroData?.tagline || 'Team Member'
+                          const empAvatar = heroData?.avatarUrl
+                          const cardUrl = getPortfolioSubdomainUrl(card.subdomain, card.status === 'draft')
+
+                          return (
+                            <div
+                              key={card.id}
+                              className="corp-employee-card"
+                              onClick={() => selectPortfolio(card)}
+                            >
+                              <div className="corp-emp-left">
+                                <div className="corp-emp-avatar">
+                                  {empAvatar ? (
+                                    <img src={resolveMediaUrl(empAvatar)} alt={empName} />
+                                  ) : (
+                                    <div className="corp-emp-avatar-initials">
+                                      {empName.charAt(0).toUpperCase()}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="corp-emp-details">
+                                  <div className="corp-emp-name-row">
+                                    <h4 className="corp-emp-name">{empName}</h4>
+                                    <span className={`status-badge status-${card.status}`}>
+                                      <span className="status-dot" />
+                                      {card.status === 'published' ? 'Live' : 'Draft'}
+                                    </span>
+                                  </div>
+                                  <div className="corp-emp-title">{empTitle}</div>
+                                  <a
+                                    href={cardUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="corp-emp-subdomain"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    {card.subdomain}.koo-link.com ↗
+                                  </a>
+                                </div>
+                              </div>
+                              <div className="corp-emp-actions" onClick={(e) => e.stopPropagation()}>
+                                <a
+                                  href={cardUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="secondary-button"
+                                  style={{ height: 34, padding: '0 12px', fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4, textDecoration: 'none' }}
+                                >
+                                  View ↗
+                                </a>
+                                <button
+                                  type="button"
+                                  className="secondary-button"
+                                  style={{ height: 34, padding: '0 12px', fontSize: 11 }}
+                                  onClick={() => {
+                                    setSelected(card)
+                                    setShowNfcStudio(true)
+                                  }}
+                                >
+                                  🖨️ NFC
+                                </button>
+                                <button
+                                  type="button"
+                                  className="primary-button"
+                                  style={{ height: 34, padding: '0 14px', fontSize: 11 }}
+                                  onClick={() => selectPortfolio(card)}
+                                >
+                                  Edit →
+                                </button>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
             </div>
           ) : (
             <div className="profiles-clean-list">
@@ -1285,7 +1915,12 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
                 <span><i /> LIVE PREVIEW</span>
                 <span>{selected.status.toUpperCase()}</span>
               </div>
-              <PortfolioPreview blocks={blocks} theme={theme} subdomain={selected.subdomain} />
+              <PortfolioPreview
+                blocks={blocks}
+                theme={theme}
+                subdomain={selected.subdomain}
+                companyLogoUrl={user?.companyLogoUrl || undefined}
+              />
             </div>
           </div>
         </section>
@@ -1365,6 +2000,57 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
             </div>
           </div>
         </div>
+      )}
+      {showBulkModal && user && companyMaster && (() => {
+        const userTier: NfcCardTier = user.customerType ?? 'individual'
+        const profileLimit = TIER_PROFILE_LIMITS[userTier]
+        const remainingCapacity = profileLimit !== null ? Math.max(0, profileLimit - portfolios.length) : null
+        const masterHero = companyMaster.content?.blocks?.find((b) => b.type === 'hero')
+        const masterHeroData = masterHero && masterHero.type === 'hero' ? masterHero.data as Record<string, string | undefined> : null
+        return (
+          <BulkEmployeeModal
+            company={{
+              companyName: user.companyName || masterHeroData?.company || masterHeroData?.name || 'Company',
+              companyLogoUrl: user.companyLogoUrl || masterHeroData?.companyLogoUrl || null,
+              brandColor: user.brandColor || companyMaster.theme?.accentColor || '#0e0e11',
+              location: masterHeroData?.location || undefined,
+              website: masterHeroData?.website || undefined,
+              companySubdomain: companyMaster.subdomain,
+            }}
+            user={user}
+            remainingCapacity={remainingCapacity}
+            onClose={() => setShowBulkModal(false)}
+            onSuccess={(count) => {
+              setShowBulkModal(false)
+              apiRequest('/portfolios/me').then((items) => {
+                setPortfolios(items as Portfolio[])
+              }).catch(() => undefined)
+              showToast(count + ' employee card' + (count === 1 ? '' : 's') + ' created and activated.')
+            }}
+            checkSubdomain={checkSubdomainForWizard}
+          />
+        )
+      })()}
+
+      {showBrandKitModal && user && (
+        <BrandKitModal
+          user={user}
+          onClose={() => setShowBrandKitModal(false)}
+          onSaved={(brandKit) => {
+            if (brandKit.customerType) {
+              window.sessionStorage.setItem(cardTierStorageKey, brandKit.customerType)
+              setSelectedCardTier(brandKit.customerType)
+            }
+            setUser((prev) => (prev ? {
+              ...prev,
+              customerType: brandKit.customerType || prev.customerType,
+              companyName: brandKit.companyName ?? undefined,
+              companyLogoUrl: brandKit.companyLogoUrl ?? undefined,
+              brandColor: brandKit.brandColor ?? undefined,
+            } : null))
+            showToast('Organization Brand Kit updated! All member cards now share this logo and brand color.')
+          }}
+        />
       )}
       {/* Floating Workspace Toast Notification */}
       {toast && (
@@ -2174,7 +2860,17 @@ function BlockForm({
   )
 }
 
-function PortfolioPreview({ blocks, theme, subdomain }: { blocks: PortfolioBlock[]; theme: PortfolioTheme; subdomain?: string }) {
+function PortfolioPreview({
+  blocks,
+  theme,
+  subdomain,
+  companyLogoUrl,
+}: {
+  blocks: PortfolioBlock[]
+  theme: PortfolioTheme
+  subdomain?: string
+  companyLogoUrl?: string
+}) {
   const [downloadNote, setDownloadNote] = useState<string | null>(null)
   const [previewDevice, setPreviewDevice] = useState<'mobile' | 'laptop'>('laptop')
 
@@ -2190,6 +2886,7 @@ function PortfolioPreview({ blocks, theme, subdomain }: { blocks: PortfolioBlock
     avatarUrl?: string
     headerImageUrl?: string
     company?: string
+    companyLogoUrl?: string
     location?: string
     phone?: string
     email?: string
@@ -2339,6 +3036,7 @@ function PortfolioPreview({ blocks, theme, subdomain }: { blocks: PortfolioBlock
               name={name}
               title={title}
               company={company}
+              companyLogoUrl={heroData.companyLogoUrl || companyLogoUrl || undefined}
               bio={bio}
               avatarUrl={heroData.avatarUrl}
               headerImageUrl={heroData.headerImageUrl}

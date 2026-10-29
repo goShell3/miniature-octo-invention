@@ -6,7 +6,7 @@ import type {
   AdminQueueStats,
   PaymentStatus,
 } from '@amalink/types'
-import { API_URL } from './config'
+import { API_URL, resolveMediaUrl } from './config'
 import { getAuthToken } from './auth-client'
 
 function getAdminHeaders(extra: Record<string, string> = {}) {
@@ -179,6 +179,7 @@ export function AdminPrintQueue({ onNotification }: AdminPrintQueueProps) {
 
       const svg = await createCardSvg('#0e0e11', '#ffffff', order.shortUrl, {
         frontLogoText: order.owner.companyName || order.owner.name,
+        companyLogoUrl: order.owner.companyLogoUrl ? resolveMediaUrl(order.owner.companyLogoUrl) : undefined,
         cardName: order.shippingAddress?.name || order.owner.name,
         cardDesignation: order.owner.companyName || 'Member',
         qrDataUrl,
