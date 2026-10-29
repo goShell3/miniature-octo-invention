@@ -148,6 +148,20 @@ export const auth = betterAuth({
         input: true,
         returned: true,
       },
+      companyLogoUrl: {
+        type: 'string',
+        fieldName: 'company_logo_url',
+        required: false,
+        input: true,
+        returned: true,
+      },
+      brandColor: {
+        type: 'string',
+        fieldName: 'brand_color',
+        required: false,
+        input: true,
+        returned: true,
+      },
       phoneNumber: {
         type: 'string',
         fieldName: 'phone_number',

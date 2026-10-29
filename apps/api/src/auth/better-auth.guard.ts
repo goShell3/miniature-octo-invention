@@ -17,6 +17,8 @@ export interface AuthenticatedUser {
   role?: 'admin' | 'user';
   customerType?: NfcCardTier;
   companyName?: string;
+  companyLogoUrl?: string | null;
+  brandColor?: string | null;
   phoneNumber?: string;
   tinNumber?: string;
   teamSize?: string;
@@ -60,6 +62,8 @@ export class BetterAuthGuard implements CanActivate {
       role: userObj.role === 'admin' || isEmailAdmin ? 'admin' : 'user',
       customerType: userObj.customerType,
       companyName: userObj.companyName,
+      companyLogoUrl: userObj.companyLogoUrl,
+      brandColor: userObj.brandColor,
       phoneNumber: userObj.phoneNumber,
       tinNumber: userObj.tinNumber,
       teamSize: userObj.teamSize,
