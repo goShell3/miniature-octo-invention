@@ -1,0 +1,378 @@
+/* ── Corporate Settings View Styles (Clean, Zero Emojis) ── */
+.corp-settings-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding-bottom: 40px;
+}
+
+.corp-settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.corp-settings-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 8px;
+}
+
+.corp-settings-eyebrow {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #2563eb;
+  margin-bottom: 4px;
+}
+
+.corp-settings-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 6px;
+}
+
+.corp-settings-desc {
+  font-size: 13.5px;
+  color: #64748b;
+  margin: 0;
+  max-width: 620px;
+  line-height: 1.5;
+}
+
+.corp-settings-save-btn {
+  height: 40px;
+  padding: 0 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.corp-settings-banner {
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.corp-settings-banner.success {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+}
+.corp-settings-banner.error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+/* Cards */
+.corp-settings-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 24px 28px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.corp-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 4px;
+}
+
+.corp-card-desc {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 20px;
+}
+
+/* Grids */
+.corp-form-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.corp-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.corp-input-group.full {
+  width: 100%;
+}
+.corp-input-group.half {
+  flex: 1 1 calc(50% - 8px);
+  min-width: 240px;
+}
+
+.corp-input-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.corp-text-input,
+.corp-textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #0f172a;
+  background: #ffffff;
+  outline: none;
+  box-sizing: border-box;
+}
+.corp-text-input:focus,
+.corp-textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.corp-subdomain-bar {
+  display: flex;
+  align-items: center;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff;
+}
+.corp-subdomain-bar:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.corp-sub-prefix,
+.corp-sub-suffix {
+  padding: 0 12px;
+  font-size: 12px;
+  color: #64748b;
+  background: #f8fafc;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.corp-sub-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 9px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+/* Brand Layout */
+.corp-brand-layout {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 28px;
+  align-items: flex-start;
+}
+
+.corp-logo-zone {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.corp-logo-preview-box {
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.corp-logo-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 6px;
+}
+
+.corp-logo-placeholder-text {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.05em;
+}
+
+.corp-logo-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.corp-upload-btn {
+  cursor: pointer;
+  height: 32px;
+  padding: 0 14px;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.corp-input-hint {
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* Palette */
+.corp-palette-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.corp-palette-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.corp-palette-grid {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.corp-color-chip {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.corp-color-chip:hover {
+  transform: scale(1.08);
+}
+.corp-color-chip.active {
+  border-color: #0f172a;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #0f172a;
+}
+
+.corp-custom-color-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.corp-hex-input {
+  width: 80px;
+  padding: 4px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+}
+
+.corp-color-picker {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* Tier Selector */
+.corp-tier-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.corp-tier-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.corp-tier-card {
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  background: #ffffff;
+  transition: all 0.15s ease;
+}
+.corp-tier-card:hover {
+  border-color: #94a3b8;
+}
+.corp-tier-card.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.corp-tier-radio {
+  margin-top: 2px;
+}
+
+.corp-radio-dot {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  position: relative;
+}
+.corp-radio-dot.checked {
+  border-color: #2563eb;
+}
+.corp-radio-dot.checked::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #2563eb;
+}
+
+.corp-tier-card-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 2px;
+}
+
+.corp-tier-card-meta {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.corp-settings-bottom-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 12px;
+}
+
+@media (max-width: 640px) {
+  .corp-brand-layout {
+    grid-template-columns: 1fr;
+  }
+}

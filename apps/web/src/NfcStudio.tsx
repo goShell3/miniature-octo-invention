@@ -16,7 +16,7 @@ import type {
   PaymentMethod,
   PaymentStatus,
 } from '@amalink/types'
-import { API_URL } from './config'
+import { API_URL, resolveMediaUrl } from './config'
 import { getAuthToken } from './auth-client'
 import { getPortfolioSubdomainUrl, getPortfolioDomainLabel } from './url-helpers'
 import './NfcStudio.css'
@@ -99,6 +99,7 @@ export async function createCardSvg(
   _portfolioUrl: string,
   placeholders: {
     frontLogoText: string
+    companyLogoUrl?: string
     cardName: string
     cardDesignation: string
     qrDataUrl?: string
@@ -121,7 +122,12 @@ export async function createCardSvg(
     <g transform="translate(40, 30)">
       <rect width="856" height="540" rx="28" fill="${backgroundColor}" />
       <rect width="856" height="540" rx="28" fill="none" stroke="${textColor}" stroke-opacity="0.08" stroke-width="2" />
+      ${placeholders.companyLogoUrl ? `
+      <image href="${escapeXml(placeholders.companyLogoUrl)}" x="278" y="170" width="300" height="120" preserveAspectRatio="xMidYMid meet" />
+      <text x="428" y="340" text-anchor="middle" class="logo-text" font-size="28">${safeLogo}</text>
+      ` : `
       <text x="428" y="285" text-anchor="middle" class="logo-text">${safeLogo}</text>
+      `}
     </g>
 
     <!-- BACK CARD (856x540 at x=904, y=30) -->
@@ -388,6 +394,7 @@ export function NfcStudio({
   async function downloadTemplate() {
     const svg = await createCardSvg(backgroundColor, textColor, portfolioUrl, {
       frontLogoText,
+      companyLogoUrl: user?.companyLogoUrl ? resolveMediaUrl(user.companyLogoUrl) : undefined,
       cardName,
       cardDesignation,
       qrDataUrl,
@@ -606,6 +613,13 @@ export function NfcStudio({
                 >
                   <div className="nfc-duo-card-tag">FRONT</div>
                   <div className="nfc-minimal-front-center">
+                    {user?.companyLogoUrl && (
+                      <img
+                        src={resolveMediaUrl(user.companyLogoUrl)}
+                        alt={frontLogoText || 'Company Logo'}
+                        className="nfc-card-company-logo-img"
+                      />
+                    )}
                     <span className="nfc-minimal-logo-text">{frontLogoText || 'Your Logo'}</span>
                   </div>
                 </div>
@@ -661,6 +675,13 @@ export function NfcStudio({
                   {/* Front Face */}
                   <article className="nfc-card-face front nfc-minimal-card" style={cardStyle}>
                     <div className="nfc-minimal-front-center">
+                      {user?.companyLogoUrl && (
+                        <img
+                          src={resolveMediaUrl(user.companyLogoUrl)}
+                          alt={frontLogoText || 'Company Logo'}
+                          className="nfc-card-company-logo-img"
+                        />
+                      )}
                       <span className="nfc-minimal-logo-text">{frontLogoText || 'Your Logo'}</span>
                     </div>
                   </article>
@@ -783,6 +804,71 @@ export function NfcStudio({
               ) : (
                 /* Unpaid State: Manual Payment Guide & Multi-tier Verification */
                 <div className="nfc-payment-guide">
+                  {(selectedTier === 'enterprise' || selectedTier === 'corporate' || user?.customerType === 'enterprise' || user?.customerType === 'corporate') && (
+                    <div className="nfc-corporate-proforma-banner">
+                      <div className="nfc-corp-banner-header">
+                        <span className="nfc-corp-icon">🏛️</span>
+                        <div>
+                          <strong>Corporate Purchase Order &amp; Proforma Invoice Available</strong>
+                          <p>
+                            For {selectedTier.toUpperCase()} volume orders, payments can be made via official CBE Corporate Wire or Bank Deposit. Formal VAT receipt and Proforma invoice provided.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="nfc-corp-banner-actions">
+                        <button
+                          type="button"
+                          className="secondary-button"
+                          onClick={() => {
+                            const subtotal = Math.round(order.totalAmount / 1.15)
+                            const vat = order.totalAmount - subtotal
+                            const proformaText = [
+                              '=====================================================',
+                              'KOOLINK OFFICIAL PROFORMA INVOICE',
+                              '=====================================================',
+                              `Invoice Ref: PRO-KL-${order.id.slice(0, 8).toUpperCase()}`,
+                              `Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}`,
+                              `Customer / Organization: ${user?.companyName || address.name || 'Valued Corporate Client'}`,
+                              `TIN Number: ${user?.tinNumber || 'N/A'}`,
+                              `Contact Phone: ${address.phone || user?.phoneNumber || 'N/A'}`,
+                              `Delivery City: ${address.city}, Ethiopia`,
+                              '',
+                              'ORDER DETAILS:',
+                              '-----------------------------------------------------',
+                              'Item: Koolink Executive Contactless NFC Smart Cards',
+                              `Tier: ${selectedTier.toUpperCase()} (${quantity} cards)`,
+                              `Unit Price: ${(order.totalAmount / quantity).toFixed(2)} ETB`,
+                              '',
+                              `Subtotal: ${subtotal.toLocaleString()} ETB`,
+                              `VAT (15%): ${vat.toLocaleString()} ETB`,
+                              `TOTAL DUE: ${order.totalAmount.toLocaleString()} ETB`,
+                              '',
+                              'PAYMENT INSTRUCTIONS (Corporate Wire Transfer):',
+                              '-----------------------------------------------------',
+                              'Bank Name: Commercial Bank of Ethiopia (CBE)',
+                              `Account Name: ${MANUAL_PAYMENT_ACCOUNTS.accountHolder}`,
+                              `Account Number: ${MANUAL_PAYMENT_ACCOUNTS.cbe.accountNumber}`,
+                              `Wire Reference / Memo: KL-${order.id.slice(0, 8).toUpperCase()}`,
+                              '',
+                              'Please submit the CBE FT wire confirmation or deposit slip via the portal to initiate production.',
+                              '====================================================='
+                            ].join('\n')
+                            const blob = new Blob([proformaText], { type: 'text/plain;charset=utf-8' })
+                            const url = URL.createObjectURL(blob)
+                            const a = document.createElement('a')
+                            a.href = url
+                            a.download = `Proforma-KL-${order.id.slice(0, 8).toUpperCase()}.txt`
+                            document.body.appendChild(a)
+                            a.click()
+                            a.remove()
+                            setTimeout(() => URL.revokeObjectURL(url), 1000)
+                          }}
+                        >
+                          📄 Download Proforma Invoice (.txt)
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   <div className="nfc-pay-method-tabs">
                     <button
                       type="button"

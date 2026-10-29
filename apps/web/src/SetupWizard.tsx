@@ -5,8 +5,6 @@ import { DigitalCard } from './DigitalCard'
 import type { CardSocial } from './DigitalCard'
 import { getPortfolioDomainLabel, getPortfolioSubdomainUrl } from './url-helpers'
 import { BrandLogo } from './BrandLogo'
-import { API_URL } from './config'
-import { getAuthToken } from './auth-client'
 import './SetupWizard.css'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -17,6 +15,7 @@ export interface WizardData {
   lastName: string
   title: string
   company: string
+  companyLogoUrl?: string
   email: string
   phone: string
   bio: string
@@ -42,9 +41,22 @@ interface SetupWizardProps {
   checkSubdomain: (subdomain: string) => Promise<boolean>
   busy: boolean
   error: string
+  initialCompanyName?: string
+  initialCompanyLogoUrl?: string | null
+  initialBrandColor?: string | null
+  onSwitchToOrg?: () => void
 }
 
-export function SetupWizard({ onFinish, checkSubdomain, busy, error }: SetupWizardProps) {
+export function SetupWizard({
+  onFinish,
+  checkSubdomain,
+  busy,
+  error,
+  initialCompanyName,
+  initialCompanyLogoUrl,
+  initialBrandColor,
+  onSwitchToOrg,
+}: SetupWizardProps) {
   const [subdomainStatus, setSubdomainStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle')
   const [fieldError, setFieldError] = useState('')
   const [mobileTab, setMobileTab] = useState<'form' | 'preview'>('form')
@@ -57,7 +69,8 @@ export function SetupWizard({ onFinish, checkSubdomain, busy, error }: SetupWiza
     firstName: '',
     lastName: '',
     title: '',
-    company: '',
+    company: initialCompanyName || '',
+    companyLogoUrl: initialCompanyLogoUrl || '',
     email: '',
     phone: '',
     bio: '',
@@ -73,7 +86,7 @@ export function SetupWizard({ onFinish, checkSubdomain, busy, error }: SetupWiza
     youtube: '',
     github: '',
     facebook: '',
-    accentColor: '#ff3535', // Koolink signature red
+    accentColor: (initialBrandColor as `#${string}`) || '#ff3535',
   })
 
   const uid = useId()
@@ -116,57 +129,54 @@ export function SetupWizard({ onFinish, checkSubdomain, busy, error }: SetupWiza
       return
     }
 
-    // Immediate optimistic local blob preview on the live card
-    const localBlob = URL.createObjectURL(file)
-    setAvatarPreviewUrl(localBlob)
-    patch({ avatarUrl: localBlob })
-
     setUploadingAvatar(true)
-    try {
-      const uploadResponse = await fetch(`${API_URL}/media/upload-url`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json', ...(getAuthToken() ? { Authorization: 'Bearer ' + getAuthToken() } : {}) },
-        body: JSON.stringify({
-          category: 'avatar',
-          filename: file.name,
-          mimeType: file.type,
-          sizeBytes: file.size,
-        }),
-      })
+    setFieldError('')
 
-      const upload = (await uploadResponse.json()) as {
-        assetId?: string
-        uploadUrl?: string
-        publicUrl?: string
-        headers?: Record<string, string>
-        message?: string | string[]
-      }
-
-      if (uploadResponse.ok && upload.uploadUrl && upload.assetId && upload.publicUrl) {
-        const putResponse = await fetch(upload.uploadUrl, {
-          method: 'PUT',
-          headers: upload.headers,
-          body: file,
-        })
-
-        if (putResponse.ok) {
-          const confirmResponse = await fetch(`${API_URL}/media/assets/${upload.assetId}/confirm`, {
-            method: 'POST',
-            credentials: 'include',
-          })
-          const confirmation = (await confirmResponse.json()) as { publicUrl?: string }
-          if (confirmResponse.ok && confirmation.publicUrl) {
-            patch({ avatarUrl: confirmation.publicUrl })
-            setAvatarPreviewUrl(confirmation.publicUrl)
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const rawDataUrl = event.target?.result as string
+      const img = new Image()
+      img.onload = () => {
+        const maxDim = 800
+        let w = img.width
+        let h = img.height
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = Math.round((h * maxDim) / w)
+            w = maxDim
+          } else {
+            w = Math.round((w * maxDim) / h)
+            h = maxDim
           }
         }
+        const canvas = document.createElement('canvas')
+        canvas.width = w
+        canvas.height = h
+        const ctx = canvas.getContext('2d')
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, w, h)
+          const isPng = file.type === 'image/png' || file.name.endsWith('.png')
+          const finalUrl = canvas.toDataURL(isPng ? 'image/png' : 'image/jpeg', 0.9)
+          patch({ avatarUrl: finalUrl })
+          setAvatarPreviewUrl(finalUrl)
+        } else {
+          patch({ avatarUrl: rawDataUrl })
+          setAvatarPreviewUrl(rawDataUrl)
+        }
+        setUploadingAvatar(false)
       }
-    } catch (err) {
-      console.warn('Background image upload deferred, local preview preserved.', err)
-    } finally {
+      img.onerror = () => {
+        patch({ avatarUrl: rawDataUrl })
+        setAvatarPreviewUrl(rawDataUrl)
+        setUploadingAvatar(false)
+      }
+      img.src = rawDataUrl
+    }
+    reader.onerror = () => {
+      setFieldError('Failed to read image file. Please try another image.')
       setUploadingAvatar(false)
     }
+    reader.readAsDataURL(file)
   }
 
   // ── Submission Validation ─────────────────────────────────────────────────────
@@ -225,6 +235,22 @@ export function SetupWizard({ onFinish, checkSubdomain, busy, error }: SetupWiza
           <span>Smart NFC Card Setup</span>
         </div>
       </header>
+
+      {/* ── Mode Switcher: Switch to Organization Brand Setup ──────── */}
+      {onSwitchToOrg && (
+        <div className="wizard-mode-banner">
+          <div className="wizard-mode-content">
+            <span className="wizard-mode-label">Looking to set up for a company or business?</span>
+            <button
+              type="button"
+              className="wizard-mode-switch-btn"
+              onClick={onSwitchToOrg}
+            >
+              🏢 Switch to Organization Brand Setup (Business &amp; Enterprise) →
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Mobile Viewport Switcher (<= 840px) ────────────────────── */}
       <div className="wizard-mobile-toggle-bar">
@@ -685,6 +711,7 @@ export function SetupWizard({ onFinish, checkSubdomain, busy, error }: SetupWiza
               name={fullName}
               title={data.title}
               company={data.company}
+              companyLogoUrl={data.companyLogoUrl}
               bio={data.bio}
               avatarUrl={avatarPreviewUrl || data.avatarUrl}
               phone={data.phone}
@@ -774,6 +801,7 @@ export function wizardDataToBlocks(data: WizardData): PortfolioBlock[] {
         name: fullName,
         tagline: data.title || '',
         company: data.company || '',
+        companyLogoUrl: data.companyLogoUrl || '',
         location: data.location || 'Addis Ababa, Ethiopia',
         phone: data.phone || '',
         email: data.email || '',

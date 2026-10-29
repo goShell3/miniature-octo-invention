@@ -72,10 +72,19 @@ export interface UserProfile {
   name?: string;
   role?: 'admin' | 'user';
   customerType?: NfcCardTier;
-  companyName?: string;
+  companyName?: string | null;
+  companyLogoUrl?: string | null;
+  brandColor?: string | null;
   phoneNumber?: string;
   tinNumber?: string;
   teamSize?: string;
+}
+
+export interface CompanyBrandKit {
+  companyName: string;
+  companyLogoUrl?: string | null;
+  brandColor?: string | null;
+  customerType?: NfcCardTier;
 }
 
 export interface AdminOrderSummary extends NfcOrderSummary {
@@ -84,6 +93,8 @@ export interface AdminOrderSummary extends NfcOrderSummary {
     email: string;
     name: string;
     companyName?: string | null;
+    companyLogoUrl?: string | null;
+    brandColor?: string | null;
     phoneNumber?: string | null;
     tinNumber?: string | null;
     customerType?: NfcCardTier;
@@ -229,6 +240,7 @@ export interface HeroBlock {
     avatarUrl?: string;
     headerImageUrl?: string;
     company?: string;
+    companyLogoUrl?: string;
     location?: string;
     phone?: string;
     email?: string;
@@ -321,5 +333,18 @@ export interface PortfolioSummary {
   id: string;
   subdomain: string;
   status: PortfolioStatus;
+  isCompanyMaster?: boolean;
   updatedAt: string;
+}
+
+export interface PortfolioModel {
+  id: string;
+  subdomain: string;
+  status: PortfolioStatus;
+  isCompanyMaster?: boolean;
+  customDomain?: string | null;
+  theme: PortfolioTheme;
+  createdAt: string;
+  updatedAt: string;
+  content: { version: number; blocks: PortfolioBlock[] } | null;
 }

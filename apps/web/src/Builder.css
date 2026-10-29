@@ -1727,3 +1727,345 @@
     font-size: 16px !important;
   }
 }
+
+
+/* =====================================================================
+   Corporate & Enterprise Two-Tier Workspace Dashboard Styles
+   ===================================================================== */
+.corporate-dashboard-view {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.corp-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.corp-eyebrow {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #2563eb;
+  margin-bottom: 4px;
+}
+
+.corp-section-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink, #0f172a);
+  margin: 0;
+}
+
+.corp-section-sub {
+  font-size: 13px;
+  color: var(--muted, #64748b);
+  margin: 4px 0 0;
+}
+
+.corp-badge-master {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.corp-master-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 28px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1.5px solid #cbd5e1;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.corp-master-card:hover {
+  border-color: #94a3b8;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+}
+
+.corp-master-card-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex: 1;
+  min-width: 0;
+}
+
+.corp-master-logo-frame {
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  border: 2px solid #e2e8f0;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.corp-master-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 6px;
+}
+
+.corp-master-logo-fallback {
+  width: 100%;
+  height: 100%;
+  color: #ffffff;
+  font-size: 28px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.corp-master-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.corp-master-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.corp-master-company-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink, #0f172a);
+  margin: 0;
+}
+
+.corp-master-url {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2563eb;
+  text-decoration: none;
+}
+.corp-master-url:hover {
+  text-decoration: underline;
+}
+
+.corp-master-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--muted, #64748b);
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.corp-master-color-swatch {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-family: ui-monospace, monospace;
+}
+.corp-master-color-swatch .color-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.corp-master-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.corp-employees-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.corp-empty-employees {
+  text-align: center;
+  padding: 56px 24px;
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  border-radius: 16px;
+}
+.corp-empty-icon {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+  color: var(--muted, #94a3b8);
+  opacity: 0.6;
+}
+.corp-empty-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink, #0f172a);
+  margin: 0 0 6px;
+}
+.corp-empty-desc {
+  font-size: 13px;
+  color: var(--muted, #64748b);
+  max-width: 480px;
+  margin: 0 auto 20px;
+  line-height: 1.5;
+}
+
+.corp-employee-grid {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+}
+
+.corp-employee-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 22px;
+  background: #ffffff;
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 14px;
+  transition: all 0.18s ease;
+  cursor: pointer;
+}
+.corp-employee-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
+}
+
+.corp-emp-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+
+.corp-emp-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #f1f5f9;
+  border: 1.5px solid #cbd5e1;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.corp-emp-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.corp-emp-avatar-initials {
+  font-size: 18px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.corp-emp-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.corp-emp-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.corp-emp-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink, #0f172a);
+  margin: 0;
+}
+.corp-emp-title {
+  font-size: 12px;
+  color: var(--muted, #64748b);
+}
+.corp-emp-subdomain {
+  font-size: 11px;
+  font-weight: 600;
+  color: #2563eb;
+  text-decoration: none;
+}
+.corp-emp-subdomain:hover {
+  text-decoration: underline;
+}
+
+.corp-emp-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .corp-master-card {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 18px;
+  }
+  .corp-master-actions {
+    width: 100%;
+    margin-top: 12px;
+  }
+  .corp-master-actions .secondary-button,
+  .corp-master-actions .primary-button {
+    flex: 1;
+    justify-content: center;
+  }
+  .corp-employee-card {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+  }
+  .corp-emp-actions {
+    width: 100%;
+    margin-top: 10px;
+  }
+  .corp-emp-actions .secondary-button,
+  .corp-emp-actions .primary-button {
+    flex: 1;
+    justify-content: center;
+  }
+}

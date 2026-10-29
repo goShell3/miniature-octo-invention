@@ -25,6 +25,22 @@ export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps)
   const [profile, setProfile] = useState<PublicProfileData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [syncToast, setSyncToast] = useState(false)
+  const [retryKey, setRetryKey] = useState(0)
+
+  function getRootHomeUrl(): string {
+    if (typeof window === 'undefined') return 'https://www.koo-link.com'
+    const hostname = window.location.hostname.toLowerCase()
+    if (hostname.endsWith('.localhost')) {
+      const port = window.location.port ? `:${window.location.port}` : ''
+      return `http://localhost${port}`
+    }
+    const parts = hostname.split('.')
+    if (parts.length > 2) {
+      const baseDomain = parts.slice(1).join('.')
+      return `${window.location.protocol}//${baseDomain.startsWith('www.') ? baseDomain : `www.${baseDomain}`}`
+    }
+    return `${window.location.protocol}//${window.location.host}`
+  }
 
   const vcardUrl = `${apiUrl}/sites/${encodeURIComponent(subdomain)}/vcard?preview=true`
 
@@ -35,7 +51,7 @@ export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps)
 
     // Fetch public portfolio data (with preview=true support)
     fetch(`${apiUrl}/sites/${encodeURIComponent(subdomain)}/data?preview=true`, {
-      credentials: 'include',
+      credentials: 'omit',
     })
       .then(async (res) => {
         if (!res.ok) {
@@ -60,7 +76,7 @@ export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps)
     return () => {
       isCurrent = false
     }
-  }, [subdomain, apiUrl])
+  }, [subdomain, apiUrl, retryKey])
 
   // Auto-trigger contact sync when scanned from QR code or NFC tap with ?sync=vcf
   useEffect(() => {
@@ -92,23 +108,45 @@ export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps)
   }
 
   if (error || !profile) {
+    const homeUrl = getRootHomeUrl()
     return (
       <div className="public-profile-viewport" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: 24 }}>
         <div style={{ maxWidth: 440, width: '100%', background: '#1c1815', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: 20, padding: 36, textAlign: 'center', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}>
           <img src="/icon.svg" alt="Koolink" style={{ width: 44, height: 44, margin: '0 auto 16px' }} />
           <h2 style={{ fontSize: 22, fontWeight: 800, margin: '0 0 10px', color: '#f6f5f2' }}>Profile Not Found</h2>
-          <p style={{ fontSize: 13, color: '#a89f91', lineHeight: 1.55, margin: '0 0 24px' }}>
+          <p style={{ fontSize: 13, color: '#a89f91', lineHeight: 1.55, margin: '0 0 20px' }}>
             The profile <strong>"{subdomain}"</strong> was not found or is currently saved as an unpublished draft.
           </p>
+
+          <button
+            type="button"
+            onClick={() => setRetryKey((k) => k + 1)}
+            style={{
+              display: 'inline-block',
+              width: '100%',
+              padding: '11px 18px',
+              background: '#2b2622',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              color: '#f6f5f2',
+              borderRadius: 8,
+              fontWeight: 700,
+              fontSize: 13,
+              cursor: 'pointer',
+              marginBottom: 12,
+            }}
+          >
+            ↻ Retry Connecting to Server
+          </button>
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <a
-              href="/"
+              href={`${homeUrl}/`}
               style={{ display: 'inline-block', padding: '12px 18px', background: '#ff3535', color: '#fff', borderRadius: 8, fontWeight: 700, fontSize: 13, textDecoration: 'none' }}
             >
               Go to Workspace / Sign In →
             </a>
             <a
-              href="/"
+              href={`${homeUrl}/`}
               style={{ fontSize: 12, color: '#7a7269', textDecoration: 'none' }}
             >
               Return to Koolink Home
@@ -133,6 +171,7 @@ export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps)
     avatarUrl?: string
     headerImageUrl?: string
     company?: string
+    companyLogoUrl?: string
     location?: string
     phone?: string
     email?: string
@@ -227,6 +266,7 @@ export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps)
               name={name}
               title={title}
               company={company}
+              companyLogoUrl={heroData.companyLogoUrl}
               bio={bio}
               avatarUrl={heroData.avatarUrl}
               headerImageUrl={heroData.headerImageUrl}
