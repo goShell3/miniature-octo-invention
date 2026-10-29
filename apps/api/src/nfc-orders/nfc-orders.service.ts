@@ -66,7 +66,7 @@ export class NfcOrdersService {
 
     const owner = await this.usersRepository.findOne({
       where: { id: ownerId },
-      select: { id: true, email: true, companyName: true, customerType: true },
+      select: { id: true, email: true, companyName: true, companyLogoUrl: true, brandColor: true, customerType: true },
     });
     const resolvedTier: NfcCardTier = getTierFromQuantity(input.quantity);
 
@@ -464,6 +464,8 @@ export class NfcOrdersService {
         email: owner?.email ?? '',
         name: owner?.name ?? 'Anonymous Customer',
         companyName: owner?.companyName ?? null,
+        companyLogoUrl: owner?.companyLogoUrl ?? null,
+        brandColor: owner?.brandColor ?? null,
         phoneNumber: owner?.phoneNumber ?? null,
         tinNumber: owner?.tinNumber ?? null,
         customerType: owner?.customerType ?? 'individual',

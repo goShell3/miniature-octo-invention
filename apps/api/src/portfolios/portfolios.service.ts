@@ -44,6 +44,7 @@ export class PortfoliosService {
     ownerId: string,
     input: {
       subdomain: string;
+      isCompanyMaster?: boolean;
       theme?: PortfolioTheme;
       blocks?: PortfolioBlock[];
     },
@@ -53,6 +54,40 @@ export class PortfoliosService {
       throw new ConflictException('Subdomain is unavailable');
     }
 
+    const owner = await this.dataSource.getRepository(UserEntity).findOneBy({ id: ownerId });
+    const isCompanyMaster = Boolean(input.isCompanyMaster);
+
+    const blocks = (input.blocks ?? []).map((b) => {
+      if (b.type === 'hero') {
+        return {
+          ...b,
+          data: {
+            ...b.data,
+            company: b.data.company || owner?.companyName || undefined,
+            companyLogoUrl: b.data.companyLogoUrl || owner?.companyLogoUrl || undefined,
+          },
+        };
+      }
+      return b;
+    });
+
+    if (isCompanyMaster && owner) {
+      const heroBlock = blocks.find((b) => b.type === 'hero');
+      if (heroBlock && heroBlock.type === 'hero') {
+        if (heroBlock.data.company) owner.companyName = heroBlock.data.company;
+        if (heroBlock.data.companyLogoUrl) owner.companyLogoUrl = heroBlock.data.companyLogoUrl;
+      }
+      if (input.theme?.accentColor) {
+        owner.brandColor = input.theme.accentColor;
+      }
+      await this.dataSource.getRepository(UserEntity).save(owner);
+    }
+
+    const theme = input.theme ?? {
+      id: 'minimal',
+      accentColor: (owner?.brandColor as any) || '#ff3535',
+    };
+
     return this.dataSource.transaction(async (manager) => {
       const portfolios = manager.getRepository(PortfolioEntity);
       const contentVersions = manager.getRepository(PortfolioContentEntity);
@@ -60,16 +95,17 @@ export class PortfoliosService {
         portfolios.create({
           owner: { id: ownerId } as UserEntity,
           subdomain,
-          status: 'draft',
-          theme: input.theme ?? { id: 'minimal', accentColor: '#ff3535' },
+          status: isCompanyMaster ? 'published' : 'draft',
+          isCompanyMaster,
+          theme,
         }),
       );
       const content = await contentVersions.save(
         contentVersions.create({
           portfolio,
           version: 1,
-          blocks: input.blocks ?? [],
-          isPublished: false,
+          blocks,
+          isPublished: isCompanyMaster,
         }),
       );
       return { ...portfolio, content };
@@ -195,6 +231,7 @@ export class PortfoliosService {
       id: portfolio.id,
       subdomain: portfolio.subdomain,
       status: portfolio.status,
+      isCompanyMaster: portfolio.isCompanyMaster,
       theme: portfolio.theme,
       updatedAt: portfolio.updatedAt,
       content: content[0] ?? null,

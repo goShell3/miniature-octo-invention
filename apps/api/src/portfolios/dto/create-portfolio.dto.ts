@@ -1,5 +1,6 @@
 import {
   IsArray,
+  IsBoolean,
   IsObject,
   IsOptional,
   IsString,
@@ -13,6 +14,10 @@ export class CreatePortfolioDto {
   @MaxLength(30)
   @Matches(/^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])?$/)
   subdomain!: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isCompanyMaster?: boolean;
 
   @IsOptional()
   @IsObject()

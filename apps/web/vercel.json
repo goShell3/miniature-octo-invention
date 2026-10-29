@@ -30,6 +30,10 @@
       "destination": "https://sewnet-api.onrender.com/c/:path*"
     },
     {
+      "source": "/sites/:path*",
+      "destination": "https://sewnet-api.onrender.com/sites/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
