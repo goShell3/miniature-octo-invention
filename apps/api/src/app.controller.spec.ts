@@ -16,7 +16,7 @@ describe('AppController', () => {
 
   describe('health', () => {
     it('returns the API health status', () => {
-      expect(appController.getHealth()).toEqual({
+      expect(appController.health()).toEqual({
         status: 'ok',
         service: 'amalink-api',
       });

@@ -139,6 +139,36 @@ function escapeVcard(value: string): string {
     .replace(/\r/g, '');
 }
 
+export function sanitizeBlocks(blocks: PortfolioBlock[]): PortfolioBlock[] {
+  if (!Array.isArray(blocks)) return [];
+  return blocks.map((block) => {
+    if (block.type === 'hero' && block.data) {
+      const data = { ...block.data };
+      if (typeof data.avatarUrl === 'string' && data.avatarUrl.startsWith('blob:')) {
+        delete data.avatarUrl;
+      }
+      if (typeof data.headerImageUrl === 'string' && data.headerImageUrl.startsWith('blob:')) {
+        delete data.headerImageUrl;
+      }
+      if (typeof data.companyLogoUrl === 'string' && data.companyLogoUrl.startsWith('blob:')) {
+        delete data.companyLogoUrl;
+      }
+      return { ...block, data };
+    }
+    if (block.type === 'projects' && block.data && Array.isArray(block.data.items)) {
+      const items = block.data.items.map((item) => {
+        if (typeof item.imageUrl === 'string' && item.imageUrl.startsWith('blob:')) {
+          const { imageUrl: _, ...rest } = item;
+          return rest;
+        }
+        return item;
+      });
+      return { ...block, data: { ...block.data, items } };
+    }
+    return block;
+  });
+}
+
 @Injectable()
 export class RenderService {
   constructor(
@@ -184,14 +214,14 @@ export class RenderService {
       subdomain: portfolio.subdomain,
       status: portfolio.status,
       theme: portfolio.theme,
-      blocks: content.blocks as PortfolioBlock[],
+      blocks: sanitizeBlocks(content.blocks as PortfolioBlock[]),
       updatedAt: portfolio.updatedAt,
     };
   }
 
   async generateVcard(subdomain: string, allowDraft = false): Promise<string> {
     const { portfolio, content } = await this.getPortfolio(subdomain, allowDraft);
-    const blocks = (content.blocks ?? []) as PortfolioBlock[];
+    const blocks = sanitizeBlocks((content.blocks ?? []) as PortfolioBlock[]);
 
     const hero = blocks.find((b) => b.type === 'hero');
     const about = blocks.find((b) => b.type === 'about');
@@ -256,7 +286,7 @@ export class RenderService {
 
   async renderPublishedPortfolio(subdomain: string, isPreview = false): Promise<string> {
     const { portfolio, content } = await this.getPortfolio(subdomain, isPreview);
-    const blocks = (content.blocks ?? []) as PortfolioBlock[];
+    const blocks = sanitizeBlocks((content.blocks ?? []) as PortfolioBlock[]);
 
     const hero = blocks.find((b) => b.type === 'hero');
     const about = blocks.find((b) => b.type === 'about');

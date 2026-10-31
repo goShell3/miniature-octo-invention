@@ -9,6 +9,7 @@ import { DataSource, Repository } from 'typeorm';
 import { PortfolioContentEntity } from '../database/entities/portfolio-content.entity';
 import { PortfolioEntity } from '../database/entities/portfolio.entity';
 import { UserEntity } from '../database/entities/user.entity';
+import { sanitizeBlocks } from '../render/render.service';
 
 const reservedSubdomains = new Set([
   'www',
@@ -57,7 +58,7 @@ export class PortfoliosService {
     const owner = await this.dataSource.getRepository(UserEntity).findOneBy({ id: ownerId });
     const isCompanyMaster = Boolean(input.isCompanyMaster);
 
-    const blocks = (input.blocks ?? []).map((b) => {
+    const blocks = sanitizeBlocks((input.blocks ?? []).map((b) => {
       if (b.type === 'hero') {
         return {
           ...b,
@@ -69,7 +70,7 @@ export class PortfoliosService {
         };
       }
       return b;
-    });
+    }));
 
     if (isCompanyMaster && owner) {
       const heroBlock = blocks.find((b) => b.type === 'hero');
@@ -167,7 +168,7 @@ export class PortfoliosService {
           contentVersions.create({
             portfolio: savedPortfolio,
             version: latestVersion + 1,
-            blocks: input.blocks,
+            blocks: sanitizeBlocks(input.blocks),
             isPublished: false,
           }),
         );
@@ -227,6 +228,7 @@ export class PortfoliosService {
     const content = [...(portfolio.contentVersions ?? [])].sort(
       (left, right) => right.version - left.version,
     );
+    const latest = content[0] ?? null;
     return {
       id: portfolio.id,
       subdomain: portfolio.subdomain,
@@ -234,7 +236,12 @@ export class PortfoliosService {
       isCompanyMaster: portfolio.isCompanyMaster,
       theme: portfolio.theme,
       updatedAt: portfolio.updatedAt,
-      content: content[0] ?? null,
+      content: latest
+        ? {
+            ...latest,
+            blocks: sanitizeBlocks(latest.blocks),
+          }
+        : null,
     };
   }
 }

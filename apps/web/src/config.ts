@@ -36,11 +36,18 @@ export const API_URL = getApiUrl()
 
 export function resolveMediaUrl(url?: string): string | undefined {
   if (!url) return undefined
+  if (url.startsWith('blob:')) {
+    // Only permit blob: URLs if they originate from the current document origin.
+    // Cross-origin blob URLs are strictly blocked by the browser's Same-Origin Policy.
+    if (typeof window !== 'undefined' && url.startsWith(`blob:${window.location.origin}/`)) {
+      return url
+    }
+    return undefined
+  }
   if (
     url.startsWith('http://') ||
     url.startsWith('https://') ||
-    url.startsWith('data:') ||
-    url.startsWith('blob:')
+    url.startsWith('data:')
   ) {
     return url
   }

@@ -354,15 +354,19 @@ export function DigitalCard({
     }
   }, [profileUrl])
 
+  const resolvedAvatar = resolveMediaUrl(avatarUrl)
+  const resolvedCompanyLogo = resolveMediaUrl(companyLogoUrl)
+  const resolvedHeaderImage = resolveMediaUrl(headerImageUrl)
+
   return (
     <div className="intro-card-wrapper" style={{ '--card-accent': accentColor } as CSSProperties}>
       {/* 1. Identity Box (Dark Rounded Card) */}
       <div
         className="intro-identity-card"
         style={
-          headerImageUrl
+          resolvedHeaderImage
             ? {
-                backgroundImage: `linear-gradient(to bottom, rgba(34,34,34,0.7), rgba(34,34,34,0.96)), url(${resolveMediaUrl(headerImageUrl)})`,
+                backgroundImage: `linear-gradient(to bottom, rgba(34,34,34,0.7), rgba(34,34,34,0.96)), url(${resolvedHeaderImage})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
               }
@@ -370,17 +374,17 @@ export function DigitalCard({
         }
       >
         <div className="intro-avatar-box">
-          {avatarUrl && !avatarError ? (
+          {resolvedAvatar && !avatarError ? (
             <img
-              src={resolveMediaUrl(avatarUrl)}
+              src={resolvedAvatar}
               alt={name}
               className="intro-avatar-photo"
               onError={() => setAvatarError(true)}
             />
-          ) : companyLogoUrl ? (
+          ) : resolvedCompanyLogo ? (
             <div className="intro-avatar-placeholder company-avatar">
               <img
-                src={resolveMediaUrl(companyLogoUrl)}
+                src={resolvedCompanyLogo}
                 alt={company || 'Company'}
                 className="intro-avatar-company-logo"
               />
@@ -527,9 +531,9 @@ export function DigitalCard({
             </button>
 
             <div className="fullscreen-qr-header">
-              {avatarUrl && !avatarError ? (
+              {resolvedAvatar && !avatarError ? (
                 <img
-                  src={resolveMediaUrl(avatarUrl)}
+                  src={resolvedAvatar}
                   alt={name}
                   className="fullscreen-qr-avatar"
                   onError={() => setAvatarError(true)}
