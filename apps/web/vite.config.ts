@@ -29,6 +29,24 @@ export default defineConfig(({ mode }) => {
         '@amalink/types': path.resolve(process.cwd(), '../../packages/types/src/index.ts'),
       },
     },
+    build: {
+      chunkSizeWarningLimit: 600,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/scheduler')) {
+              return 'react-vendor'
+            }
+            if (id.includes('node_modules/better-auth')) {
+              return 'auth-vendor'
+            }
+            if (id.includes('node_modules/qrcode')) {
+              return 'qrcode-vendor'
+            }
+          },
+        },
+      },
+    },
     server: {
       host: true,          // bind to 0.0.0.0 so cloudflared can reach it
       port: 5173,

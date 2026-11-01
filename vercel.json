@@ -29,6 +29,10 @@
       "destination": "https://sewnet-api.onrender.com/admin/:path*"
     },
     {
+      "source": "/sites/:path*",
+      "destination": "https://sewnet-api.onrender.com/sites/:path*"
+    },
+    {
       "source": "/c/:path*",
       "destination": "https://sewnet-api.onrender.com/c/:path*"
     },

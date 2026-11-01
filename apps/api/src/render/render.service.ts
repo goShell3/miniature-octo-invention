@@ -39,6 +39,15 @@ function safeMediaUrl(value: unknown): string | null {
   return /^\/media\/assets\/[0-9a-f-]{36}$/i.test(value) ? value : null;
 }
 
+function safeDataUrl(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (trimmed.startsWith('data:image/')) {
+    return trimmed;
+  }
+  return null;
+}
+
 function normalizeSocialUrl(platform: string, rawInput: string): string {
   const trimmed = rawInput.trim();
   if (!trimmed) return '';
@@ -319,8 +328,8 @@ export class RenderService {
     const tagline = heroData.tagline?.trim() || '';
     const company = heroData.company?.trim() || '';
     const location = heroData.location?.trim() || '';
-    const avatarUrl = safeMediaUrl(heroData.avatarUrl) ?? safeWebUrl(heroData.avatarUrl);
-    const headerImageUrl = safeMediaUrl(heroData.headerImageUrl) ?? safeWebUrl(heroData.headerImageUrl);
+    const avatarUrl = safeMediaUrl(heroData.avatarUrl) ?? safeDataUrl(heroData.avatarUrl) ?? safeWebUrl(heroData.avatarUrl);
+    const headerImageUrl = safeMediaUrl(heroData.headerImageUrl) ?? safeDataUrl(heroData.headerImageUrl) ?? safeWebUrl(heroData.headerImageUrl);
     const headerImageStyle = headerImageUrl
       ? ` style="background-image: linear-gradient(rgba(255,255,255,.78), rgba(250,248,245,.9)), url('${escapeHtml(headerImageUrl)}'); background-position: center; background-size: cover;"`
       : '';
@@ -470,7 +479,7 @@ export class RenderService {
             const linkTag = pLink
               ? `<a href="${escapeHtml(pLink)}" target="_blank" rel="noopener noreferrer" class="project-card-link">View Project ↗</a>`
               : '';
-            const pImg = safeMediaUrl(p.imageUrl) ?? safeWebUrl(p.imageUrl);
+            const pImg = safeMediaUrl(p.imageUrl) ?? safeDataUrl(p.imageUrl) ?? safeWebUrl(p.imageUrl);
             const imgTag = pImg
               ? `<div class="project-card-img-wrap"><img src="${escapeHtml(pImg)}" alt="${escapeHtml(p.title)}" class="project-card-img" /></div>`
               : '';

@@ -23,6 +23,7 @@ export class RenderController {
   }
 
   @Get(':subdomain/data')
+  @Header('Cache-Control', 'public, max-age=30, s-maxage=300, stale-while-revalidate=86400')
   getData(
     @Param('subdomain') subdomain: string,
     @Query('preview') preview?: string,

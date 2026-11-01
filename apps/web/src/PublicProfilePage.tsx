@@ -21,8 +21,21 @@ interface PublicProfilePageProps {
 }
 
 export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps) {
-  const [loading, setLoading] = useState(true)
-  const [profile, setProfile] = useState<PublicProfileData | null>(null)
+  const cacheKey = `koolink.profile.${subdomain.toLowerCase()}`
+
+  function getCachedProfile(): PublicProfileData | null {
+    if (typeof window === 'undefined') return null
+    try {
+      const raw = sessionStorage.getItem(cacheKey) || localStorage.getItem(cacheKey)
+      return raw ? (JSON.parse(raw) as PublicProfileData) : null
+    } catch {
+      return null
+    }
+  }
+
+  const [cachedData] = useState<PublicProfileData | null>(getCachedProfile)
+  const [profile, setProfile] = useState<PublicProfileData | null>(cachedData)
+  const [loading, setLoading] = useState(!cachedData)
   const [error, setError] = useState<string | null>(null)
   const [syncToast, setSyncToast] = useState(false)
   const [retryKey, setRetryKey] = useState(0)
@@ -46,7 +59,7 @@ export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps)
 
   useEffect(() => {
     let isCurrent = true
-    setLoading(true)
+    if (!profile) setLoading(true)
     setError(null)
 
     // Fetch public portfolio data (with preview=true support)
@@ -64,11 +77,17 @@ export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps)
         if (isCurrent) {
           setProfile(data)
           setLoading(false)
+          try {
+            sessionStorage.setItem(cacheKey, JSON.stringify(data))
+            localStorage.setItem(cacheKey, JSON.stringify(data))
+          } catch {}
         }
       })
       .catch((err: Error) => {
         if (isCurrent) {
-          setError(err.message)
+          if (!profile) {
+            setError(err.message)
+          }
           setLoading(false)
         }
       })
@@ -98,10 +117,15 @@ export function PublicProfilePage({ subdomain, apiUrl }: PublicProfilePageProps)
 
   if (loading) {
     return (
-      <div className="public-profile-viewport" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
-        <div style={{ textAlign: 'center' }}>
-          <img src="/icon.svg" alt="Koolink" style={{ width: 44, height: 44, margin: '0 auto 16px' }} />
-          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1.5, color: '#a89f91' }}>LOADING DIGITAL CARD…</div>
+      <div className="public-profile-viewport" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+        <div style={{ maxWidth: 420, width: '100%', background: '#1c1815', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 28, padding: '36px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+          <div style={{ width: 104, height: 104, borderRadius: '50%', background: 'rgba(255, 255, 255, 0.08)' }} />
+          <div style={{ width: '60%', height: 24, borderRadius: 6, background: 'rgba(255, 255, 255, 0.08)' }} />
+          <div style={{ width: '40%', height: 16, borderRadius: 4, background: 'rgba(255, 255, 255, 0.05)' }} />
+          <div style={{ display: 'flex', gap: 12, marginTop: 12, width: '100%' }}>
+            <div style={{ flex: 1, height: 44, borderRadius: 8, background: 'rgba(255, 255, 255, 0.08)' }} />
+            <div style={{ flex: 1, height: 44, borderRadius: 8, background: 'rgba(255, 255, 255, 0.08)' }} />
+          </div>
         </div>
       </div>
     )
