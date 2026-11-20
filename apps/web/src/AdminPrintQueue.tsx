@@ -432,7 +432,7 @@ export function AdminPrintQueue({ onNotification }: AdminPrintQueueProps) {
                     <p style={{ fontSize: 11 }}>
                       Subdomain:{' '}
                       <a href={subUrl} target="_blank" rel="noreferrer" style={{ color: '#0284c7', fontWeight: 600 }}>
-                        {order.portfolio.subdomain}.sewnet.et ↗
+                        {order.portfolio.subdomain}.koo-link.com ↗
                       </a>
                     </p>
                   </div>

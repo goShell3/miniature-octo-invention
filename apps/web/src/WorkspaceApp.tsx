@@ -85,7 +85,7 @@ function initialBlocks(): PortfolioBlock[] {
       data: {
         name: 'John Doe',
         tagline: 'Technology Strategist & Founder',
-        company: 'Sewnet Digital',
+        company: 'Koo-Link Digital',
         location: 'Addis Ababa, Ethiopia',
         avatarUrl: '',
         phone: '+251 91 123 4567',
@@ -1046,7 +1046,7 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
           >
             Brand Kit
           </button>
-          {(user.role === 'admin' || user.email === 'roben@sewnet.et' || user.email?.includes('admin')) && (
+          {(user.role === 'admin' || user.email === 'abebe@koo-link.com' || user.email?.includes('admin')) && (
             <button
               type="button"
               style={{
@@ -1175,7 +1175,7 @@ function WorkspaceApp({ onNavigateToAdmin }: { onNavigateToAdmin?: () => void })
                   <span className="coming-soon-badge">Coming Soon</span>
                   {userTier === 'individual' ? (
                     <div className="announcement-text">
-                      <strong>Custom Domain Linking (.et) &amp; Offline vCard QR</strong>
+                      <strong>Custom Domain Linking (koo-link.com) &amp; Offline vCard QR</strong>
                       <p>Link your personal domain directly to your digital card with automated verification.</p>
                     </div>
                   ) : (

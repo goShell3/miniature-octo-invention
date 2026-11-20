@@ -475,7 +475,7 @@ export class NfcOrdersService {
   }
 
   private getShortUrl(code: string) {
-    const baseUrl = process.env.PUBLIC_BASE_URL ?? 'https://sewnet.vercel.app/';
+    const baseUrl = process.env.PUBLIC_BASE_URL ?? 'https://koo-link.com';
     return `${baseUrl.replace(/\/$/, '')}/c/${code}`;
   }
 }

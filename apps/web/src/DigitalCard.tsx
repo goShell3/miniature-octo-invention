@@ -158,7 +158,7 @@ export function DigitalCard({
   email = '',
   socials = [],
   accentColor = '#ff3535',
-  profileUrl = 'https://sewnet.et/yourname',
+  profileUrl = 'https://koo-link.com/yourname',
   displayUrl = 'koo.link/yourname',
   previewOnly = false,
   onSaveVcard,
@@ -332,7 +332,7 @@ export function DigitalCard({
   // Generate dynamic QR code encoding the live profile URL
   useEffect(() => {
     let isCurrent = true
-    const qrTarget = profileUrl || 'https://sewnet.et'
+    const qrTarget = profileUrl || 'https://koo-link.com'
 
     QRCode.toDataURL(qrTarget, {
       width: 440,
