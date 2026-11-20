@@ -41,6 +41,9 @@ export class PortfolioEntity {
   @Column({ name: 'is_company_master', type: 'boolean', default: false })
   isCompanyMaster!: boolean;
 
+  @Column({ name: 'view_count', type: 'integer', default: 0 })
+  viewCount!: number;
+
   @Column({ type: 'jsonb', nullable: true })
   theme!: PortfolioTheme | null;
 

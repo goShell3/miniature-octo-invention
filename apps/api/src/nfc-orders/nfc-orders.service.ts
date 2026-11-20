@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import {
   AdminOrderSummary,
+  AdminPortfolioSummary,
   AdminQueueStats,
   NFC_CARD_TIER_PRICES_ETB,
   NfcCardTier,
@@ -301,7 +302,26 @@ export class NfcOrdersService {
     }
 
     const orders = await qb.getMany();
-    return orders.map((order) => this.formatAdminOrder(order));
+
+    const orderIds = orders.map((o) => o.id);
+    const tapsMap = new Map<string, number>();
+    if (orderIds.length > 0) {
+      const taps = await this.dataSource
+        .getRepository(CardTapEntity)
+        .createQueryBuilder('tap')
+        .select('tap.orderId', 'orderId')
+        .addSelect('COUNT(tap.id)', 'count')
+        .where('tap.orderId IN (:...orderIds)', { orderIds })
+        .groupBy('tap.orderId')
+        .getRawMany<{ orderId: string; count: string }>();
+      for (const t of taps) {
+        tapsMap.set(t.orderId, Number(t.count || 0));
+      }
+    }
+
+    return orders.map((order: NfcOrderEntity) =>
+      this.formatAdminOrder(order, tapsMap.get(order.id) || 0),
+    );
   }
 
   async getAdminQueueStats(): Promise<AdminQueueStats> {
@@ -330,6 +350,40 @@ export class NfcOrdersService {
       else if (order.status === 'delivered') deliveredCount++;
     }
 
+    // Customer profiles & portfolio activity metrics
+    let totalProfiles = 0;
+    let publishedProfiles = 0;
+    let totalUsersWithProfiles = 0;
+    let totalClicks = 0;
+
+    try {
+      totalProfiles = await this.portfoliosRepository.count();
+      publishedProfiles = await this.portfoliosRepository.count({ where: { status: 'published' } });
+
+      const distinctUsers = await this.portfoliosRepository
+        .createQueryBuilder('p')
+        .select('COUNT(DISTINCT p.owner_id)', 'count')
+        .getRawOne<{ count: string }>();
+      totalUsersWithProfiles = Number(distinctUsers?.count ?? 0);
+
+      const totalTapsResult = await this.dataSource
+        .getRepository(CardTapEntity)
+        .createQueryBuilder('tap')
+        .select('COUNT(tap.id)', 'count')
+        .getRawOne<{ count: string }>();
+      const totalCardTaps = Number(totalTapsResult?.count ?? 0);
+
+      const viewsResult = await this.portfoliosRepository
+        .createQueryBuilder('p')
+        .select('SUM(COALESCE(p.view_count, 0))', 'sum')
+        .getRawOne<{ sum: string }>();
+      const totalPageViews = Number(viewsResult?.sum ?? 0);
+
+      totalClicks = totalCardTaps + totalPageViews;
+    } catch (err) {
+      console.warn('Could not compute profile/clicks admin metrics:', err);
+    }
+
     return {
       totalOrders: orders.length,
       printingCount,
@@ -339,7 +393,57 @@ export class NfcOrdersService {
       totalRevenueETB,
       totalCards,
       unpaidCount,
+      totalProfiles,
+      publishedProfiles,
+      totalUsersWithProfiles,
+      totalClicks,
     };
+  }
+
+  async findAllAdminPortfolios(): Promise<AdminPortfolioSummary[]> {
+    const portfolios = await this.portfoliosRepository
+      .createQueryBuilder('portfolio')
+      .leftJoinAndSelect('portfolio.owner', 'owner')
+      .orderBy('portfolio.createdAt', 'DESC')
+      .getMany();
+
+    const tapsPerPortfolio = await this.dataSource
+      .getRepository(CardTapEntity)
+      .createQueryBuilder('tap')
+      .innerJoin('tap.order', 'order')
+      .select('order.portfolioId', 'portfolioId')
+      .addSelect('COUNT(tap.id)', 'count')
+      .groupBy('order.portfolioId')
+      .getRawMany<{ portfolioId: string; count: string }>();
+
+    const tapsMap = new Map<string, number>();
+    for (const t of tapsPerPortfolio) {
+      if (t.portfolioId) {
+        tapsMap.set(t.portfolioId, Number(t.count || 0));
+      }
+    }
+
+    return portfolios.map((p) => {
+      const cardTaps = tapsMap.get(p.id) || 0;
+      const pageViews = Number((p as any).viewCount || 0);
+      return {
+        id: p.id,
+        subdomain: p.subdomain,
+        status: p.status,
+        isCompanyMaster: Boolean(p.isCompanyMaster),
+        createdAt: p.createdAt ? p.createdAt.toISOString() : new Date().toISOString(),
+        updatedAt: p.updatedAt ? p.updatedAt.toISOString() : new Date().toISOString(),
+        clicksCount: cardTaps + pageViews,
+        owner: {
+          id: p.owner?.id || '',
+          email: p.owner?.email || '',
+          name: p.owner?.name || 'Anonymous Customer',
+          companyName: p.owner?.companyName || null,
+          phoneNumber: p.owner?.phoneNumber || null,
+          customerType: p.owner?.customerType || 'individual',
+        },
+      };
+    });
   }
 
   async updateOrderStatus(orderId: string, input: UpdateOrderStatusDto): Promise<AdminOrderSummary> {
@@ -436,7 +540,7 @@ export class NfcOrdersService {
     };
   }
 
-  private formatAdminOrder(order: NfcOrderEntity): AdminOrderSummary {
+  private formatAdminOrder(order: NfcOrderEntity, tapsCount = 0): AdminOrderSummary {
     const owner = order.portfolio?.owner;
     return {
       id: order.id,
@@ -454,6 +558,7 @@ export class NfcOrdersService {
       shortUrl: this.getShortUrl(order.shortLinkCode),
       shippingAddress: order.shippingAddress,
       paymentVerificationData: order.paymentVerificationData,
+      tapsCount: tapsCount + Number(order.portfolio?.viewCount || 0),
       portfolio: {
         id: order.portfolio?.id ?? '',
         subdomain: order.portfolio?.subdomain ?? '',

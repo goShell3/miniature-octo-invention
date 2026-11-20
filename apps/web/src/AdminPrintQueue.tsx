@@ -208,6 +208,22 @@ export function AdminPrintQueue({ onNotification }: AdminPrintQueueProps) {
     <div className="admin-queue-view">
       {/* ── Key Fulfillment Stats Row ── */}
       <div className="admin-stats-grid">
+        <div className="admin-stat-card profiles">
+          <span className="admin-stat-label">👥 Profiles Created</span>
+          <span className="admin-stat-value">{stats?.totalProfiles != null ? stats.totalProfiles : '...'}</span>
+          <span className="admin-stat-sub">
+            {stats ? `${stats.totalUsersWithProfiles ?? 0} creators • ${stats.publishedProfiles ?? 0} published` : '...'}
+          </span>
+        </div>
+
+        <div className="admin-stat-card clicks">
+          <span className="admin-stat-label">👆 Portfolio Clicks &amp; Taps</span>
+          <span className="admin-stat-value">
+            {stats?.totalClicks != null ? stats.totalClicks.toLocaleString() : '...'}
+          </span>
+          <span className="admin-stat-sub">Total visits across all cards</span>
+        </div>
+
         <div className="admin-stat-card print-queue">
           <span className="admin-stat-label">🖨️ Active Print Queue</span>
           <span className="admin-stat-value">{stats ? stats.printingCount : '...'}</span>
@@ -353,6 +369,25 @@ export function AdminPrintQueue({ onNotification }: AdminPrintQueueProps) {
                   </div>
 
                   <div className="admin-badges-wrap">
+                    <span
+                      className="admin-badge"
+                      style={{
+                        background: '#fdf2f8',
+                        color: '#db2777',
+                        border: '1px solid #fbcfe8',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 3,
+                        padding: '3px 8px',
+                        borderRadius: 6,
+                      }}
+                      title="Total clicks & card taps on this digital portfolio"
+                    >
+                      👆 {order.tapsCount ?? 0} {order.tapsCount === 1 ? 'click' : 'clicks'}
+                    </span>
+
                     <span className={`admin-status-badge ${order.status}`}>
                       <span className="status-dot" />
                       {order.status === 'printing' ? '🖨️ In Print Queue' : order.status.toUpperCase()}
@@ -429,11 +464,28 @@ export function AdminPrintQueue({ onNotification }: AdminPrintQueueProps) {
                     <p className="admin-price-highlight">
                       {order.totalAmount.toLocaleString()} {order.currency}
                     </p>
-                    <p style={{ fontSize: 11 }}>
-                      Subdomain:{' '}
+                    <p style={{ fontSize: 11, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
+                      <span>Subdomain:</span>
                       <a href={subUrl} target="_blank" rel="noreferrer" style={{ color: '#0284c7', fontWeight: 600 }}>
                         {order.portfolio.subdomain}.koo-link.com ↗
                       </a>
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 3,
+                          background: '#fdf2f8',
+                          color: '#db2777',
+                          border: '1px solid #fbcfe8',
+                          padding: '1px 6px',
+                          borderRadius: 8,
+                          fontWeight: 700,
+                          fontSize: 10,
+                        }}
+                        title="Total clicks & card taps on this digital portfolio"
+                      >
+                        👆 {order.tapsCount ?? 0}
+                      </span>
                     </p>
                   </div>
 

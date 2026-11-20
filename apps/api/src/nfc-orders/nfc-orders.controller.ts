@@ -85,6 +85,12 @@ export class NfcOrdersController {
   }
 
   @UseGuards(BetterAuthGuard, AdminGuard)
+  @Get('admin/portfolios')
+  findAllPortfoliosAdmin() {
+    return this.nfcOrdersService.findAllAdminPortfolios();
+  }
+
+  @UseGuards(BetterAuthGuard, AdminGuard)
   @Patch('admin/orders/:id/status')
   updateOrderStatus(
     @Param('id') id: string,

@@ -108,6 +108,24 @@ export interface AdminOrderSummary extends NfcOrderSummary {
   tapsCount?: number;
 }
 
+export interface AdminPortfolioSummary {
+  id: string;
+  subdomain: string;
+  status: 'draft' | 'published' | 'unpublished';
+  isCompanyMaster: boolean;
+  createdAt: string;
+  updatedAt: string;
+  clicksCount: number;
+  owner: {
+    id: string;
+    email: string;
+    name: string;
+    companyName?: string | null;
+    phoneNumber?: string | null;
+    customerType?: NfcCardTier;
+  };
+}
+
 export interface AdminQueueStats {
   totalOrders: number;
   printingCount: number;
@@ -117,6 +135,10 @@ export interface AdminQueueStats {
   totalRevenueETB: number;
   totalCards: number;
   unpaidCount: number;
+  totalProfiles?: number;
+  publishedProfiles?: number;
+  totalUsersWithProfiles?: number;
+  totalClicks?: number;
 }
 
 export interface UpdateOrderStatusInput {

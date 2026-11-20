@@ -4,6 +4,7 @@ import { authClient, getAuthToken, setAuthToken } from './auth-client'
 import { API_URL } from './config'
 import { BrandLogo } from './BrandLogo'
 import { AdminPrintQueue } from './AdminPrintQueue'
+import { AdminPortfoliosTable } from './AdminPortfoliosTable'
 import './AdminPage.css'
 
 interface AdminPageProps {
@@ -15,6 +16,7 @@ export function AdminPage({ initialUser, onNavigateToUserWorkspace }: AdminPageP
   const [user, setUser] = useState<UserProfile | null>(initialUser ?? null)
   const [loading, setLoading] = useState(!initialUser)
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' | 'info' } | null>(null)
+  const [adminTab, setAdminTab] = useState<'orders' | 'portfolios'>('orders')
 
   // Sign-in form state if not logged in
   const [email, setEmail] = useState('')
@@ -253,16 +255,80 @@ export function AdminPage({ initialUser, onNavigateToUserWorkspace }: AdminPageP
           /* Authorized: Render Dedicated Operations Dashboard */
           <div>
             <div style={{ marginBottom: 20 }}>
-              <p className="eyebrow" style={{ color: '#0284c7' }}>FULFILLMENT OPERATIONS</p>
-              <h1 style={{ fontSize: 28, margin: 0, fontWeight: 800, color: '#0f172a' }}>
-                Physical Card Orders &amp; Print Queue
-              </h1>
-              <p style={{ margin: '4px 0 0', color: 'var(--muted)', fontSize: 13 }}>
-                Review customer orders, verify Cheki transaction references, and generate CR80 print-ready vector layouts.
-              </p>
+              <p className="eyebrow" style={{ color: '#0284c7' }}>OPERATIONS &amp; ANALYTICS PORTAL</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
+                <div>
+                  <h1 style={{ fontSize: 28, margin: 0, fontWeight: 800, color: '#0f172a' }}>
+                    {adminTab === 'orders' ? 'Physical Card Orders & Print Queue' : 'Customer Profiles & Click Analytics'}
+                  </h1>
+                  <p style={{ margin: '4px 0 0', color: 'var(--muted)', fontSize: 13 }}>
+                    {adminTab === 'orders'
+                      ? 'Review customer orders, verify Cheki transaction references, and generate CR80 print-ready vector layouts.'
+                      : 'Track all customer profiles created across Koolink, review active subdomains, and monitor visitor clicks.'}
+                  </p>
+                </div>
+
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    background: '#e2e8f0',
+                    padding: 3,
+                    borderRadius: 10,
+                    gap: 4,
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setAdminTab('orders')}
+                    style={{
+                      background: adminTab === 'orders' ? '#ffffff' : 'transparent',
+                      color: adminTab === 'orders' ? '#0f172a' : '#64748b',
+                      border: 'none',
+                      borderRadius: 8,
+                      padding: '8px 16px',
+                      fontSize: 12.5,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      boxShadow: adminTab === 'orders' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <span>🖨️ Physical Orders</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setAdminTab('portfolios')}
+                    style={{
+                      background: adminTab === 'portfolios' ? '#ffffff' : 'transparent',
+                      color: adminTab === 'portfolios' ? '#0f172a' : '#64748b',
+                      border: 'none',
+                      borderRadius: 8,
+                      padding: '8px 16px',
+                      fontSize: 12.5,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      boxShadow: adminTab === 'portfolios' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <span>👥 Profiles &amp; Clicks</span>
+                  </button>
+                </div>
+              </div>
             </div>
 
-            <AdminPrintQueue onNotification={showToast} />
+            {adminTab === 'orders' ? (
+              <AdminPrintQueue onNotification={showToast} />
+            ) : (
+              <AdminPortfoliosTable onNotification={showToast} />
+            )}
           </div>
         )}
       </main>

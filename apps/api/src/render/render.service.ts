@@ -218,6 +218,9 @@ export class RenderService {
 
   async getPortfolioData(subdomain: string, allowDraft = false) {
     const { portfolio, content } = await this.getPortfolio(subdomain, allowDraft);
+    if (!allowDraft) {
+      void this.incrementViewCount(portfolio.id);
+    }
     return {
       id: portfolio.id,
       subdomain: portfolio.subdomain,
@@ -226,6 +229,19 @@ export class RenderService {
       blocks: sanitizeBlocks(content.blocks as PortfolioBlock[]),
       updatedAt: portfolio.updatedAt,
     };
+  }
+
+  private async incrementViewCount(portfolioId: string): Promise<void> {
+    try {
+      await this.portfoliosRepository
+        .createQueryBuilder()
+        .update(PortfolioEntity)
+        .set({ viewCount: () => 'COALESCE(view_count, 0) + 1' })
+        .where('id = :id', { id: portfolioId })
+        .execute();
+    } catch {
+      // Gracefully ignore if database migration is pending
+    }
   }
 
   async generateVcard(subdomain: string, allowDraft = false): Promise<string> {
