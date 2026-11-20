@@ -46,13 +46,20 @@ const sslOption =
     ? { rejectUnauthorized: false }
     : false;
 
+const poolMax = Number(process.env.DB_POOL_MAX ?? 4);
+
 export const dataSourceOptions: DataSourceOptions = {
   type: 'postgres',
   ...(dbUrl
     ? {
         url: dbUrl,
         ssl: sslOption,
-        extra: sslOption ? { ssl: { rejectUnauthorized: false } } : undefined,
+        extra: {
+          max: poolMax,
+          idleTimeoutMillis: 30000,
+          connectionTimeoutMillis: 10000,
+          ...(sslOption ? { ssl: { rejectUnauthorized: false } } : {}),
+        },
       }
     : {
         host: process.env.DATABASE_HOST ?? 'localhost',
@@ -61,7 +68,12 @@ export const dataSourceOptions: DataSourceOptions = {
         port: Number(process.env.DATABASE_PORT ?? 5432),
         database: process.env.DATABASE_NAME ?? 'amalink',
         ssl: sslOption,
-        extra: sslOption ? { ssl: { rejectUnauthorized: false } } : undefined,
+        extra: {
+          max: poolMax,
+          idleTimeoutMillis: 30000,
+          connectionTimeoutMillis: 10000,
+          ...(sslOption ? { ssl: { rejectUnauthorized: false } } : {}),
+        },
       }),
   entities: [
     UserEntity,

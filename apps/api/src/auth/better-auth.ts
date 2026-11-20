@@ -49,6 +49,8 @@ const isRemoteDb =
     dbUrl.includes('neon.tech') ||
     dbUrl.includes('aws'));
 
+const authPoolMax = Number(process.env.AUTH_POOL_MAX ?? 3);
+
 const pool = dbUrl
   ? new Pool({
       connectionString: dbUrl,
@@ -58,7 +60,9 @@ const pool = dbUrl
           : process.env.DATABASE_SSL === 'true' || isRemoteDb
           ? { rejectUnauthorized: false }
           : undefined,
-      max: 10,
+      max: authPoolMax,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000,
     })
   : new Pool({
       host: process.env.DATABASE_HOST ?? '127.0.0.1',
@@ -70,7 +74,9 @@ const pool = dbUrl
         process.env.DATABASE_SSL === 'true'
           ? { rejectUnauthorized: false }
           : undefined,
-      max: 10,
+      max: authPoolMax,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000,
     });
 
 const defaultOrigins = [
